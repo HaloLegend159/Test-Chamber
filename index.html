@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TDH Agreement – One‑Page PDF</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0f172a; --panel:#111827; --ink:#e5e7eb; --muted:#94a3b8; --accent:#22d3ee; --border:#1f2937; --radius:14px; --gap:14px }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1200px;margin:20px auto;padding:0 16px 96px}
+  .toolbar{position:sticky;top:0;z-index:5;backdrop-filter:blur(8px);background:rgba(15,23,42,.75);border-bottom:1px solid var(--border)}
+  .toolbar-inner{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0}
+  .title{display:flex;gap:10px;align-items:center;font-weight:700}
+  .title .dot{width:10px;height:10px;border-radius:999px;background:var(--accent);box-shadow:0 0 18px var(--accent)}
+  .btn{appearance:none;border:none;background:#0ea5e9;color:white;font-weight:600;padding:10px 14px;border-radius:10px;cursor:pointer;transition:transform .05s ease, opacity .2s ease;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+  .btn.secondary{background:#334155}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--border)}
+  .btn:active{transform:translateY(1px)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:16px}
+  .panel h2{margin:0 0 10px;font-size:16px;letter-spacing:.2px}
+  .row{display:grid;gap:var(--gap)}
+  .row.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media (max-width: 900px){.row.cols-2,.row.cols-3{grid-template-columns:1fr}}
+  .field{display:grid;gap:6px}
+  label{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.3px}
+  input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--ink);outline:none}
+  textarea{min-height:84px;resize:vertical}
+  .chipset{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:#0b1220;border:1px solid var(--border);padding:8px 10px;border-radius:999px}
+  .note{color:var(--muted);font-size:12px}
+  .hr{height:1px;background:var(--border);margin:20px 0}
+  .status{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e5e7eb;background:#0b1220;border:1px solid var(--border);padding:6px 10px;border-radius:999px}
+  .status .light{width:8px;height:8px;border-radius:999px;background:#f59e0b;box-shadow:0 0 10px currentColor}
+
+  /* === PRINTABLE (centered, single page) === */
+  #printRoot{position:fixed;inset:0;pointer-events:none;opacity:0}
+  .page{position:relative;width:816px;min-height:1056px;background:#fff;color:#0b1220;margin:0 auto;padding:28px 32px;border:1px solid #e5e7eb;border-radius:8px}
+  .page-inner{width:100%; transform-origin: top center;}
+  .header{display:flex;gap:16px;align-items:center;margin-bottom:6px}
+  .logoBox{width:180px;min-height:60px;display:flex;align-items:center}
+  .logoBox img{max-width:180px;max-height:70px;object-fit:contain}
+  .h1{font-size:22px;font-weight:700;margin:0}
+  .sub{color:#475569;margin:2px 0 0}
+  .sec{margin-top:12px}
+  .sec-title{font-size:14px;font-weight:700;margin:0 0 6px;border-bottom:1px solid #e5e7eb;padding-bottom:4px}
+  .kv{display:grid;grid-template-columns:220px 1fr;gap:4px 10px;align-items:start}
+  .kv + .kv{margin-top:6px}
+  .k{font-size:11px;color:#64748b}
+  .v{font-size:13px;font-weight:600;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:1.5}
+  .pillrow{display:flex;flex-wrap:wrap;gap:6px}
+  .pill{display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;color:#1e3a8a;border-radius:999px;padding:2px 8px;font-size:11px}
+  .avoid-break{page-break-inside:avoid}
+  /* Signatures */
+  .signRow{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:10px}
+  .sigBox{border:1px dashed #cbd5e1;border-radius:8px;padding:10px 12px}
+  .sigLine{height:30px;border-bottom:2px solid #0f172a;margin:16px 0 8px}
+  .sigMeta{display:grid;grid-template-columns:120px 1fr;gap:4px 8px}
+  .sigMeta .k{font-size:10px;color:#64748b}
+
+  /* Compact (1-page fit) */
+  .page.compact{padding:16px 20px}
+  .page.compact .h1{font-size:18.5px}
+  .page.compact .sec{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:6px}
+  .page.compact .sec-title{grid-column:1 / -1;font-size:12.2px;margin-bottom:0}
+  .page.compact .kv{grid-template-columns:155px 1fr}
+  .page.compact .v{font-size:12.2px;line-height:1.38}
+  .page.compact .k{font-size:10.2px}
+  .page.compact .pill{font-size:10px;padding:1px 6px}
+  .page.compact .logoBox{width:140px}
+  .page.compact .sigBox{padding:6px 8px}
+  .page.compact .sigLine{height:18px;margin:8px 0 6px}
+  .page.compact .signRow{gap:14px}
+  .page.compact .sigMeta{grid-template-columns:100px 1fr}
+  .page.compact .sec.paydates{grid-template-columns:repeat(3,1fr)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <div class="title"><span class="dot"></span><span>TDH Agreement – Form → PDF</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="status" style="gap:6px;cursor:pointer"><input id="fitToggle" type="checkbox" checked style="accent-color:#22c55e"> Fit to 1 page</label>
+          <span class="status" id="engineStatus"><span class="light" id="engineLight"></span><span id="engineText">PDF engine: loading…</span></span>
+          <button class="btn ghost" id="btnExample" title="Fill with example data">Load Example</button>
+          <button class="btn secondary" id="btnClear" title="Clear all fields">Clear</button>
+          <button class="btn" id="btnDownload" title="Generate a polished PDF">Download PDF</button>
+          <button class="btn ghost" id="btnRepair" title="Reload the PDF engine if blocked">Repair PDF Engine</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">This is the **rolled‑back** version that previously worked (no Current Price field, single‑page PDF, standard exporter).</p>
+
+    <!-- GENERAL INFO -->
+    <section class="panel">
+      <h2>General Info</h2>
+      <div class="row cols-3">
+        <div class="field"><label for="name">Name</label><input id="name" placeholder="Full name"/></div>
+        <div class="field"><label for="primaryContactName">Primary Contact Name</label><input id="primaryContactName"/></div>
+        <div class="field"><label for="primaryContactPhone">Primary Contact Phone</label><input id="primaryContactPhone" placeholder="(555) 555‑5555"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="insuranceCompany">Insurance Company</label><input id="insuranceCompany"/></div>
+        <div class="field"><label for="claimNumber">Claim Number</label><input id="claimNumber"/></div>
+        <div class="field"><label for="phone">Phone</label><input id="phone" placeholder="(555) 555‑5555"/></div>
+      </div>
+      <div class="row cols-2" style="margin-top:var(--gap)">
+        <div class="field"><label for="address">Address</label><input id="address" placeholder="Street address"/></div>
+        <div class="field"><label for="cityStateZip">City, State, Zip</label><input id="cityStateZip" placeholder="City, ST 00000"/></div>
+      </div>
+    </section>
+
+    <!-- ROOFING INFO -->
+    <section class="panel">
+      <h2>Roofing Info</h2>
+      <div class="row cols-3">
+        <div class="field">
+          <label>Roofing locations</label>
+          <div class="chipset" id="roofLocations">
+            <label class="chip"><input type="checkbox" value="House"> House</label>
+            <label class="chip"><input type="checkbox" value="Garage"> Garage</label>
+            <label class="chip"><input type="checkbox" value="Shed"> Shed</label>
+            <label class="chip"><input type="checkbox" value="Flat"> Flat</label>
+          </div>
+        </div>
+        <div class="field"><label for="tearOffLayers">Tear off layers</label><input id="tearOffLayers" placeholder="# of layers" /></div>
+        <div class="field">
+          <label>Underlayment</label>
+          <div class="chipset" id="underlayment">
+            <label class="chip"><input type="radio" name="underlayment" value="15lb"> 15lb</label>
+            <label class="chip"><input type="radio" name="underlayment" value="30lb"> 30lb</label>
+            <label class="chip"><input type="radio" name="underlayment" value="Synthetic"> Synthetic</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="shinglesBrand">Shingles Brand</label><input id="shinglesBrand"/></div>
+        <div class="field"><label for="style">Style</label><input id="style" placeholder="Architectural, 3‑tab, etc."/></div>
+        <div class="field"><label for="color">Color</label><input id="color"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="sqs">SQs</label><input id="sqs"/></div>
+        <div class="field"><label for="iceWater">Ice & Water Barrier</label><input id="iceWater"/></div>
+        <div class="field"><label for="dripEdge">Drip Edge</label><input id="dripEdge"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="gutterApron">Gutter Apron</label><input id="gutterApron"/></div>
+        <div class="field"><label for="sideWallFlashing">Side Wall Flashing</label><input id="sideWallFlashing" placeholder="Metal or Plastic"/></div>
+        <div class="field"><label for="vents">Vents</label><input id="vents" placeholder="Type / Count"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="valleys">Valleys</label><input id="valleys" placeholder="Open or Closed"/></div>
+        <div class="field"><label for="pipeJacks">Pipe Jacks</label><input id="pipeJacks" placeholder="QTY / Type"/></div>
+        <div class="field"><label for="ridge">Ridge Cap / Ridge Vent</label><input id="ridge" placeholder="Cap / Vent"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="roofPitch">Roof Pitch</label><input id="roofPitch"/></div>
+        <div class="field"><label for="stories">Stories</label><input id="stories"/></div>
+        <div class="field"><label for="roofSize">Roof Size</label><input id="roofSize" placeholder="Approx. sq ft"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field">
+          <label>Roof Type</label>
+          <div class="chipset" id="roofType">
+            <label class="chip"><input type="radio" name="roofType" value="Hip"> Hip</label>
+            <label class="chip"><input type="radio" name="roofType" value="Gable"> Gable</label>
+            <label class="chip"><input type="radio" name="roofType" value="Both"> Both</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GUTTERS -->
+    <section class="panel">
+      <h2>Gutters & Downspouts</h2>
+      <div class="row cols-3">
+        <div class="field"><label for="gutters">Gutters</label><input id="gutters" placeholder="5&quot; / 6&quot;"/></div>
+        <div class="field"><label for="downspouts">Downspouts</label><input id="downspouts" placeholder="2x3 / 3x4"/></div>
+        <div class="field"><label for="gutterColor">Gutter Color</label><input id="gutterColor"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="downspoutColor">Downspout Color</label><input id="downspoutColor"/></div>
+        <div class="field"><label for="gutterGuards">Gutter Guards</label><input id="gutterGuards" placeholder="Plastic / RX / Leaf Free"/></div>
+        <div class="field"><label for="magRoll">Mag Roll Sweeper</label><input id="magRoll" placeholder="Yes / No"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="debris">Clean & Haul Debris</label><input id="debris" placeholder="Yes / No"/></div>
+      </div>
+    </section>
+
+    <!-- SIDING -->
+    <section class="panel">
+      <h2>Siding</h2>
+      <div class="row cols-3">
+        <div class="field"><label for="sidingBrand">Brand</label><input id="sidingBrand"/></div>
+        <div class="field"><label for="sidingStyle">Style</label><input id="sidingStyle"/></div>
+        <div class="field"><label for="sidingSqs">SQs</label><input id="sidingSqs"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="sidingColor">Color</label><input id="sidingColor"/></div>
+        <div class="field"><label for="elevations">Elevations</label><input id="elevations" placeholder="Front / Rear / Left / Right"/></div>
+        <div class="field"><label for="trim">Trim</label><input id="trim"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="fascia">Fascia</label><input id="fascia" placeholder="Smooth / PVC"/></div>
+        <div class="field"><label for="soffit">Soffit</label><input id="soffit" placeholder="Solid / Vented"/></div>
+        <div class="field"><label for="windowWraps">Window Wraps</label><input id="windowWraps" placeholder="Smooth / PVC"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="blocks">Blocks</label><input id="blocks" placeholder="Light / Split"/></div>
+        <div class="field"><label for="sidingNotes">Notes</label><input id="sidingNotes" placeholder="Any additional siding info"/></div>
+        <div class="field"><label for="partialFull">Partial or Full</label><input id="partialFull"/></div>
+      </div>
+    </section>
+
+    <!-- MATERIALS / INTERIOR / PAYMENTS (no Current Price in rollback) -->
+    <section class="panel">
+      <h2>Materials / Interior / Payments</h2>
+      <div class="row cols-3">
+        <div class="field"><label for="materialDrop">Material drop off</label><input id="materialDrop" placeholder="Address / Notes"/></div>
+        <div class="field"><label for="redeck">Redeck</label><input id="redeck" placeholder="Yes / No / Areas"/></div>
+        <div class="field"><label for="interior">Interior damage</label><input id="interior" placeholder="Rooms / Notes"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="agreedAmount">Agreed Amount ($)</label><input id="agreedAmount" type="number" inputmode="decimal" placeholder="0.00"/></div>
+        <div class="field"><label for="firstPayment">First Payment ($)</label><input id="firstPayment" type="number" inputmode="decimal" placeholder="0.00"/></div>
+        <div class="field"><label for="finalPayment">Final Payment ($)</label><input id="finalPayment" type="number" inputmode="decimal" placeholder="0.00"/></div>
+      </div>
+      <div class="row cols-3" style="margin-top:var(--gap)">
+        <div class="field"><label for="custDate">Agreed by Customer (date)</label><input id="custDate" type="date"/></div>
+        <div class="field"><label for="repDate">Agreed by TDH Rep (date)</label><input id="repDate" type="date"/></div>
+        <div class="field"><label for="repName">TDH Representative</label><input id="repName" placeholder="Name"/></div>
+      </div>
+    </section>
+
+    <div class="panel diag">
+      <h3>Diagnostics</h3>
+      <p class="note">Run these if PDF isn’t downloading or the engine light is red.</p>
+      <div class="tests" id="tests"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="btnRunDiag">Run Diagnostics</button>
+        <button class="btn secondary" id="btnResetDiag">Clear Diagnostics</button>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div id="printRoot"></div>
+  </div>
+
+  <script>
+    // ---------- Small DOM helpers ----------
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+
+    // Paths
+    const LOGO_PATH = './assets/tdh-logo.png';
+
+    // ---------- PDF engine loader with fallbacks ----------
+    const PDF_CDNS = [
+      'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
+      'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+    ];
+
+    function loadScript(url){
+      return new Promise((resolve, reject)=>{
+        const s = document.createElement('script');
+        s.src = url; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+        s.onload = ()=> resolve(url); s.onerror = ()=> reject(new Error('Failed to load '+url));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function ensurePdfLoaded(){
+      if (window.html2pdf) return true;
+      let lastErr;
+      for(const url of PDF_CDNS){
+        try{ await loadScript(url); if(window.html2pdf) return true; }
+        catch(e){ lastErr = e; }
+      }
+      throw lastErr || new Error('html2pdf failed to load from all CDNs');
+    }
+
+    function setEngineStatus(status, msg){
+      const light = $('#engineLight'); const text = $('#engineText'); text.textContent = msg;
+      if(status==='ok'){ light.style.background = '#22c55e'; light.style.boxShadow='0 0 10px #22c55e'; }
+      else if(status==='bad'){ light.style.background = '#ef4444'; light.style.boxShadow='0 0 10px #ef4444'; }
+      else { light.style.background = '#f59e0b'; light.style.boxShadow='0 0 10px #f59e0b'; }
+    }
+
+    // Initialize engine (wrap awaits in async IIFE – avoids top-level await)
+    (async ()=>{
+      try{ await ensurePdfLoaded(); setEngineStatus('ok','PDF engine: ready'); }
+      catch(e){ setEngineStatus('bad','PDF engine: failed to load'); console.error(e); }
+    })();
+
+    // ---------- Form helpers ----------
+    function getCheckedChips(container){ const nodes = $$("input[type='checkbox']:checked", container); return nodes.map(i=>i.value); }
+    function getCheckedRadio(container){ const r = $("input[type='radio']:checked", container); return r ? r.value : ''; }
+
+    function collectData(){
+      return {
+        name: $('#name').value.trim(),
+        primaryContactName: $('#primaryContactName').value.trim(),
+        primaryContactPhone: $('#primaryContactPhone').value.trim(),
+        insuranceCompany: $('#insuranceCompany').value.trim(),
+        claimNumber: $('#claimNumber').value.trim(),
+        phone: $('#phone').value.trim(),
+        address: $('#address').value.trim(),
+        cityStateZip: $('#cityStateZip').value.trim(),
+        roofLocations: getCheckedChips($('#roofLocations')),
+        tearOffLayers: $('#tearOffLayers').value.trim(),
+        underlayment: getCheckedRadio($('#underlayment')),
+        shinglesBrand: $('#shinglesBrand').value.trim(),
+        style: $('#style').value.trim(),
+        color: $('#color').value.trim(),
+        sqs: $('#sqs').value.trim(),
+        iceWater: $('#iceWater').value.trim(),
+        dripEdge: $('#dripEdge').value.trim(),
+        gutterApron: $('#gutterApron').value.trim(),
+        sideWallFlashing: $('#sideWallFlashing').value.trim(),
+        vents: $('#vents').value.trim(),
+        valleys: $('#valleys').value.trim(),
+        pipeJacks: $('#pipeJacks').value.trim(),
+        ridge: $('#ridge').value.trim(),
+        roofPitch: $('#roofPitch').value.trim(),
+        stories: $('#stories').value.trim(),
+        roofSize: $('#roofSize').value.trim(),
+        roofType: getCheckedRadio($('#roofType')),
+        gutters: $('#gutters').value.trim(),
+        downspouts: $('#downspouts').value.trim(),
+        gutterColor: $('#gutterColor').value.trim(),
+        downspoutColor: $('#downspoutColor').value.trim(),
+        gutterGuards: $('#gutterGuards').value.trim(),
+        magRoll: $('#magRoll').value.trim(),
+        debris: $('#debris').value.trim(),
+        sidingBrand: $('#sidingBrand').value.trim(),
+        sidingStyle: $('#sidingStyle').value.trim(),
+        sidingSqs: $('#sidingSqs').value.trim(),
+        sidingColor: $('#sidingColor').value.trim(),
+        elevations: $('#elevations').value.trim(),
+        trim: $('#trim').value.trim(),
+        fascia: $('#fascia').value.trim(),
+        soffit: $('#soffit').value.trim(),
+        windowWraps: $('#windowWraps').value.trim(),
+        blocks: $('#blocks').value.trim(),
+        sidingNotes: $('#sidingNotes').value.trim(),
+        partialFull: $('#partialFull').value.trim(),
+        materialDrop: $('#materialDrop').value.trim(),
+        redeck: $('#redeck').value.trim(),
+        interior: $('#interior').value.trim(),
+        agreedAmount: $('#agreedAmount').value,
+        firstPayment: $('#firstPayment').value,
+        finalPayment: $('#finalPayment').value,
+        custDate: $('#custDate').value,
+        repDate: $('#repDate').value,
+        repName: $('#repName').value.trim()
+      };
+    }
+
+    function clearForm(){ $$('input, textarea, select').forEach(el=>{ if(el.type==='checkbox' || el.type==='radio'){ el.checked=false; } else { el.value=''; } }); }
+
+    function loadExample(){
+      const ex = {
+        name:'Jordan & Casey Mitchell', primaryContactName:'Casey Mitchell', primaryContactPhone:'(402) 555‑0199',
+        insuranceCompany:'Prairie Mutual', claimNumber:'PM‑NE‑24‑11827', phone:'(402) 555‑0177',
+        address:'2513 River Rd Dr', cityStateZip:'Waterloo, NE 68069', roofLocations:['House','Garage'],
+        tearOffLayers:'1', underlayment:'Synthetic', shinglesBrand:'Malarkey Vista', style:'Architectural', color:'Weathered Wood', sqs:'28',
+        iceWater:'Yes – eaves/valleys (per code)', dripEdge:'Yes – charcoal', gutterApron:'Yes – charcoal', sideWallFlashing:'Metal',
+        vents:'4 box vents – black', valleys:'Open (metal)', pipeJacks:'3 – neoprene', ridge:'Ridge cap – matching', roofPitch:'6/12', stories:'2', roofSize:'~2,800 sq ft', roofType:'Gable',
+        gutters:'5"', downspouts:'3x4', gutterColor:'Charcoal', downspoutColor:'Charcoal', gutterGuards:'Leaf Free', magRoll:'Yes', debris:'Yes',
+        sidingBrand:'LP SmartSide', sidingStyle:'Lap 8"', sidingSqs:'19', sidingColor:'Charcoal', elevations:'Front, Rear, Left, Right', trim:'PVC', fascia:'Smooth', soffit:'Vented', windowWraps:'Smooth', blocks:'2 Light, 1 Split', sidingNotes:'Replace damaged starter strips on north elevation', partialFull:'Partial – storm faces only',
+        materialDrop:'Driveway (left side) – 7am OK', redeck:'No', interior:'Master bath ceiling stain', agreedAmount:'18124.55', firstPayment:'5000.00', finalPayment:'13124.55',
+        custDate:new Date().toISOString().slice(0,10), repDate:new Date().toISOString().slice(0,10), repName:'TDH Rep – J. Morales'
+      };
+      for(const [k,v] of Object.entries(ex)){ const el = document.getElementById(k); if(el){ el.value = v } }
+      $$("#roofLocations input[type='checkbox']").forEach(cb=>{cb.checked = (ex.roofLocations||[]).includes(cb.value)});
+      $$("#underlayment input[type='radio']").forEach(r=>{r.checked = (r.value===ex.underlayment)});
+      $$("#roofType input[type='radio']").forEach(r=>{r.checked = (r.value===ex.roofType)});
+    }
+
+    function currency(n){ if(n==null||n==='')return''; const v=Number(n); if(Number.isNaN(v))return n; return v.toLocaleString(undefined,{style:'currency',currency:'USD'}) }
+
+    function kv(parent,label,value){ const wrap = document.createElement('div'); wrap.className = 'kv'; wrap.innerHTML = `<div class="k">${label}</div><div class="v">${value || '—'}</div>`; parent.appendChild(wrap); }
+
+    function buildHeader(){
+      const h = document.createElement('div'); h.className = 'header';
+      const logo = document.createElement('div'); logo.className = 'logoBox'; const img = new Image(); img.src = LOGO_PATH; img.alt = 'TDH Logo'; img.loading = 'eager'; img.decoding = 'sync'; img.crossOrigin = 'anonymous'; img.onerror = ()=>{ logo.innerHTML = '<strong>TDH</strong>'; }; logo.appendChild(img);
+      const text = document.createElement('div'); text.innerHTML = `<div class="h1">TDH Agreement</div><div class="sub">Generated ${new Date().toLocaleDateString()}</div>`;
+      h.appendChild(logo); h.appendChild(text); return h;
+    }
+
+    function buildSignatures(d){
+      const s = document.createElement('section'); s.className = 'sec signatures avoid-break'; s.innerHTML = `<div class="sec-title">Signatures</div>`;
+      const row = document.createElement('div'); row.className = 'signRow';
+      const customer = document.createElement('div'); customer.className = 'sigBox'; customer.innerHTML = `
+        <div class="k" style="font-weight:700">Customer Signature</div>
+        <div class="sigLine"></div>
+        <div class="sigMeta"><div class="k">Printed Name</div><div class="v">${d.name || '____________________________'}</div><div class="k">Date</div><div class="v">${d.custDate || '____/____/________'}</div></div>`;
+      const rep = document.createElement('div'); rep.className = 'sigBox'; rep.innerHTML = `
+        <div class="k" style="font-weight:700">TDH Representative</div>
+        <div class="sigLine"></div>
+        <div class="sigMeta"><div class="k">Printed Name</div><div class="v">${d.repName || '____________________________'}</div><div class="k">Date</div><div class="v">${d.repDate || '____/____/________'}</div></div>`;
+      row.appendChild(customer); row.appendChild(rep); s.appendChild(row); return s;
+    }
+
+    function buildPrintable(d){
+      const root = $('#printRoot'); root.innerHTML = '';
+      const page = document.createElement('div'); page.className = 'page';
+      const inner = document.createElement('div'); inner.className = 'page-inner';
+
+      const section = (title)=>{ const s = document.createElement('section'); s.className = 'sec avoid-break'; s.innerHTML = `<div class="sec-title">${title}</div>`; return s; };
+
+      inner.appendChild(buildHeader());
+
+      const s1 = section('General Information');
+      kv(s1,'Name', d.name); kv(s1,'Primary Contact', d.primaryContactName); kv(s1,'Primary Phone', d.primaryContactPhone);
+      kv(s1,'Insurance Company', d.insuranceCompany); kv(s1,'Claim Number', d.claimNumber); kv(s1,'Phone', d.phone);
+      kv(s1,'Address', d.address); kv(s1,'City/State/Zip', d.cityStateZip);
+
+      const s2 = section('Roofing');
+      const locWrap = document.createElement('div'); locWrap.className='kv'; const pillRow = `<div class="pillrow">${(d.roofLocations||[]).map(x=>`<span class='pill'>${x}</span>`).join('') || '—'}</div>`; locWrap.innerHTML = `<div class="k">Locations</div><div class="v">${pillRow}</div>`; s2.appendChild(locWrap);
+      ['Tear Off Layers','Underlayment','Shingles Brand','Style','Color','SQs','Ice & Water','Drip Edge','Gutter Apron','Side Wall Flashing','Vents','Valleys','Pipe Jacks','Ridge','Roof Pitch','Stories','Roof Size','Roof Type']
+        .forEach((label)=>{ const map = { 'Tear Off Layers':d.tearOffLayers,'Underlayment':d.underlayment,'Shingles Brand':d.shinglesBrand,'Style':d.style,'Color':d.color,'SQs':d.sqs,'Ice & Water':d.iceWater,'Drip Edge':d.dripEdge,'Gutter Apron':d.gutterApron,'Side Wall Flashing':d.sideWallFlashing,'Vents':d.vents,'Valleys':d.valleys,'Pipe Jacks':d.pipeJacks,'Ridge':d.ridge,'Roof Pitch':d.roofPitch,'Stories':d.stories,'Roof Size':d.roofSize,'Roof Type':d.roofType }; kv(s2,label,map[label]); });
+
+      const s3 = section('Gutters & Siding');
+      ['Gutters','Downspouts','Gutter Color','Downspout Color','Gutter Guards','Mag Roll Sweeper','Clean & Haul Debris','Siding Brand','Siding Style','Siding SQs','Siding Color','Elevations','Trim','Fascia','Soffit','Window Wraps','Blocks','Siding Notes','Partial or Full']
+        .forEach(label=>{ const map = { 'Gutters':d.gutters,'Downspouts':d.downspouts,'Gutter Color':d.gutterColor,'Downspout Color':d.downspoutColor,'Gutter Guards':d.gutterGuards,'Mag Roll Sweeper':d.magRoll,'Clean & Haul Debris':d.debris,'Siding Brand':d.sidingBrand,'Siding Style':d.sidingStyle,'Siding SQs':d.sidingSqs,'Siding Color':d.sidingColor,'Elevations':d.elevations,'Trim':d.trim,'Fascia':d.fascia,'Soffit':d.soffit,'Window Wraps':d.windowWraps,'Blocks':d.blocks,'Siding Notes':d.sidingNotes,'Partial or Full':d.partialFull }; kv(s3,label,map[label]); });
+
+      const s4 = section('Payments & Dates'); s4.classList.add('paydates');
+      kv(s4,'Agreed Amount', currency(d.agreedAmount));
+      kv(s4,'First Payment', currency(d.firstPayment));
+      kv(s4,'Final Payment', currency(d.finalPayment));
+      kv(s4,'Customer Date', d.custDate);
+      kv(s4,'TDH Rep Date', d.repDate);
+      kv(s4,'TDH Representative', d.repName);
+
+      const s5 = buildSignatures(d);
+
+      inner.appendChild(s1); inner.appendChild(s2); inner.appendChild(s3); inner.appendChild(s4); inner.appendChild(s5);
+      page.appendChild(inner); $('#printRoot').appendChild(page);
+      return {page, inner};
+    }
+
+    // === PDF EXPORT – visible overlay capture (prevents blank pages) ===
+    async function downloadPDF(){
+      try { await ensurePdfLoaded(); setEngineStatus('ok','PDF engine: ready'); }
+      catch(e){ setEngineStatus('bad','PDF engine: failed to load (click Repair)'); alert('PDF engine failed to load. Click "Repair PDF Engine" to try alternate CDNs.'); return; }
+
+      const data = collectData();
+      const { page, inner } = buildPrintable(data);
+
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(_){/* ignore */}
+      const imgs = Array.from(page.querySelectorAll('img'));
+      await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res=>{ img.onload=res; img.onerror=res; })));
+
+      const capH = 1056; if ($('#fitToggle').checked) page.classList.add('compact');
+      await new Promise(r=>requestAnimationFrame(()=>r()));
+      const actual = inner.scrollHeight; const reserve = 24;
+      const scale = Math.min(1, (capH - reserve) / actual);
+      if (scale < 1){ inner.style.transformOrigin = 'top center'; inner.style.transform = `scale(${scale})`; }
+      page.style.height = capH + 'px';
+
+      const overlay = document.createElement('div');
+      Object.assign(overlay.style, { position:'fixed', inset:'0', background:'#ffffff', zIndex:'999999', display:'flex', justifyContent:'center', alignItems:'flex-start', padding:'20px', overflow:'auto' });
+      try { const pr = document.getElementById('printRoot'); if (page.parentNode === pr) pr.removeChild(page); } catch(_){ }
+      overlay.appendChild(page);
+      document.body.appendChild(overlay);
+      await new Promise(r=>requestAnimationFrame(()=>r()));
+
+      const filenameSafe = (data.name || 'TDH_Agreement').replace(/[^a-z0-9_\-]+/gi,'_');
+      const opt = { margin:[0,0,0,0], filename: `${filenameSafe}_${new Date().toISOString().slice(0,10)}.pdf`, image: { type:'jpeg', quality:0.98 }, html2canvas: { scale: 3, useCORS:true, backgroundColor:'#ffffff', letterRendering:true, scrollX:0, scrollY:0 }, jsPDF: { unit:'pt', format:'letter', orientation:'portrait' }, pagebreak: { mode: ['avoid-all','css','legacy'] } };
+
+      try { await html2pdf().set(opt).from(page).save(); }
+      finally { overlay.remove(); }
+    }
+
+    // ---------- Diagnostics ----------
+    function addTestLine(name, ok, extra=''){ const line = document.createElement('div'); line.style.cssText='display:flex;justify-content:space-between;gap:12px;padding:6px 8px;background:#0f1628;border:1px solid #1c263d;border-radius:10px;margin-top:6px'; line.innerHTML = `<span>${name}</span><span style="${ok?'color:#22c55e':'color:#ef4444'}">${ok?'PASS':'FAIL'}${extra? ' – '+extra: ''}</span>`; $('#tests').appendChild(line); }
+
+    async function runDiagnostics(){
+      $('#tests').innerHTML = '';
+      const engineLoaded = !!window.html2pdf || await ensurePdfLoaded().then(()=>true).catch(()=>false);
+      addTestLine('Engine loads (html2pdf present)', engineLoaded);
+      try{ await new Promise((res,rej)=>{ const img=new Image(); img.onload=res; img.onerror=()=>rej(new Error('Logo not found')); img.src=LOGO_PATH; }); addTestLine('Logo asset reachable', true);}catch(e){ addTestLine('Logo asset reachable', false, e.message||e.toString()); }
+      addTestLine('downloadPDF is defined', typeof downloadPDF==='function');
+      try{ const {page} = buildPrintable(collectData()); const hasTitle = !!page.querySelector('.h1'); addTestLine('Printable builder returns page with header', hasTitle); $('#printRoot').innerHTML=''; }
+      catch(err){ addTestLine('Printable builder returns page with header', false, err.message||String(err)); }
+    }
+
+    function resetDiagnostics(){ $('#tests').innerHTML = ''; }
+
+    // ---------- Wire up UI ----------
+    $('#btnExample').addEventListener('click', loadExample);
+    $('#btnClear').addEventListener('click', clearForm);
+    $('#btnDownload').addEventListener('click', downloadPDF);
+    $('#btnRepair').addEventListener('click', async ()=>{ setEngineStatus('pending','PDF engine: loading…'); try{ await ensurePdfLoaded(); setEngineStatus('ok','PDF engine: ready'); } catch(e){ setEngineStatus('bad','PDF engine: failed to load'); console.error(e); } });
+    $('#btnRunDiag').addEventListener('click', runDiagnostics);
+    $('#btnResetDiag').addEventListener('click', resetDiagnostics);
+  </script>
+</body>
+</html>
