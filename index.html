@@ -3,511 +3,536 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>TDH Agreement – One‑Page PDF</title>
+<title>Alien Checkpoint</title>
 <meta name="color-scheme" content="dark light" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#0f172a; --panel:#111827; --ink:#e5e7eb; --muted:#94a3b8; --accent:#22d3ee; --border:#1f2937; --radius:14px; --gap:14px }
+  :root{
+    --bg:#0b0f1a; --panel:#0f1626; --ink:#e6f0ff; --muted:#9ab; --accent:#66e; --warn:#ffbe0b; --bad:#ef4444; --good:#22c55e; --paper:#f7f4e8; --inkpaper:#1e293b; --border:#1f2a44;
+  }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  a{color:var(--accent);text-decoration:none}
-  .wrap{max-width:1200px;margin:20px auto;padding:0 16px 96px}
-  .toolbar{position:sticky;top:0;z-index:5;backdrop-filter:blur(8px);background:rgba(15,23,42,.75);border-bottom:1px solid var(--border)}
-  .toolbar-inner{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0}
-  .title{display:flex;gap:10px;align-items:center;font-weight:700}
-  .title .dot{width:10px;height:10px;border-radius:999px;background:var(--accent);box-shadow:0 0 18px var(--accent)}
-  .btn{appearance:none;border:none;background:#0ea5e9;color:white;font-weight:600;padding:10px 14px;border-radius:10px;cursor:pointer;transition:transform .05s ease, opacity .2s ease;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-  .btn.secondary{background:#334155}
-  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--border)}
+  body{margin:0;background:linear-gradient(180deg,#0b0f1a,#0a0d17 60%);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;gap:12px;padding:10px 12px;background:#0e1422;border:1px solid var(--border);border-radius:14px;position:sticky;top:0;z-index:10;backdrop-filter:blur(6px)}
+  header h1{font-size:18px;margin:0 8px 0 0;letter-spacing:.6px}
+  .stat{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0b1220;border:1px solid var(--border);border-radius:10px}
+  .stat b{font-weight:700}
+  .grow{flex:1}
+  .btn{appearance:none;border:1px solid var(--border);background:#121a2b;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;transition:transform .05s ease,background .2s}
+  .btn:hover{background:#141f34}
   .btn:active{transform:translateY(1px)}
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:16px}
-  .panel h2{margin:0 0 10px;font-size:16px;letter-spacing:.2px}
-  .row{display:grid;gap:var(--gap)}
-  .row.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .row.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-  @media (max-width: 900px){.row.cols-2,.row.cols-3{grid-template-columns:1fr}}
-  .field{display:grid;gap:6px}
-  label{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.3px}
-  input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--ink);outline:none}
-  textarea{min-height:84px;resize:vertical}
-  .chipset{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{display:inline-flex;align-items:center;gap:8px;background:#0b1220;border:1px solid var(--border);padding:8px 10px;border-radius:999px}
-  .note{color:var(--muted);font-size:12px}
-  .hr{height:1px;background:var(--border);margin:20px 0}
-  .status{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e5e7eb;background:#0b1220;border:1px solid var(--border);padding:6px 10px;border-radius:999px}
-  .status .light{width:8px;height:8px;border-radius:999px;background:#f59e0b;box-shadow:0 0 10px currentColor}
-
-  /* === PRINTABLE (centered, single page) === */
-  #printRoot{position:fixed;inset:0;pointer-events:none;opacity:0}
-  .page{position:relative;width:816px;min-height:1056px;background:#fff;color:#0b1220;margin:0 auto;padding:28px 32px;border:1px solid #e5e7eb;border-radius:8px}
-  .page-inner{width:100%; transform-origin: top center;}
-  .header{display:flex;gap:16px;align-items:center;margin-bottom:6px}
-  .logoBox{width:180px;min-height:60px;display:flex;align-items:center}
-  .logoBox img{max-width:180px;max-height:70px;object-fit:contain}
-  .h1{font-size:22px;font-weight:700;margin:0}
-  .sub{color:#475569;margin:2px 0 0}
-  .sec{margin-top:12px}
-  .sec-title{font-size:14px;font-weight:700;margin:0 0 6px;border-bottom:1px solid #e5e7eb;padding-bottom:4px}
-  .kv{display:grid;grid-template-columns:220px 1fr;gap:4px 10px;align-items:start}
-  .kv + .kv{margin-top:6px}
-  .k{font-size:11px;color:#64748b}
-  .v{font-size:13px;font-weight:600;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:1.5}
-  .pillrow{display:flex;flex-wrap:wrap;gap:6px}
-  .pill{display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;color:#1e3a8a;border-radius:999px;padding:2px 8px;font-size:11px}
-  .avoid-break{page-break-inside:avoid}
-  /* Signatures */
-  .signRow{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:10px}
-  .sigBox{border:1px dashed #cbd5e1;border-radius:8px;padding:10px 12px}
-  .sigLine{height:30px;border-bottom:2px solid #0f172a;margin:16px 0 8px}
-  .sigMeta{display:grid;grid-template-columns:120px 1fr;gap:4px 8px}
-  .sigMeta .k{font-size:10px;color:#64748b}
-
-  /* Compact (1-page fit) */
-  .page.compact{padding:16px 20px}
-  .page.compact .h1{font-size:18.5px}
-  .page.compact .sec{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:6px}
-  .page.compact .sec-title{grid-column:1 / -1;font-size:12.2px;margin-bottom:0}
-  .page.compact .kv{grid-template-columns:155px 1fr}
-  .page.compact .v{font-size:12.2px;line-height:1.38}
-  .page.compact .k{font-size:10.2px}
-  .page.compact .pill{font-size:10px;padding:1px 6px}
-  .page.compact .logoBox{width:140px}
-  .page.compact .sigBox{padding:6px 8px}
-  .page.compact .sigLine{height:18px;margin:8px 0 6px}
-  .page.compact .signRow{gap:14px}
-  .page.compact .sigMeta{grid-template-columns:100px 1fr}
-  .page.compact .sec.paydates{grid-template-columns:repeat(3,1fr)}
+  .grid{display:grid;grid-template-columns:360px 1fr 360px;gap:14px;margin-top:14px}
+  .panel{background:#0f1626;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .panel h2{margin:0;padding:10px 12px;background:#0c1220;border-bottom:1px solid var(--border);font-size:14px;color:#cde;text-transform:uppercase;letter-spacing:.7px}
+  .pad{padding:12px}
+  .queue{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow:auto}
+  .alienCard{display:flex;gap:10px;align-items:center;padding:10px;background:#10192d;border:1px dashed #233355;border-radius:12px}
+  .alienPic{width:54px;height:54px;border-radius:10px;background:#091225;display:grid;place-items:center;overflow:hidden}
+  .alienMeta{font-size:12px;color:var(--muted)}
+  .workspace{display:grid;grid-template-columns:1fr;gap:10px}
+  .desk{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .doc{background:var(--paper);color:var(--inkpaper);border:2px solid #c9c4b4;border-radius:10px;box-shadow:0 1px 0 #0004 inset, 0 8px 30px #0005;padding:10px;position:relative;min-height:160px}
+  .doc h3{margin:0 0 6px;font:700 14px ui-monospace,Consolas,monospace;letter-spacing:.4px}
+  .doc table{width:100%;border-collapse:collapse;font:13px ui-monospace,Consolas,monospace}
+  .doc td{padding:4px 6px;border-bottom:1px dashed #d7d2c2}
+  .doc td:first-child{width:44%}
+  .stamp{position:absolute;inset:auto auto 10px 10px;padding:6px 10px;border:3px solid #b33;border-radius:8px;color:#b33;font:700 16px ui-monospace,Consolas,monospace;transform:rotate(-6deg);opacity:0;pointer-events:none}
+  .stamp.ok{border-color:#1d7c3a;color:#1d7c3a}
+  .tools{display:flex;gap:10px}
+  .hammer{background:#0d172a;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .big{display:flex;gap:10px}
+  .big .btn{font-size:16px;padding:12px 14px}
+  .rule{padding:10px;border-bottom:1px dashed #2a3b6b}
+  .rule:last-child{border-bottom:none}
+  .rule b{color:#cfe1ff}
+  .muted{color:var(--muted)}
+  .flex{display:flex;gap:10px;align-items:center}
+  .money{color:#86efac}
+  .strike{color:#fecaca}
+  .log{max-height:180px;overflow:auto;background:#0b1220;border:1px solid var(--border);border-radius:10px;padding:8px;font:12px ui-monospace,Consolas,monospace}
+  .log p{margin:0 0 6px}
+  .switches{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font:12px ui-monospace,Consolas,monospace;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#0c1322}
+  .right{display:flex;flex-direction:column;gap:10px}
+  .footer{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted)}
+  .kbd{font:600 12px ui-monospace,Consolas,monospace;background:#0c1322;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0f1626;border:1px solid var(--border);padding:10px 14px;border-radius:10px;box-shadow:0 10px 30px #0007;display:none}
+  .rank{font-weight:700}
+  .progress{height:8px;background:#12203a;border-radius:999px;overflow:hidden}
+  .progress>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#2dd4bf,#60a5fa)}
+  .help{font-size:13px;color:#cbd5e1}
+  .disclaimer{font-size:12px;color:#8ea3c7}
+  .photo{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center}
+  .photo img{width:72px;height:72px;border-radius:8px;border:2px solid #c9c4b4;background:white}
+  .faceRow{display:flex;gap:6px;flex-wrap:wrap;font:12px ui-monospace,Consolas,monospace}
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="toolbar">
-      <div class="toolbar-inner">
-        <div class="title"><span class="dot"></span><span>TDH Agreement – Form → PDF</span></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="status" style="gap:6px;cursor:pointer"><input id="fitToggle" type="checkbox" checked style="accent-color:#22c55e"> Fit to 1 page</label>
-          <span class="status" id="engineStatus"><span class="light" id="engineLight"></span><span id="engineText">PDF engine: loading…</span></span>
-          <button class="btn ghost" id="btnExample" title="Fill with example data">Load Example</button>
-          <button class="btn secondary" id="btnClear" title="Clear all fields">Clear</button>
-          <button class="btn" id="btnDownload" title="Generate a polished PDF">Download PDF</button>
-          <button class="btn ghost" id="btnRepair" title="Reload the PDF engine if blocked">Repair PDF Engine</button>
+    <header>
+      <h1>Alien Checkpoint</h1>
+      <div class="stat"><b>Day:</b> <span id="ui-day">1</span></div>
+      <div class="stat"><b>Credits:</b> <span id="ui-credits" class="money">0</span></div>
+      <div class="stat"><b>Strikes:</b> <span id="ui-strikes" class="strike">0</span></div>
+      <div class="stat"><b>Rank:</b> <span id="ui-rank" class="rank">Recruit</span></div>
+      <div class="grow"></div>
+      <button class="btn" id="btn-newday" title="Start/End Day (Space)">Start Day</button>
+      <button class="btn" id="btn-reset" title="Reset save">Reset</button>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Docking Queue</h2>
+        <div class="pad queue" id="queue"></div>
+      </section>
+
+      <section class="panel workspace">
+        <h2>Inspection Desk</h2>
+        <div class="pad desk">
+          <div class="doc" id="passport">
+            <h3>INTERSTELLAR PASSPORT</h3>
+            <div class="photo" style="margin-bottom:6px">
+              <img id="pp-live" alt="Live portrait" />
+              <div class="faceRow" id="pp-feats">—</div>
+            </div>
+            <table>
+              <tr><td>Species</td><td id="pp-species">—</td></tr>
+              <tr><td>Name</td><td id="pp-name">—</td></tr>
+              <tr><td>Planet of Origin</td><td id="pp-planet">—</td></tr>
+              <tr><td>Birth Cycle</td><td id="pp-dob">—</td></tr>
+              <tr><td>Expires</td><td id="pp-exp">—</td></tr>
+              <tr><td>Genetic Key</td><td id="pp-gk">—</td></tr>
+            </table>
+            <div class="stamp" id="pp-stamp">DENIED</div>
+          </div>
+          <div class="doc" id="visa">
+            <h3>DOCKING VISA</h3>
+            <table>
+              <tr><td>Purpose</td><td id="vs-purpose">—</td></tr>
+              <tr><td>Duration</td><td id="vs-duration">—</td></tr>
+              <tr><td>Planet Permit</td><td id="vs-planet">—</td></tr>
+              <tr><td>Quarantine</td><td id="vs-quar">—</td></tr>
+              <tr><td>Seal Code</td><td id="vs-seal">—</td></tr>
+            </table>
+            <div class="stamp ok" id="vs-stamp">APPROVED</div>
+          </div>
+          <div class="doc" id="photoid">
+            <h3>PHOTO IDENTIFICATION</h3>
+            <div class="photo">
+              <img id="pid-photo" alt="Recorded photo" />
+              <div>
+                <div id="pid-caption" class="muted">—</div>
+                <div class="faceRow" id="pid-feats">—</div>
+              </div>
+            </div>
+            <div class="stamp" id="pid-stamp">MISMATCH</div>
+          </div>
         </div>
-      </div>
+        <div class="pad">
+          <div class="tools big">
+            <button class="btn" id="approve">APPROVE (A)</button>
+            <button class="btn" id="deny">DENY (D)</button>
+            <button class="btn" id="detain">DETAIN (F)</button>
+            <button class="btn" id="next">NEXT SHIP (N)</button>
+          </div>
+          <div class="footer">
+            <div class="switches">
+              <span class="chip">Tip: Click a doc to reveal hidden stamps if forged</span>
+              <span class="chip">Shortcuts: <span class="kbd">A</span>/<span class="kbd">D</span>/<span class="kbd">F</span>/<span class="kbd">N</span>, <span class="kbd">Space</span> for Start/End Day</span>
+            </div>
+          </div>
+        </div>
+        <div class="pad">
+          <div class="log" id="log"></div>
+        </div>
+      </section>
+
+      <section class="panel right">
+        <h2>Regulations & Progress</h2>
+        <div class="pad" id="rules"></div>
+        <div class="pad">
+          <div class="help">New: Aliens now have unique randomized anatomy & faces. Ensure the Photo ID matches the live portrait and listed features (arms, eyes, antennae, head shape, markings, color).</div>
+        </div>
+        <div class="pad">
+          <div>Progress to next rank</div>
+          <div class="progress"><i id="xpbar"></i></div>
+          <div class="disclaimer" style="margin-top:8px">Inspired by border-control puzzle games. Original parody mechanics—no copyrighted assets.</div>
+        </div>
+      </section>
     </div>
 
-    <p class="note">This is the **rolled‑back** version that previously worked (no Current Price field, single‑page PDF, standard exporter).</p>
-
-    <!-- GENERAL INFO -->
-    <section class="panel">
-      <h2>General Info</h2>
-      <div class="row cols-3">
-        <div class="field"><label for="name">Name</label><input id="name" placeholder="Full name"/></div>
-        <div class="field"><label for="primaryContactName">Primary Contact Name</label><input id="primaryContactName"/></div>
-        <div class="field"><label for="primaryContactPhone">Primary Contact Phone</label><input id="primaryContactPhone" placeholder="(555) 555‑5555"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="insuranceCompany">Insurance Company</label><input id="insuranceCompany"/></div>
-        <div class="field"><label for="claimNumber">Claim Number</label><input id="claimNumber"/></div>
-        <div class="field"><label for="phone">Phone</label><input id="phone" placeholder="(555) 555‑5555"/></div>
-      </div>
-      <div class="row cols-2" style="margin-top:var(--gap)">
-        <div class="field"><label for="address">Address</label><input id="address" placeholder="Street address"/></div>
-        <div class="field"><label for="cityStateZip">City, State, Zip</label><input id="cityStateZip" placeholder="City, ST 00000"/></div>
-      </div>
-    </section>
-
-    <!-- ROOFING INFO -->
-    <section class="panel">
-      <h2>Roofing Info</h2>
-      <div class="row cols-3">
-        <div class="field">
-          <label>Roofing locations</label>
-          <div class="chipset" id="roofLocations">
-            <label class="chip"><input type="checkbox" value="House"> House</label>
-            <label class="chip"><input type="checkbox" value="Garage"> Garage</label>
-            <label class="chip"><input type="checkbox" value="Shed"> Shed</label>
-            <label class="chip"><input type="checkbox" value="Flat"> Flat</label>
-          </div>
-        </div>
-        <div class="field"><label for="tearOffLayers">Tear off layers</label><input id="tearOffLayers" placeholder="# of layers" /></div>
-        <div class="field">
-          <label>Underlayment</label>
-          <div class="chipset" id="underlayment">
-            <label class="chip"><input type="radio" name="underlayment" value="15lb"> 15lb</label>
-            <label class="chip"><input type="radio" name="underlayment" value="30lb"> 30lb</label>
-            <label class="chip"><input type="radio" name="underlayment" value="Synthetic"> Synthetic</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="shinglesBrand">Shingles Brand</label><input id="shinglesBrand"/></div>
-        <div class="field"><label for="style">Style</label><input id="style" placeholder="Architectural, 3‑tab, etc."/></div>
-        <div class="field"><label for="color">Color</label><input id="color"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="sqs">SQs</label><input id="sqs"/></div>
-        <div class="field"><label for="iceWater">Ice & Water Barrier</label><input id="iceWater"/></div>
-        <div class="field"><label for="dripEdge">Drip Edge</label><input id="dripEdge"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="gutterApron">Gutter Apron</label><input id="gutterApron"/></div>
-        <div class="field"><label for="sideWallFlashing">Side Wall Flashing</label><input id="sideWallFlashing" placeholder="Metal or Plastic"/></div>
-        <div class="field"><label for="vents">Vents</label><input id="vents" placeholder="Type / Count"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="valleys">Valleys</label><input id="valleys" placeholder="Open or Closed"/></div>
-        <div class="field"><label for="pipeJacks">Pipe Jacks</label><input id="pipeJacks" placeholder="QTY / Type"/></div>
-        <div class="field"><label for="ridge">Ridge Cap / Ridge Vent</label><input id="ridge" placeholder="Cap / Vent"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="roofPitch">Roof Pitch</label><input id="roofPitch"/></div>
-        <div class="field"><label for="stories">Stories</label><input id="stories"/></div>
-        <div class="field"><label for="roofSize">Roof Size</label><input id="roofSize" placeholder="Approx. sq ft"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field">
-          <label>Roof Type</label>
-          <div class="chipset" id="roofType">
-            <label class="chip"><input type="radio" name="roofType" value="Hip"> Hip</label>
-            <label class="chip"><input type="radio" name="roofType" value="Gable"> Gable</label>
-            <label class="chip"><input type="radio" name="roofType" value="Both"> Both</label>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- GUTTERS -->
-    <section class="panel">
-      <h2>Gutters & Downspouts</h2>
-      <div class="row cols-3">
-        <div class="field"><label for="gutters">Gutters</label><input id="gutters" placeholder="5&quot; / 6&quot;"/></div>
-        <div class="field"><label for="downspouts">Downspouts</label><input id="downspouts" placeholder="2x3 / 3x4"/></div>
-        <div class="field"><label for="gutterColor">Gutter Color</label><input id="gutterColor"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="downspoutColor">Downspout Color</label><input id="downspoutColor"/></div>
-        <div class="field"><label for="gutterGuards">Gutter Guards</label><input id="gutterGuards" placeholder="Plastic / RX / Leaf Free"/></div>
-        <div class="field"><label for="magRoll">Mag Roll Sweeper</label><input id="magRoll" placeholder="Yes / No"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="debris">Clean & Haul Debris</label><input id="debris" placeholder="Yes / No"/></div>
-      </div>
-    </section>
-
-    <!-- SIDING -->
-    <section class="panel">
-      <h2>Siding</h2>
-      <div class="row cols-3">
-        <div class="field"><label for="sidingBrand">Brand</label><input id="sidingBrand"/></div>
-        <div class="field"><label for="sidingStyle">Style</label><input id="sidingStyle"/></div>
-        <div class="field"><label for="sidingSqs">SQs</label><input id="sidingSqs"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="sidingColor">Color</label><input id="sidingColor"/></div>
-        <div class="field"><label for="elevations">Elevations</label><input id="elevations" placeholder="Front / Rear / Left / Right"/></div>
-        <div class="field"><label for="trim">Trim</label><input id="trim"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="fascia">Fascia</label><input id="fascia" placeholder="Smooth / PVC"/></div>
-        <div class="field"><label for="soffit">Soffit</label><input id="soffit" placeholder="Solid / Vented"/></div>
-        <div class="field"><label for="windowWraps">Window Wraps</label><input id="windowWraps" placeholder="Smooth / PVC"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="blocks">Blocks</label><input id="blocks" placeholder="Light / Split"/></div>
-        <div class="field"><label for="sidingNotes">Notes</label><input id="sidingNotes" placeholder="Any additional siding info"/></div>
-        <div class="field"><label for="partialFull">Partial or Full</label><input id="partialFull"/></div>
-      </div>
-    </section>
-
-    <!-- MATERIALS / INTERIOR / PAYMENTS (no Current Price in rollback) -->
-    <section class="panel">
-      <h2>Materials / Interior / Payments</h2>
-      <div class="row cols-3">
-        <div class="field"><label for="materialDrop">Material drop off</label><input id="materialDrop" placeholder="Address / Notes"/></div>
-        <div class="field"><label for="redeck">Redeck</label><input id="redeck" placeholder="Yes / No / Areas"/></div>
-        <div class="field"><label for="interior">Interior damage</label><input id="interior" placeholder="Rooms / Notes"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="agreedAmount">Agreed Amount ($)</label><input id="agreedAmount" type="number" inputmode="decimal" placeholder="0.00"/></div>
-        <div class="field"><label for="firstPayment">First Payment ($)</label><input id="firstPayment" type="number" inputmode="decimal" placeholder="0.00"/></div>
-        <div class="field"><label for="finalPayment">Final Payment ($)</label><input id="finalPayment" type="number" inputmode="decimal" placeholder="0.00"/></div>
-      </div>
-      <div class="row cols-3" style="margin-top:var(--gap)">
-        <div class="field"><label for="custDate">Agreed by Customer (date)</label><input id="custDate" type="date"/></div>
-        <div class="field"><label for="repDate">Agreed by TDH Rep (date)</label><input id="repDate" type="date"/></div>
-        <div class="field"><label for="repName">TDH Representative</label><input id="repName" placeholder="Name"/></div>
-      </div>
-    </section>
-
-    <div class="panel diag">
-      <h3>Diagnostics</h3>
-      <p class="note">Run these if PDF isn’t downloading or the engine light is red.</p>
-      <div class="tests" id="tests"></div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" id="btnRunDiag">Run Diagnostics</button>
-        <button class="btn secondary" id="btnResetDiag">Clear Diagnostics</button>
-      </div>
-    </div>
-
-    <div class="hr"></div>
-
-    <div id="printRoot"></div>
+    <div class="toast" id="toast"></div>
   </div>
 
-  <script>
-    // ---------- Small DOM helpers ----------
-    const $ = (sel, root=document) => root.querySelector(sel);
-    const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+<script>
+(function(){
+  // --- Game State ---
+  const SAVE_KEY = 'alien_checkpoint_save_v3';
+  const RANKS = [
+    {name:'Recruit', xp:0},
+    {name:'Officer', xp:120},
+    {name:'Inspector', xp:300},
+    {name:'Controller', xp:600},
+    {name:'Adjudicator', xp:1000}
+  ];
 
-    // Paths
-    const LOGO_PATH = './assets/tdh-logo.png';
+  let state = {
+    day: 1,
+    credits: 0,
+    strikes: 0,
+    xp: 0,
+    unlocked: {hardMode:false, endless:false},
+    inDay:false,
+    queue:[],
+    current:null,
+    seed: Math.floor(Math.random()*1e9)
+  };
 
-    // ---------- PDF engine loader with fallbacks ----------
-    const PDF_CDNS = [
-      'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
-      'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+  // --- Utilities ---
+  function rand(){ // Mulberry32 PRNG for reproducibility within a day
+    let t = state.seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  const pick = arr => arr[Math.floor(rand()*arr.length)];
+  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  const byId = id=>document.getElementById(id);
+  const log = (msg)=>{ const el=byId('log'); const p=document.createElement('p'); p.textContent=msg; el.prepend(p); };
+  const toast=(m)=>{const t=byId('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1500)}
+  function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify({
+      day:state.day, credits:state.credits, strikes:0, xp:state.xp, unlocked:state.unlocked
+  })); }
+  function load(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s){
+      state.day=s.day; state.credits=s.credits; state.strikes=0; state.xp=s.xp||0; state.unlocked=s.unlocked||{hardMode:false,endless:false};
+    }}catch(e){console.warn('no save');}
+  }
+
+  // --- Content Generation ---
+  const SPECIES = [
+    {name:'Zerulon', planets:['Aurex','Klyntar']},
+    {name:'Myridian', planets:['Doros','Myra-2']},
+    {name:'Vorx', planets:['Hask','Vortex-9']},
+    {name:'Eldari', planets:['Solace','Nyelle']},
+    {name:'Gubb', planets:['Pudra']}
+  ];
+  const PURPOSES = ['Transit','Trade','Tourism','Work','Diplomacy'];
+  const DURATIONS = ['1 day','3 days','7 days','14 days','30 days'];
+
+  const HEADS = ['round','tall','wide','tri'];
+  const MARKINGS = ['none','stripes','spots','chevrons'];
+
+  function pad(n){return String(n).padStart(2,'0')}
+  function formatDate(dayOffset){
+    const y=2481, m= ( (state.day+dayOffset) % 12 ) + 1, d=((state.day*3+dayOffset)%27)+1;
+    return `${y}-${pad(m)}-${pad(d)}`
+  }
+
+  function makeFeatures(){
+    const eyes = 1 + Math.floor(rand()*5); // 1–5
+    const arms = 2 + Math.floor(rand()*4); // 2–5
+    const antennae = Math.floor(rand()*3); // 0–2
+    const head = pick(HEADS);
+    const tint = `hsl(${Math.floor(rand()*360)} 70% 65%)`;
+    const markings = pick(MARKINGS);
+    return {eyes, arms, antennae, head, tint, markings};
+  }
+
+  function renderAlienSVG(f){
+    // simple vector avatar using features
+    const w=72, h=72; const cx=36, cy=40; const bodyH=28; const armY=44;
+    const headPath = {
+      round:`M18,18 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0`,
+      tall:`M24,14 h24 a8,12 0 0,1 8,12 v12 a20,16 0 0,1 -40,0 v-12 a8,12 0 0,1 8,-12 z`,
+      wide:`M16,24 h40 a8,10 0 0,1 0,20 h-40 a8,10 0 0,1 0,-20 z`,
+      tri:`M36,14 L56,44 H16 Z`
+    }[f.head];
+
+    const eyes = Array.from({length:f.eyes}, (_,i)=>{
+      const spread = Math.min(12, 4*(f.eyes-1));
+      const x = cx - spread/2 + (i*(spread/(Math.max(1,f.eyes-1))));
+      return `<circle cx="${x.toFixed(1)}" cy="32" r="3" fill="#111"/>`;
+    }).join('');
+
+    const ants = Array.from({length:f.antennae}, (_,i)=>{
+      const x = cx + (i - (f.antennae-1)/2)*8;
+      return `<path d="M${x},18 q-4,-8 -8,-12" stroke="#333" stroke-width="2" fill="none"/>`;
+    }).join('');
+
+    const mark = f.markings==='none'? '' : (
+      f.markings==='stripes' ? `<path d="M22,28 h28 M22,36 h28" stroke="#0005" stroke-width="3"/>` :
+      f.markings==='spots' ? `<circle cx="26" cy="30" r="2" fill="#0005"/><circle cx="46" cy="36" r="2" fill="#0005"/>` :
+      `<path d="M24,34 l12,-8 l12,8" stroke="#0005" stroke-width="3" fill="none"/>`
+    );
+
+    const arms = Array.from({length:f.arms}, (_,i)=>{
+      const x = 16 + i*(40/(f.arms-1||1));
+      return `<rect x="${x-2}" y="${armY}" width="4" height="14" rx="2" fill="#7aa3"/>`;
+    }).join('');
+
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${w} ${h}'>
+      <rect width='${w}' height='${h}' fill='white'/>
+      <g>
+        <rect x='14' y='42' width='44' height='18' rx='8' fill='${f.tint}'/>
+        <path d='${headPath}' fill='${f.tint}' stroke='#0004' stroke-width='1'/>
+        ${mark}
+        ${ants}
+        ${eyes}
+        ${arms}
+      </g>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+  }
+
+  function featuresSummary(f){
+    return [`eyes:${f.eyes}`,`arms:${f.arms}`,`ant:${f.antennae}`,`head:${f.head}`,`mark:${f.markings}`].join(' | ');
+  }
+
+  function maybePhotoMismatch(real){
+    const forged = JSON.parse(JSON.stringify(real));
+    const knobs = ['eyes','arms','antennae','head','markings'];
+    const k = pick(knobs);
+    if(k==='eyes') forged.eyes = clamp(real.eyes + (rand()>0.5?1:-1),1,5);
+    if(k==='arms') forged.arms = clamp(real.arms + (rand()>0.5?1:-1),2,5);
+    if(k==='antennae') forged.antennae = clamp(real.antennae + (rand()>0.5?1:-1),0,2);
+    if(k==='head') forged.head = pick(HEADS.filter(h=>h!==real.head));
+    if(k==='markings') forged.markings = pick(MARKINGS.filter(m=>m!==real.markings));
+    // tiny hue nudge
+    return forged;
+  }
+
+  function makeAlien(day){
+    const sp = pick(SPECIES);
+    const name = pick(['Ryll','Kora','Jent','Zux','Mira','Torv','Plek','Lena','Qir','Brol']) + ' ' + pick(['Zeen','Tark','Vel','Qor','Dax','Meln','Iri','Sorn']);
+    const planet = pick(sp.planets);
+    const dob = `${2440+Math.floor(rand()*40)}-${pad(1+Math.floor(rand()*12))}-${pad(1+Math.floor(rand()*27))}`;
+    const expOk = rand()>0.18; // some expired
+    const exp = expOk? formatDate( 10 + Math.floor(rand()*30) ) : formatDate( - (1+Math.floor(rand()*8)) );
+    const purpose = pick(PURPOSES);
+    const duration = pick(DURATIONS);
+    const seal = (rand()>0.15)? 'NX-'+(100+Math.floor(rand()*900)) : 'FORGE';
+    const gk = (rand()>0.1)? ('GK'+Math.floor(rand()*99999)) : 'MISMATCH';
+    const quarant = (rand()>0.8)? 'Required' : 'None';
+
+    const feats = makeFeatures();
+    const photoForged = rand()>0.82; // sometimes mismatch photo
+    const photoFeats = photoForged? maybePhotoMismatch(feats) : JSON.parse(JSON.stringify(feats));
+
+    const forgedHints = [];
+    if(seal==='FORGE') forgedHints.push('Visa seal looks grainy');
+    if(gk==='MISMATCH') forgedHints.push('Genetic key mismatch risk');
+    if(!expOk) forgedHints.push('Passport expired');
+    if(photoForged) forgedHints.push('Photo ID features don\'t match live portrait');
+
+    return {
+      sp: sp.name, planet, name, dob, exp, purpose, duration, quarantine:quarant, seal,
+      gk, forgedHints,
+      banned:false,
+      feats, photoFeats,
+      liveImg:null, photoImg:null
+    }
+  }
+
+  function buildQueue(){
+    state.queue = Array.from({length: 5 + Math.floor(state.day/2)}, ()=>makeAlien(state.day));
+    const bannedSpecies = (state.day>=3 && rand()>0.5)? pick(SPECIES).name : null;
+    const quarantinePlanet = (state.day>=4 && rand()>0.5)? pick(['Aurex','Doros','Hask','Solace','Pudra']):null;
+    state.todayRules = baseRules(state.day, bannedSpecies, quarantinePlanet);
+  }
+
+  function baseRules(day, bannedSpecies, quarantinePlanet){
+    const rules = [
+      {id:'id-match', text:'Names must be legible and present on both documents.', check:(a)=>true},
+      {id:'expiry', text:'Passports must be unexpired.', check:(a)=> new Date(a.exp) >= new Date(formatDate(0)) },
+      {id:'seal', text:'Visa must have a valid security seal.', check:(a)=> a.seal!=='FORGE' },
+      {id:'gk', text:'Genetic Key must not be MISMATCH.', check:(a)=> a.gk!=='MISMATCH' },
+      {id:'photo', text:'Photo ID must match live portrait features (eyes, arms, antennae, head, markings).', check:(a)=> sameFeatures(a.feats, a.photoFeats) }
     ];
-
-    function loadScript(url){
-      return new Promise((resolve, reject)=>{
-        const s = document.createElement('script');
-        s.src = url; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
-        s.onload = ()=> resolve(url); s.onerror = ()=> reject(new Error('Failed to load '+url));
-        document.head.appendChild(s);
-      });
+    if(day>=3 && bannedSpecies){
+      rules.push({id:'ban', text:`BANNED TODAY: ${bannedSpecies} species.`, check:(a)=> a.sp!==bannedSpecies});
     }
-
-    async function ensurePdfLoaded(){
-      if (window.html2pdf) return true;
-      let lastErr;
-      for(const url of PDF_CDNS){
-        try{ await loadScript(url); if(window.html2pdf) return true; }
-        catch(e){ lastErr = e; }
-      }
-      throw lastErr || new Error('html2pdf failed to load from all CDNs');
+    if(day>=4 && quarantinePlanet){
+      rules.push({id:'q', text:`Arrivals from ${quarantinePlanet} require \"Quarantine: Required\".`, check:(a)=> (a.planet!==quarantinePlanet) || (a.quarantine==='Required')});
     }
+    if(day>=5){ rules.push({id:'purpose', text:'Work or Diplomacy require Visa Duration ≥ 7 days.', check:(a)=> (a.purpose==='Work'||a.purpose==='Diplomacy')?(['7 days','14 days','30 days'].includes(a.duration)):true}); }
+    return rules;
+  }
 
-    function setEngineStatus(status, msg){
-      const light = $('#engineLight'); const text = $('#engineText'); text.textContent = msg;
-      if(status==='ok'){ light.style.background = '#22c55e'; light.style.boxShadow='0 0 10px #22c55e'; }
-      else if(status==='bad'){ light.style.background = '#ef4444'; light.style.boxShadow='0 0 10px #ef4444'; }
-      else { light.style.background = '#f59e0b'; light.style.boxShadow='0 0 10px #f59e0b'; }
+  function sameFeatures(a,b){
+    return a.eyes===b.eyes && a.arms===b.arms && a.antennae===b.antennae && a.head===b.head && a.markings===b.markings;
+  }
+
+  // --- UI Rendering ---
+  function renderHeader(){
+    byId('ui-day').textContent = state.day;
+    byId('ui-credits').textContent = state.credits;
+    byId('ui-strikes').textContent = state.strikes;
+    const rank = RANKS.reduce((acc,r)=> state.xp>=r.xp? r:acc, RANKS[0]);
+    byId('ui-rank').textContent = rank.name;
+    const next = RANKS.find(r=>r.xp>state.xp);
+    const pct = next? ( (state.xp - rank.xp) / (next.xp - rank.xp) * 100) : 100;
+    byId('xpbar').style.width = clamp(pct,0,100)+'%';
+  }
+
+  function renderRules(){
+    const box=byId('rules'); box.innerHTML='';
+    state.todayRules.forEach(r=>{
+      const div=document.createElement('div'); div.className='rule';
+      div.innerHTML = `<b>Rule:</b> ${r.text}`;
+      box.appendChild(div);
+    })
+  }
+
+  function renderQueue(){
+    const q=byId('queue'); q.innerHTML='';
+    state.queue.forEach((a)=>{
+      const card=document.createElement('div'); card.className='alienCard';
+      const thumb = renderAlienSVG(a.feats);
+      card.innerHTML=`<div class="alienPic"><img src="${thumb}" alt="thumb" style="width:100%;height:100%;object-fit:cover"/></div><div><div><b>${a.name}</b> — ${a.sp}</div><div class="alienMeta">${a.planet} • ${a.purpose} • ${a.duration}</div></div>`;
+      q.appendChild(card);
+    })
+  }
+
+  function showDoc(a){
+    byId('pp-species').textContent = a.sp;
+    byId('pp-name').textContent = a.name;
+    byId('pp-planet').textContent = a.planet;
+    byId('pp-dob').textContent = a.dob;
+    byId('pp-exp').textContent = a.exp;
+    byId('pp-gk').textContent = a.gk;
+
+    byId('vs-purpose').textContent = a.purpose;
+    byId('vs-duration').textContent = a.duration;
+    byId('vs-planet').textContent = a.planet;
+    byId('vs-quar').textContent = a.quarantine;
+    byId('vs-seal').textContent = a.seal;
+
+    // Photos & feature summaries
+    const liveURL = renderAlienSVG(a.feats);
+    const photoURL = renderAlienSVG(a.photoFeats);
+    byId('pp-live').src = liveURL; a.liveImg=liveURL;
+    byId('pid-photo').src = photoURL; a.photoImg=photoURL;
+
+    byId('pp-feats').textContent = featuresSummary(a.feats);
+    byId('pid-feats').textContent = featuresSummary(a.photoFeats);
+    byId('pid-caption').textContent = 'Recorded at prior docking';
+
+    byId('pp-stamp').style.opacity=0;
+    byId('vs-stamp').style.opacity=0;
+    byId('pid-stamp').style.opacity=0;
+  }
+
+  function popNext(){
+    if(!state.queue.length){ state.current=null; log('Queue empty. End the day to proceed.'); return; }
+    state.current = state.queue.shift();
+    renderQueue();
+    showDoc(state.current);
+    log(`Next ship: ${state.current.name} (${state.current.sp}) from ${state.current.planet}`);
+  }
+
+  // --- Adjudication Logic ---
+  function evaluate(answer){
+    if(!state.current){ toast('No ship selected'); return; }
+    const a=state.current;
+    const failures = state.todayRules.filter(r=>!r.check(a));
+    const correctDecision = failures.length===0 ? 'APPROVE' : (failures.length>=2? 'DETAIN' : 'DENY');
+
+    const ppStamp = byId('pp-stamp');
+    const vsStamp = byId('vs-stamp');
+    const pidStamp = byId('pid-stamp');
+
+    if(answer==='APPROVE'){ vsStamp.style.opacity=1; vsStamp.textContent='APPROVED'; vsStamp.classList.add('ok'); }
+    if(answer==='DENY'){ ppStamp.style.opacity=1; ppStamp.textContent='DENIED'; ppStamp.classList.remove('ok'); }
+    if(answer==='DETAIN'){ ppStamp.style.opacity=1; ppStamp.textContent='DETAINED'; ppStamp.classList.remove('ok'); }
+
+    // If photo mismatch exists, briefly flash stamp on photo doc when clicking docs
+    if(!sameFeatures(a.feats,a.photoFeats)) pidStamp.style.opacity=0.3;
+
+    let delta=0, xp=0;
+    if(answer===correctDecision){
+      delta = 5 + Math.max(0, 3 - failures.length);
+      xp = 15;
+      log(`✔ Correct: ${answer}. +${delta}₵`);
+      toast(`Correct (+${delta}₵, +${xp}xp)`)
+    } else {
+      delta = -3; state.strikes++; xp = 2;
+      const reason = failures.map(f=>f.id).join(', ') || 'no rule broken';
+      log(`✖ Wrong: You chose ${answer} but expected ${correctDecision}. (${reason}). -3₵, Strike ${state.strikes}`);
+      toast(`Incorrect (−3₵) • Strike ${state.strikes}`)
+      if(state.strikes>=3){ endDay('Too many strikes. Shift ended.'); return; }
     }
+    state.credits += delta; state.xp += xp;
+    renderHeader();
+  }
 
-    // Initialize engine (wrap awaits in async IIFE – avoids top-level await)
-    (async ()=>{
-      try{ await ensurePdfLoaded(); setEngineStatus('ok','PDF engine: ready'); }
-      catch(e){ setEngineStatus('bad','PDF engine: failed to load'); console.error(e); }
-    })();
+  function endDay(reason){
+    state.inDay=false;
+    byId('btn-newday').textContent='Start Day';
+    if(reason) log(`Day ended: ${reason}`);
+    const bonus = Math.max(0, (state.credits>0? Math.floor(state.credits/10):0));
+    if(bonus){ state.credits += bonus; log(`Daily performance bonus: +${bonus}₵`); }
+    if(state.day>=6) state.unlocked.hardMode=true;
+    if(state.day>=8) state.unlocked.endless=true;
+    save();
+    renderHeader();
+  }
 
-    // ---------- Form helpers ----------
-    function getCheckedChips(container){ const nodes = $$("input[type='checkbox']:checked", container); return nodes.map(i=>i.value); }
-    function getCheckedRadio(container){ const r = $("input[type='radio']:checked", container); return r ? r.value : ''; }
+  // --- Input Handlers ---
+  byId('approve').addEventListener('click',()=>{ evaluate('APPROVE'); });
+  byId('deny').addEventListener('click',()=>{ evaluate('DENY'); });
+  byId('detain').addEventListener('click',()=>{ evaluate('DETAIN'); });
+  byId('next').addEventListener('click',()=>{ popNext(); });
 
-    function collectData(){
-      return {
-        name: $('#name').value.trim(),
-        primaryContactName: $('#primaryContactName').value.trim(),
-        primaryContactPhone: $('#primaryContactPhone').value.trim(),
-        insuranceCompany: $('#insuranceCompany').value.trim(),
-        claimNumber: $('#claimNumber').value.trim(),
-        phone: $('#phone').value.trim(),
-        address: $('#address').value.trim(),
-        cityStateZip: $('#cityStateZip').value.trim(),
-        roofLocations: getCheckedChips($('#roofLocations')),
-        tearOffLayers: $('#tearOffLayers').value.trim(),
-        underlayment: getCheckedRadio($('#underlayment')),
-        shinglesBrand: $('#shinglesBrand').value.trim(),
-        style: $('#style').value.trim(),
-        color: $('#color').value.trim(),
-        sqs: $('#sqs').value.trim(),
-        iceWater: $('#iceWater').value.trim(),
-        dripEdge: $('#dripEdge').value.trim(),
-        gutterApron: $('#gutterApron').value.trim(),
-        sideWallFlashing: $('#sideWallFlashing').value.trim(),
-        vents: $('#vents').value.trim(),
-        valleys: $('#valleys').value.trim(),
-        pipeJacks: $('#pipeJacks').value.trim(),
-        ridge: $('#ridge').value.trim(),
-        roofPitch: $('#roofPitch').value.trim(),
-        stories: $('#stories').value.trim(),
-        roofSize: $('#roofSize').value.trim(),
-        roofType: getCheckedRadio($('#roofType')),
-        gutters: $('#gutters').value.trim(),
-        downspouts: $('#downspouts').value.trim(),
-        gutterColor: $('#gutterColor').value.trim(),
-        downspoutColor: $('#downspoutColor').value.trim(),
-        gutterGuards: $('#gutterGuards').value.trim(),
-        magRoll: $('#magRoll').value.trim(),
-        debris: $('#debris').value.trim(),
-        sidingBrand: $('#sidingBrand').value.trim(),
-        sidingStyle: $('#sidingStyle').value.trim(),
-        sidingSqs: $('#sidingSqs').value.trim(),
-        sidingColor: $('#sidingColor').value.trim(),
-        elevations: $('#elevations').value.trim(),
-        trim: $('#trim').value.trim(),
-        fascia: $('#fascia').value.trim(),
-        soffit: $('#soffit').value.trim(),
-        windowWraps: $('#windowWraps').value.trim(),
-        blocks: $('#blocks').value.trim(),
-        sidingNotes: $('#sidingNotes').value.trim(),
-        partialFull: $('#partialFull').value.trim(),
-        materialDrop: $('#materialDrop').value.trim(),
-        redeck: $('#redeck').value.trim(),
-        interior: $('#interior').value.trim(),
-        agreedAmount: $('#agreedAmount').value,
-        firstPayment: $('#firstPayment').value,
-        finalPayment: $('#finalPayment').value,
-        custDate: $('#custDate').value,
-        repDate: $('#repDate').value,
-        repName: $('#repName').value.trim()
-      };
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='a' || e.key==='A') evaluate('APPROVE');
+    if(e.key==='d' || e.key==='D') evaluate('DENY');
+    if(e.key==='f' || e.key==='F') evaluate('DETAIN');
+    if(e.key==='n' || e.key==='N') popNext();
+    if(e.code==='Space'){ e.preventDefault(); byId('btn-newday').click(); }
+  });
+
+  byId('btn-newday').addEventListener('click',()=>{
+    if(state.inDay){ endDay('You ended the day.'); return; }
+    state.inDay=true; state.strikes=0; byId('btn-newday').textContent='End Day';
+    buildQueue(); renderRules(); renderQueue(); popNext(); log(`Day ${state.day} begins. New rules posted.`);
+    save();
+  });
+
+  byId('btn-reset').addEventListener('click',()=>{
+    if(confirm('Reset progress?')){ localStorage.removeItem(SAVE_KEY); location.reload(); }
+  });
+
+  // Click docs to reveal hints (forgery clues)
+  function attachHint(el, on){
+    el.addEventListener('click',()=>{
+      if(!state.current) return;
+      if(state.current.forgedHints && state.current.forgedHints.length){ toast(state.current.forgedHints[Math.floor(rand()*state.current.forgedHints.length)]); }
+      if(on) on();
+    })
+  }
+  attachHint(byId('passport'));
+  attachHint(byId('visa'));
+  attachHint(byId('photoid'), ()=>{
+    if(!state.current) return;
+    if(!sameFeatures(state.current.feats,state.current.photoFeats)){
+      byId('pid-stamp').style.opacity = 1;
     }
+  });
 
-    function clearForm(){ $$('input, textarea, select').forEach(el=>{ if(el.type==='checkbox' || el.type==='radio'){ el.checked=false; } else { el.value=''; } }); }
+  // --- Boot ---
+  load();
+  renderHeader();
+  buildQueue(); renderRules(); renderQueue();
 
-    function loadExample(){
-      const ex = {
-        name:'Jordan & Casey Mitchell', primaryContactName:'Casey Mitchell', primaryContactPhone:'(402) 555‑0199',
-        insuranceCompany:'Prairie Mutual', claimNumber:'PM‑NE‑24‑11827', phone:'(402) 555‑0177',
-        address:'2513 River Rd Dr', cityStateZip:'Waterloo, NE 68069', roofLocations:['House','Garage'],
-        tearOffLayers:'1', underlayment:'Synthetic', shinglesBrand:'Malarkey Vista', style:'Architectural', color:'Weathered Wood', sqs:'28',
-        iceWater:'Yes – eaves/valleys (per code)', dripEdge:'Yes – charcoal', gutterApron:'Yes – charcoal', sideWallFlashing:'Metal',
-        vents:'4 box vents – black', valleys:'Open (metal)', pipeJacks:'3 – neoprene', ridge:'Ridge cap – matching', roofPitch:'6/12', stories:'2', roofSize:'~2,800 sq ft', roofType:'Gable',
-        gutters:'5"', downspouts:'3x4', gutterColor:'Charcoal', downspoutColor:'Charcoal', gutterGuards:'Leaf Free', magRoll:'Yes', debris:'Yes',
-        sidingBrand:'LP SmartSide', sidingStyle:'Lap 8"', sidingSqs:'19', sidingColor:'Charcoal', elevations:'Front, Rear, Left, Right', trim:'PVC', fascia:'Smooth', soffit:'Vented', windowWraps:'Smooth', blocks:'2 Light, 1 Split', sidingNotes:'Replace damaged starter strips on north elevation', partialFull:'Partial – storm faces only',
-        materialDrop:'Driveway (left side) – 7am OK', redeck:'No', interior:'Master bath ceiling stain', agreedAmount:'18124.55', firstPayment:'5000.00', finalPayment:'13124.55',
-        custDate:new Date().toISOString().slice(0,10), repDate:new Date().toISOString().slice(0,10), repName:'TDH Rep – J. Morales'
-      };
-      for(const [k,v] of Object.entries(ex)){ const el = document.getElementById(k); if(el){ el.value = v } }
-      $$("#roofLocations input[type='checkbox']").forEach(cb=>{cb.checked = (ex.roofLocations||[]).includes(cb.value)});
-      $$("#underlayment input[type='radio']").forEach(r=>{r.checked = (r.value===ex.underlayment)});
-      $$("#roofType input[type='radio']").forEach(r=>{r.checked = (r.value===ex.roofType)});
+  // Day progression: moving to next day automatically when queue is empty and still in-day
+  const observer = new MutationObserver(()=>{
+    if(state.inDay && !state.queue.length && state.current==null){
+      state.day++; endDay('Queue cleared.');
     }
+  });
+  observer.observe(byId('queue'), {childList:true});
 
-    function currency(n){ if(n==null||n==='')return''; const v=Number(n); if(Number.isNaN(v))return n; return v.toLocaleString(undefined,{style:'currency',currency:'USD'}) }
-
-    function kv(parent,label,value){ const wrap = document.createElement('div'); wrap.className = 'kv'; wrap.innerHTML = `<div class="k">${label}</div><div class="v">${value || '—'}</div>`; parent.appendChild(wrap); }
-
-    function buildHeader(){
-      const h = document.createElement('div'); h.className = 'header';
-      const logo = document.createElement('div'); logo.className = 'logoBox'; const img = new Image(); img.src = LOGO_PATH; img.alt = 'TDH Logo'; img.loading = 'eager'; img.decoding = 'sync'; img.crossOrigin = 'anonymous'; img.onerror = ()=>{ logo.innerHTML = '<strong>TDH</strong>'; }; logo.appendChild(img);
-      const text = document.createElement('div'); text.innerHTML = `<div class="h1">TDH Agreement</div><div class="sub">Generated ${new Date().toLocaleDateString()}</div>`;
-      h.appendChild(logo); h.appendChild(text); return h;
-    }
-
-    function buildSignatures(d){
-      const s = document.createElement('section'); s.className = 'sec signatures avoid-break'; s.innerHTML = `<div class="sec-title">Signatures</div>`;
-      const row = document.createElement('div'); row.className = 'signRow';
-      const customer = document.createElement('div'); customer.className = 'sigBox'; customer.innerHTML = `
-        <div class="k" style="font-weight:700">Customer Signature</div>
-        <div class="sigLine"></div>
-        <div class="sigMeta"><div class="k">Printed Name</div><div class="v">${d.name || '____________________________'}</div><div class="k">Date</div><div class="v">${d.custDate || '____/____/________'}</div></div>`;
-      const rep = document.createElement('div'); rep.className = 'sigBox'; rep.innerHTML = `
-        <div class="k" style="font-weight:700">TDH Representative</div>
-        <div class="sigLine"></div>
-        <div class="sigMeta"><div class="k">Printed Name</div><div class="v">${d.repName || '____________________________'}</div><div class="k">Date</div><div class="v">${d.repDate || '____/____/________'}</div></div>`;
-      row.appendChild(customer); row.appendChild(rep); s.appendChild(row); return s;
-    }
-
-    function buildPrintable(d){
-      const root = $('#printRoot'); root.innerHTML = '';
-      const page = document.createElement('div'); page.className = 'page';
-      const inner = document.createElement('div'); inner.className = 'page-inner';
-
-      const section = (title)=>{ const s = document.createElement('section'); s.className = 'sec avoid-break'; s.innerHTML = `<div class="sec-title">${title}</div>`; return s; };
-
-      inner.appendChild(buildHeader());
-
-      const s1 = section('General Information');
-      kv(s1,'Name', d.name); kv(s1,'Primary Contact', d.primaryContactName); kv(s1,'Primary Phone', d.primaryContactPhone);
-      kv(s1,'Insurance Company', d.insuranceCompany); kv(s1,'Claim Number', d.claimNumber); kv(s1,'Phone', d.phone);
-      kv(s1,'Address', d.address); kv(s1,'City/State/Zip', d.cityStateZip);
-
-      const s2 = section('Roofing');
-      const locWrap = document.createElement('div'); locWrap.className='kv'; const pillRow = `<div class="pillrow">${(d.roofLocations||[]).map(x=>`<span class='pill'>${x}</span>`).join('') || '—'}</div>`; locWrap.innerHTML = `<div class="k">Locations</div><div class="v">${pillRow}</div>`; s2.appendChild(locWrap);
-      ['Tear Off Layers','Underlayment','Shingles Brand','Style','Color','SQs','Ice & Water','Drip Edge','Gutter Apron','Side Wall Flashing','Vents','Valleys','Pipe Jacks','Ridge','Roof Pitch','Stories','Roof Size','Roof Type']
-        .forEach((label)=>{ const map = { 'Tear Off Layers':d.tearOffLayers,'Underlayment':d.underlayment,'Shingles Brand':d.shinglesBrand,'Style':d.style,'Color':d.color,'SQs':d.sqs,'Ice & Water':d.iceWater,'Drip Edge':d.dripEdge,'Gutter Apron':d.gutterApron,'Side Wall Flashing':d.sideWallFlashing,'Vents':d.vents,'Valleys':d.valleys,'Pipe Jacks':d.pipeJacks,'Ridge':d.ridge,'Roof Pitch':d.roofPitch,'Stories':d.stories,'Roof Size':d.roofSize,'Roof Type':d.roofType }; kv(s2,label,map[label]); });
-
-      const s3 = section('Gutters & Siding');
-      ['Gutters','Downspouts','Gutter Color','Downspout Color','Gutter Guards','Mag Roll Sweeper','Clean & Haul Debris','Siding Brand','Siding Style','Siding SQs','Siding Color','Elevations','Trim','Fascia','Soffit','Window Wraps','Blocks','Siding Notes','Partial or Full']
-        .forEach(label=>{ const map = { 'Gutters':d.gutters,'Downspouts':d.downspouts,'Gutter Color':d.gutterColor,'Downspout Color':d.downspoutColor,'Gutter Guards':d.gutterGuards,'Mag Roll Sweeper':d.magRoll,'Clean & Haul Debris':d.debris,'Siding Brand':d.sidingBrand,'Siding Style':d.sidingStyle,'Siding SQs':d.sidingSqs,'Siding Color':d.sidingColor,'Elevations':d.elevations,'Trim':d.trim,'Fascia':d.fascia,'Soffit':d.soffit,'Window Wraps':d.windowWraps,'Blocks':d.blocks,'Siding Notes':d.sidingNotes,'Partial or Full':d.partialFull }; kv(s3,label,map[label]); });
-
-      const s4 = section('Payments & Dates'); s4.classList.add('paydates');
-      kv(s4,'Agreed Amount', currency(d.agreedAmount));
-      kv(s4,'First Payment', currency(d.firstPayment));
-      kv(s4,'Final Payment', currency(d.finalPayment));
-      kv(s4,'Customer Date', d.custDate);
-      kv(s4,'TDH Rep Date', d.repDate);
-      kv(s4,'TDH Representative', d.repName);
-
-      const s5 = buildSignatures(d);
-
-      inner.appendChild(s1); inner.appendChild(s2); inner.appendChild(s3); inner.appendChild(s4); inner.appendChild(s5);
-      page.appendChild(inner); $('#printRoot').appendChild(page);
-      return {page, inner};
-    }
-
-    // === PDF EXPORT – visible overlay capture (prevents blank pages) ===
-    async function downloadPDF(){
-      try { await ensurePdfLoaded(); setEngineStatus('ok','PDF engine: ready'); }
-      catch(e){ setEngineStatus('bad','PDF engine: failed to load (click Repair)'); alert('PDF engine failed to load. Click "Repair PDF Engine" to try alternate CDNs.'); return; }
-
-      const data = collectData();
-      const { page, inner } = buildPrintable(data);
-
-      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(_){/* ignore */}
-      const imgs = Array.from(page.querySelectorAll('img'));
-      await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res=>{ img.onload=res; img.onerror=res; })));
-
-      const capH = 1056; if ($('#fitToggle').checked) page.classList.add('compact');
-      await new Promise(r=>requestAnimationFrame(()=>r()));
-      const actual = inner.scrollHeight; const reserve = 24;
-      const scale = Math.min(1, (capH - reserve) / actual);
-      if (scale < 1){ inner.style.transformOrigin = 'top center'; inner.style.transform = `scale(${scale})`; }
-      page.style.height = capH + 'px';
-
-      const overlay = document.createElement('div');
-      Object.assign(overlay.style, { position:'fixed', inset:'0', background:'#ffffff', zIndex:'999999', display:'flex', justifyContent:'center', alignItems:'flex-start', padding:'20px', overflow:'auto' });
-      try { const pr = document.getElementById('printRoot'); if (page.parentNode === pr) pr.removeChild(page); } catch(_){ }
-      overlay.appendChild(page);
-      document.body.appendChild(overlay);
-      await new Promise(r=>requestAnimationFrame(()=>r()));
-
-      const filenameSafe = (data.name || 'TDH_Agreement').replace(/[^a-z0-9_\-]+/gi,'_');
-      const opt = { margin:[0,0,0,0], filename: `${filenameSafe}_${new Date().toISOString().slice(0,10)}.pdf`, image: { type:'jpeg', quality:0.98 }, html2canvas: { scale: 3, useCORS:true, backgroundColor:'#ffffff', letterRendering:true, scrollX:0, scrollY:0 }, jsPDF: { unit:'pt', format:'letter', orientation:'portrait' }, pagebreak: { mode: ['avoid-all','css','legacy'] } };
-
-      try { await html2pdf().set(opt).from(page).save(); }
-      finally { overlay.remove(); }
-    }
-
-    // ---------- Diagnostics ----------
-    function addTestLine(name, ok, extra=''){ const line = document.createElement('div'); line.style.cssText='display:flex;justify-content:space-between;gap:12px;padding:6px 8px;background:#0f1628;border:1px solid #1c263d;border-radius:10px;margin-top:6px'; line.innerHTML = `<span>${name}</span><span style="${ok?'color:#22c55e':'color:#ef4444'}">${ok?'PASS':'FAIL'}${extra? ' – '+extra: ''}</span>`; $('#tests').appendChild(line); }
-
-    async function runDiagnostics(){
-      $('#tests').innerHTML = '';
-      const engineLoaded = !!window.html2pdf || await ensurePdfLoaded().then(()=>true).catch(()=>false);
-      addTestLine('Engine loads (html2pdf present)', engineLoaded);
-      try{ await new Promise((res,rej)=>{ const img=new Image(); img.onload=res; img.onerror=()=>rej(new Error('Logo not found')); img.src=LOGO_PATH; }); addTestLine('Logo asset reachable', true);}catch(e){ addTestLine('Logo asset reachable', false, e.message||e.toString()); }
-      addTestLine('downloadPDF is defined', typeof downloadPDF==='function');
-      try{ const {page} = buildPrintable(collectData()); const hasTitle = !!page.querySelector('.h1'); addTestLine('Printable builder returns page with header', hasTitle); $('#printRoot').innerHTML=''; }
-      catch(err){ addTestLine('Printable builder returns page with header', false, err.message||String(err)); }
-    }
-
-    function resetDiagnostics(){ $('#tests').innerHTML = ''; }
-
-    // ---------- Wire up UI ----------
-    $('#btnExample').addEventListener('click', loadExample);
-    $('#btnClear').addEventListener('click', clearForm);
-    $('#btnDownload').addEventListener('click', downloadPDF);
-    $('#btnRepair').addEventListener('click', async ()=>{ setEngineStatus('pending','PDF engine: loading…'); try{ await ensurePdfLoaded(); setEngineStatus('ok','PDF engine: ready'); } catch(e){ setEngineStatus('bad','PDF engine: failed to load'); console.error(e); } });
-    $('#btnRunDiag').addEventListener('click', runDiagnostics);
-    $('#btnResetDiag').addEventListener('click', resetDiagnostics);
-  </script>
+})();
+</script>
 </body>
 </html>
