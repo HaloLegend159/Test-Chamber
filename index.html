@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Room-Boss Gauntlet</title>
+<title>Room-Boss Gauntlet — Animated</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
@@ -14,28 +14,18 @@
   html,body{height:100%}
   body{margin:0; background:linear-gradient(180deg,var(--bg),#0b132b); color:var(--ink); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  .hud{
-    display:grid; gap:var(--gap);
-    grid-template-columns: 1.2fr 1fr;
-  }
-  .panel{
-    background:rgba(15,23,42,.8); border:1px solid var(--border); border-radius:var(--radius);
-    box-shadow:var(--shadow); padding:16px;
-  }
+  .hud{display:grid; gap:var(--gap); grid-template-columns:1.2fr 1fr}
+  .panel{background:rgba(15,23,42,.8); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px}
   .title{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px}
   .title h2{margin:0;font-size:18px}
   .tag{font-size:12px;color:var(--muted)}
   .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .bar{height:10px;background:#11203e;border-radius:999px;overflow:hidden;border:1px solid #1b2b4c}
-  .bar > i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#34d399)}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#34d399); transition:width .25s ease}
   .grid{display:grid; gap:var(--gap)}
   .grid.two{grid-template-columns:1fr 1fr}
-  .btn{
-    display:inline-flex;gap:8px;align-items:center;justify-content:center;
-    border:1px solid var(--border); background:#111b34; color:var(--ink);
-    padding:12px 14px; border-radius:12px; cursor:pointer; user-select:none;
-    transition:.15s transform,.15s background,.15s border-color;
-  }
+  .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;border:1px solid var(--border); background:#111b34; color:var(--ink);
+       padding:12px 14px; border-radius:12px; cursor:pointer; user-select:none; transition:.15s transform,.15s background,.15s border-color}
   .btn:hover{transform:translateY(-1px); background:#0f1a33}
   .btn:disabled{opacity:.5; cursor:not-allowed; transform:none}
   .btn.primary{border-color:#214b3f;background:#0f2b24}
@@ -45,21 +35,17 @@
   .choice{display:grid; gap:10px}
   .log{height:220px; overflow:auto; background:#0b152c; border:1px solid #122345; border-radius:12px; padding:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
   .log p{margin:0 0 6px; color:#c6d4e2}
-  .pill{
-    display:inline-flex;align-items:center;gap:6px; padding:3px 8px; border-radius:999px; border:1px solid #234;
-    background:#0e1c34; color:#a7bed4; font-size:12px
-  }
+  .pill{display:inline-flex;align-items:center;gap:6px; padding:3px 8px; border-radius:999px; border:1px solid #234; background:#0e1c34; color:#a7bed4; font-size:12px}
   .k{color:#a7ffcb}
   .small{font-size:12px;color:var(--muted)}
-  .sp{height:10px}
-  .ability{
-    display:flex; flex-direction:column; gap:6px; padding:10px; border:1px dashed #2a3b60; border-radius:10px;
-    background:#0a162f;
-  }
+  .ability{display:flex; flex-direction:column; gap:6px; padding:10px; border:1px dashed #2a3b60; border-radius:10px; background:#0a162f}
+  .stageWrap{position:relative; background:#0a142b; border:1px solid #13254a; border-radius:12px; overflow:hidden}
+  .stageHUD{display:flex; justify-content:space-between; gap:8px; margin-bottom:8px}
+  .stageHUD .mini{flex:1; display:flex; align-items:center; gap:8px}
+  .stageHUD .mini .bar{flex:1}
+  canvas{width:100%; height:auto; display:block; image-rendering:crisp-edges; image-rendering:pixelated}
   .footer{margin-top:14px; color:var(--muted); font-size:12px}
-  @media (max-width:900px){
-    .hud{grid-template-columns:1fr}
-  }
+  @media (max-width:900px){ .hud{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -88,11 +74,9 @@
         <div>CRIT: <b id="crit">10%</b></div>
         <div>SPD: <b id="spd">10</b></div>
       </div>
-      <div class="sp"></div>
-      <div>
-        <div class="row" id="abilitiesRow"><!-- abilities injected --></div>
-        <div class="small">Tip: Use keys <b>1/2/3</b> to pick choices. Abilities show cooldowns.</div>
-      </div>
+      <div class="sp" style="height:10px"></div>
+      <div class="row" id="abilitiesRow"></div>
+      <div class="small">Tip: Use keys <b>1/2/3</b> to pick choices. Abilities show cooldowns.</div>
     </section>
 
     <section class="panel">
@@ -100,6 +84,23 @@
         <h2 id="stageTitle">Choose an enemy</h2>
         <span class="tag" id="stageTag">Plan your next fight</span>
       </div>
+
+      <!-- NEW: Visual Stage -->
+      <div class="stageWrap">
+        <div class="stageHUD" style="padding:10px 10px 0">
+          <div class="mini">
+            <span class="tag">Player</span>
+            <div class="bar"><i id="pbarStage" style="width:100%"></i></div>
+          </div>
+          <div class="mini">
+            <span class="tag" id="enemyMiniName">Enemy</span>
+            <div class="bar"><i id="ebarStage" style="width:100%"></i></div>
+          </div>
+        </div>
+        <canvas id="stage" width="720" height="360"></canvas>
+      </div>
+
+      <div class="sp" style="height:10px"></div>
       <div id="stageArea" class="grid"></div>
     </section>
   </div>
@@ -113,520 +114,400 @@
 
 <script>
 (() => {
-  // --- Utilities ---
-  const $ = sel => document.querySelector(sel);
-  const el = (tag, props={}, children=[]) => {
-    const n = document.createElement(tag);
-    Object.entries(props).forEach(([k,v])=>{
-      if(k==='class') n.className=v;
-      else if(k==='text') n.textContent=v;
-      else if(k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v);
-      else n.setAttribute(k,v);
-    });
-    children.forEach(c => n.appendChild(c));
-    return n;
-  };
+  // ========= Utilities =========
+  const $ = s => document.querySelector(s);
+  const el = (t,p={},c=[]) => { const n=document.createElement(t);
+    Object.entries(p).forEach(([k,v])=>{ if(k==='class') n.className=v; else if(k==='text') n.textContent=v; else if(k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v); else n.setAttribute(k,v); });
+    c.forEach(ch=>n.appendChild(ch)); return n; };
   const rng = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  const ease=(t)=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 
-  // --- Game State ---
-  const state = {
-    cycle: 1,          // cycles of rooms+boss
-    room: 1,           // regular rooms within a cycle
-    bossesDefeated: 0,
-    finalBossesNeeded: 3, // after 3 bosses, next is Final Boss
-    roomsPerCycle: 3,  // rooms before a boss
-    player: {
-      maxHp: 100, hp: 100, atk: 10, def: 3, crit: 10, spd: 10,
-      xp: 0, abilities: [], cooldowns: {}
-    },
-    enemy: null,
-    phase: 'choose-enemy', // other: 'fight', 'buffs', 'boss', 'final'
-    lock:false
-  };
-
-  // --- Abilities granted by bosses ---
-  const ABILITIES = [
-    {
-      id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK damage twice.',
-      cd:3, use: (ctx)=> {
-        const dmg1 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
-        const dmg2 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
-        ctx.enemy.hp = Math.max(0, ctx.enemy.hp - (dmg1+dmg2));
-        log(`You spin into a <span class="k">Whirlwind</span> for ${dmg1+dmg2} total damage.`);
-      }
-    },
-    {
-      id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% of max HP as a barrier for 3 turns.',
-      cd:4, use: (ctx)=> {
-        const val = Math.floor(ctx.player.maxHp * 0.3);
-        ctx.player.shield = Math.max(ctx.player.shield||0, val);
-        ctx.player.shieldTurns = 3;
-        log(`You conjure <span class="k">Arcane Shield</span> absorbing ${val} damage for 3 turns.`);
-      }
-    },
-    {
-      id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.',
-      cd:5, use: (ctx)=> {
-        ctx.extraTurn = true;
-        log(`You bend time with <span class="k">Time Warp</span> and act again!`);
-      }
-    },
-    {
-      id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.',
-      cd:4, use: (ctx)=> {
-        ctx.tempAtkBoost = (ctx.tempAtkBoost||0) + ctx.player.atk; // +100% this turn
-        log(`You surge with <span class="k">Overcharge</span>! ATK doubled for this strike.`);
-      }
-    },
-    {
-      id:'vamp_bite', name:'Vampiric Bite', desc:'Deal 120% ATK and heal for 50% of damage dealt.',
-      cd:4, use: (ctx)=> {
-        const dmg = calcDamage(ctx.player.atk*1.2, ctx.enemy.def, ctx.player.crit);
-        ctx.enemy.hp = Math.max(0, ctx.enemy.hp - dmg);
-        const heal = Math.floor(dmg*0.5);
-        healPlayer(heal);
-        log(`You drain with <span class="k">Vampiric Bite</span> for ${dmg} and heal ${heal}.`);
-      }
-    }
-  ];
-
-  // --- Buff pool (for post-room rewards) ---
-  const BUFFS = [
-    {id:'hp10', name:'+10% Max HP', apply:()=>{ const add=Math.floor(state.player.maxHp*0.10); state.player.maxHp+=add; state.player.hp+=add; }},
-    {id:'atk6', name:'+6 ATK', apply:()=>{ state.player.atk+=6; }},
-    {id:'def3', name:'+3 DEF', apply:()=>{ state.player.def+=3; }},
-    {id:'crit8', name:'+8% CRIT', apply:()=>{ state.player.crit = clamp(state.player.crit+8,0,100); }},
-    {id:'spd5', name:'+5 SPD', apply:()=>{ state.player.spd+=5; }},
-    {id:'heal20', name:'Heal 20% HP now', apply:()=>{ healPlayer(Math.floor(state.player.maxHp*0.2)); }},
-    {id:'barrier', name:'Start next fight with 15 Shield', apply:()=>{ state.player.nextShield = (state.player.nextShield||0)+15; }},
-    {id:'vigor', name:'+10% damage this cycle', apply:()=>{ state.player.cycleDmg = (state.player.cycleDmg||0)+0.10; }},
-    {id:'guard', name:'-10% damage taken this cycle', apply:()=>{ state.player.cycleDR = (state.player.cycleDR||0)+0.10; }},
-  ];
-
-  // --- Enemy templates ---
-  const ENEMY_TYPES = [
-    { id:'swarmer', name:'Swarmer', desc:'Fast, low HP, light hits.', scale:(lvl)=>({
-      maxHp: 50 + lvl*12, atk: 7 + lvl*2, def: 2 + Math.floor(lvl*0.6), spd: 14 + Math.floor(lvl*0.7)
-    })},
-    { id:'brute', name:'Brute', desc:'Slow, high HP, heavy hits.', scale:(lvl)=>({
-      maxHp: 110 + lvl*20, atk: 12 + lvl*4, def: 5 + Math.floor(lvl*1.2), spd: 7 + Math.floor(lvl*0.3)
-    })},
-    { id:'mage', name:'Arcanist', desc:'Glass cannon, crit happy.', scale:(lvl)=>({
-      maxHp: 70 + lvl*14, atk: 14 + lvl*4, def: 3 + Math.floor(lvl*0.8), spd: 10 + Math.floor(lvl*0.6), crit: 20 + Math.floor(lvl*1.5)
-    })},
-  ];
-
-  function bossStats(lvl){
-    return {
-      name: `Boss ${lvl}`,
-      maxHp: 220 + lvl*70, atk: 18 + lvl*6, def: 6 + Math.floor(lvl*1.5), spd: 10 + lvl, crit: 15 + lvl*2,
-      special: lvl%2? 'Crushing Blow (+50% ATK every 3 turns)':'Arcane Barrage (2x hits every 3 turns)'
-    };
-  }
-  function finalBoss(){
-    return {
-      name:'FINAL BOSS — The Shard Eater',
-      maxHp: 800, atk: 35, def: 12, spd: 14, crit: 20, special:'Devour: every 4th turn steals 10% of your max HP'
-    };
-  }
-
-  // --- UI helpers ---
+  // ========= DOM refs =========
+  const stageCanvas = $('#stage'); const ctx = stageCanvas.getContext('2d');
   const stageTitle = $('#stageTitle'), stageTag=$('#stageTag'), stageArea=$('#stageArea');
   const php=$('#php'), phpbar=$('#phpbar'), xp=$('#xp'), xpbar=$('#xpbar');
   const atk=$('#atk'), def=$('#def'), crit=$('#crit'), spd=$('#spd');
   const cycleEl=$('#cycle'), roomEl=$('#room'), bossesEl=$('#bosses');
-  const abilitiesRow=$('#abilitiesRow');
-  const logBox=$('#log');
+  const abilitiesRow=$('#abilitiesRow'); const logBox=$('#log');
+  const pbarStage=$('#pbarStage'), ebarStage=$('#ebarStage'), enemyMiniName=$('#enemyMiniName');
 
-  function log(html){
-    const p = el('p'); p.innerHTML = html;
-    logBox.appendChild(p);
-    logBox.scrollTop = logBox.scrollHeight;
-  }
+  // ========= Game State =========
+  const state = {
+    cycle:1, room:1, bossesDefeated:0, finalBossesNeeded:3, roomsPerCycle:3,
+    player:{maxHp:100,hp:100,atk:10,def:3,crit:10,spd:10,xp:0,abilities:[],cooldowns:{},
+            shield:0,shieldTurns:null,nextShield:0,cycleDmg:0,cyleDR:0},
+    enemy:null, phase:'choose-enemy', lock:false,
+    // Stage / anim
+    animQ:[], sprites:{atlas:null, hasAtlas:false}, frame:0, t:0, shake:0
+  };
 
+  // Try to load an optional sprite atlas named "atlas.png" in same folder
+  (function loadAtlas(){
+    const img = new Image(); img.src='atlas.png';
+    img.onload=()=>{ state.sprites.atlas=img; state.sprites.hasAtlas=true; };
+    img.onerror=()=>{ state.sprites.hasAtlas=false; };
+  })();
+
+  // ========= Content Pools (same as before, trimmed explanation) =========
+  const ABILITIES = [
+    {id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK damage twice.', cd:3, use:(ctx)=>{
+      enqueueSlash(ctx,1); // first
+      const d1 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
+      ctx.enemy.hp=Math.max(0,ctx.enemy.hp-d1);
+      floatNum(ctx.enemy,-d1);
+      log(`You spin into a <span class="k">Whirlwind</span> for ${d1} damage.`);
+      enqueueSlash(ctx,-1);
+      const d2 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
+      ctx.enemy.hp=Math.max(0,ctx.enemy.hp-d2);
+      floatNum(ctx.enemy,-d2);
+      stageShake(6);
+    }},
+    {id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% of max HP as a barrier for 3 turns.', cd:4, use:(ctx)=>{
+      const val=Math.floor(ctx.player.maxHp*0.3);
+      ctx.player.shield=Math.max(ctx.player.shield||0,val);
+      ctx.player.shieldTurns=3;
+      shieldPulse('player');
+      log(`You conjure <span class="k">Arcane Shield</span> absorbing ${val} dmg for 3 turns.`);
+    }},
+    {id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.', cd:5, use:(ctx)=>{
+      rippleCenter();
+      ctx.extraTurn=true;
+      log(`You bend time with <span class="k">Time Warp</span> and act again!`);
+    }},
+    {id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.', cd:4, use:(ctx)=>{
+      ctx.tempAtkBoost=(ctx.tempAtkBoost||0)+ctx.player.atk; boltOverPlayer();
+      log(`You surge with <span class="k">Overcharge</span>! ATK doubled this strike.`);
+    }},
+    {id:'vamp_bite', name:'Vampiric Bite', desc:'Deal 120% ATK and heal 50% of dmg.', cd:4, use:(ctx)=>{
+      fangsOnEnemy();
+      const dmg=calcDamage(ctx.player.atk*1.2, ctx.enemy.def, ctx.player.crit);
+      ctx.enemy.hp=Math.max(0,ctx.enemy.hp-dmg); floatNum(ctx.enemy,-dmg);
+      const heal=Math.floor(dmg*0.5); healPlayer(heal); floatNum('player',+heal);
+      log(`You drain with <span class="k">Vampiric Bite</span> for ${dmg} and heal ${heal}.`);
+    }}
+  ];
+  const BUFFS = [
+    {id:'hp10', name:'+10% Max HP', apply:()=>{ const add=Math.floor(state.player.maxHp*0.10); state.player.maxHp+=add; state.player.hp+=add; }},
+    {id:'atk6', name:'+6 ATK', apply:()=>{ state.player.atk+=6; }},
+    {id:'def3', name:'+3 DEF', apply:()=>{ state.player.def+=3; }},
+    {id:'crit8', name:'+8% CRIT', apply:()=>{ state.player.crit=clamp(state.player.crit+8,0,100); }},
+    {id:'spd5', name:'+5 SPD', apply:()=>{ state.player.spd+=5; }},
+    {id:'heal20', name:'Heal 20% HP now', apply:()=>{ healPlayer(Math.floor(state.player.maxHp*0.2)); }},
+    {id:'barrier', name:'Start next fight with 15 Shield', apply:()=>{ state.player.nextShield=(state.player.nextShield||0)+15; }},
+    {id:'vigor', name:'+10% dmg this cycle', apply:()=>{ state.player.cycleDmg=(state.player.cycleDmg||0)+0.10; }},
+    {id:'guard', name:'-10% dmg taken this cycle', apply:()=>{ state.player.cycleDR=(state.player.cycleDR||0)+0.10; }},
+  ];
+  const ENEMY_TYPES = [
+    { id:'swarmer', name:'Swarmer', desc:'Fast, low HP, light hits.', scale:(lvl)=>({maxHp:50+lvl*12, atk:7+lvl*2, def:2+Math.floor(lvl*0.6), spd:14+Math.floor(lvl*0.7)})},
+    { id:'brute',   name:'Brute',   desc:'Slow, high HP, heavy hits.', scale:(lvl)=>({maxHp:110+lvl*20, atk:12+lvl*4, def:5+Math.floor(lvl*1.2), spd:7+Math.floor(lvl*0.3)})},
+    { id:'mage',    name:'Arcanist',desc:'Glass cannon, crit happy.', scale:(lvl)=>({maxHp:70+lvl*14, atk:14+lvl*4, def:3+Math.floor(lvl*0.8), spd:10+Math.floor(lvl*0.6), crit:20+Math.floor(lvl*1.5)})},
+  ];
+  function bossStats(lvl){ return {name:`Boss ${lvl}`, maxHp:220+lvl*70, atk:18+lvl*6, def:6+Math.floor(lvl*1.5), spd:10+lvl, crit:15+lvl*2, special:lvl%2?'Crushing Blow (+50% ATK every 3 turns)':'Arcane Barrage (2x hits every 3 turns)'}; }
+  function finalBoss(){ return {name:'FINAL BOSS — The Shard Eater', maxHp:800, atk:35, def:12, spd:14, crit:20, special:'Devour: every 4th turn steals 10% of your max HP'}; }
+
+  // ========= Logging & HUD =========
+  function log(html){ const p=el('p'); p.innerHTML=html; logBox.appendChild(p); logBox.scrollTop=logBox.scrollHeight; }
   function refreshHUD(){
-    const p = state.player;
-    php.textContent = `${p.hp} / ${p.maxHp}`;
-    phpbar.style.width = `${Math.round(100*p.hp/p.maxHp)}%`;
-    xp.textContent = p.xp;
-    xpbar.style.width = `${Math.min(100, p.xp%100)}%`;
-    atk.textContent = Math.round(p.atk);
-    def.textContent = Math.round(p.def);
-    crit.textContent = `${Math.round(p.crit)}%`;
-    spd.textContent = Math.round(p.spd);
-    cycleEl.textContent = state.cycle;
-    roomEl.textContent = state.room;
-    bossesEl.textContent = state.bossesDefeated;
+    const p=state.player;
+    php.textContent=`${p.hp} / ${p.maxHp}`; phpbar.style.width=`${Math.round(100*p.hp/p.maxHp)}%`;
+    xp.textContent=p.xp; xpbar.style.width=`${Math.min(100,p.xp%100)}%`;
+    atk.textContent=Math.round(p.atk); def.textContent=Math.round(p.def);
+    crit.textContent=`${Math.round(p.crit)}%`; spd.textContent=Math.round(p.spd);
+    cycleEl.textContent=state.cycle; roomEl.textContent=state.room; bossesEl.textContent=state.bossesDefeated;
+    // stage bars
+    pbarStage.style.width=`${Math.round(100*p.hp/p.maxHp)}%`;
+    if(state.enemy){ ebarStage.style.width=`${Math.round(100*state.enemy.hp/state.enemy.maxHp)}%`; enemyMiniName.textContent=state.enemy.name; }
     renderAbilities();
   }
-
-  function setStage(title, tag){
-    stageTitle.textContent = title;
-    stageTag.textContent = tag;
-    stageArea.innerHTML = '';
-  }
-
-  function makeChoiceButtons(options){
-    // options: [{label, class, onClick, hotkey}]
-    const grid = el('div', {class:'grid two'});
-    options.forEach((opt,i)=>{
-      const btn = el('button', {class:`btn ${opt.class||''}`, text: opt.label});
-      btn.addEventListener('click', opt.onClick);
-      grid.appendChild(btn);
-      // hotkeys
-      const hk = (i+1).toString();
-      if(!opt.hotkeyDisabled){
-        document.addEventListener('keydown', function handler(e){
-          if(state.lock) return;
-          if(e.key===hk){
-            e.preventDefault();
-            btn.click();
-          }
-        }, {once:true});
-      }
-    });
-    return grid;
-  }
-
+  function setStage(title, tag){ stageTitle.textContent=title; stageTag.textContent=tag; stageArea.innerHTML=''; }
   function renderAbilities(){
     abilitiesRow.innerHTML='';
-    const p = state.player;
-    if(!p.abilities.length){
-      abilitiesRow.appendChild(el('span',{class:'pill',text:'No abilities yet — defeat a boss!'}));
-      return;
-    }
+    const p=state.player;
+    if(!p.abilities.length){ abilitiesRow.appendChild(el('span',{class:'pill',text:'No abilities yet — defeat a boss!'})); return; }
     p.abilities.forEach(abil=>{
-      const cdLeft = p.cooldowns[abil.id]||0;
-      const wrap = el('div',{class:'ability'});
+      const cdLeft=p.cooldowns[abil.id]||0;
+      const wrap=el('div',{class:'ability'});
       wrap.appendChild(el('div',{text:abil.name}));
       wrap.appendChild(el('div',{class:'small',text:abil.desc}));
-      const btn = el('button',{class:'btn primary', text: cdLeft?`Cooldown: ${cdLeft}`:'Use'});
-      btn.disabled = !!cdLeft || state.lock || state.phase!=='fight';
-      btn.addEventListener('click', ()=> useAbility(abil));
-      wrap.appendChild(btn);
-      abilitiesRow.appendChild(wrap);
+      const btn=el('button',{class:'btn primary',text:cdLeft?`Cooldown: ${cdLeft}`:'Use'});
+      btn.disabled=!!cdLeft||state.lock||state.phase!=='fight';
+      btn.addEventListener('click',()=>useAbility(abil));
+      wrap.appendChild(btn); abilitiesRow.appendChild(wrap);
     });
   }
 
-  function healPlayer(n){
-    const p=state.player; const before=p.hp;
-    p.hp = clamp(p.hp + n, 0, p.maxHp);
-    log(`Healed ${p.hp-before} HP.`);
-  }
+  // ========= Combat Math =========
+  function calcDamage(atk,def,critChance){ const base=Math.max(1,Math.floor(atk-def*0.6)); const variance=rng(-2,2); const crit=(rng(1,100)<=Math.round(critChance||0)); return Math.max(1,Math.floor((base+variance)*(crit?1.75:1))); }
+  function healPlayer(n){ const p=state.player; const before=p.hp; p.hp=clamp(p.hp+n,0,p.maxHp); log(`Healed ${p.hp-before} HP.`); }
+  function applyIncomingDamage(amount){ const p=state.player; const dr=p.cycleDR||0; let dmg=Math.floor(amount*(1-dr));
+    if(p.shield&&p.shield>0){ const absorbed=Math.min(p.shield,dmg); p.shield-=absorbed; dmg-=absorbed; log(`Your shield absorbs ${absorbed} damage. (${p.shield||0} left)`); shieldPulse('player',0.6); }
+    p.hp=Math.max(0,p.hp-dmg); return dmg; }
+  function endTurnTick(){ const p=state.player; if(p.shieldTurns!=null){ p.shieldTurns--; if(p.shieldTurns<=0){ p.shield=0; p.shieldTurns=null; log(`Your Arcane Shield fades.`); } }
+    for(const k of Object.keys(p.cooldowns)){ if(p.cooldowns[k]>0) p.cooldowns[k]--; } }
 
-  function calcDamage(atk, def, critChance){
-    const base = Math.max(1, Math.floor(atk - def*0.6));
-    const variance = rng(-2,2);
-    const crit = (rng(1,100) <= Math.round(critChance||0));
-    return Math.max(1, Math.floor((base+variance) * (crit?1.75:1)));
-  }
-
-  function applyIncomingDamage(amount){
-    const p=state.player;
-    // damage reduction buffs
-    const dr = p.cycleDR||0;
-    let dmg = Math.floor(amount * (1 - dr));
-    // shield
-    if(p.shield && p.shield>0){
-      const absorbed = Math.min(p.shield, dmg);
-      p.shield -= absorbed; dmg -= absorbed;
-      log(`Your shield absorbs ${absorbed} damage. (${p.shield||0} left)`);
-    }
-    p.hp = Math.max(0, p.hp - dmg);
-    return dmg;
-  }
-
-  function endTurnTick(){
-    const p=state.player;
-    // decay shield turns
-    if(p.shieldTurns!=null){
-      p.shieldTurns--;
-      if(p.shieldTurns<=0){ p.shield=0; p.shieldTurns=null; log(`Your Arcane Shield fades.`); }
-    }
-    // reduce ability cooldowns
-    for(const k of Object.keys(p.cooldowns)){
-      if(p.cooldowns[k]>0) p.cooldowns[k]--;
-    }
-  }
-
-  // --- Flow ---
+  // ========= Flow (same structure as before, with stage calls) =========
   function startGame(){
     state.cycle=1; state.room=1; state.bossesDefeated=0;
-    Object.assign(state.player, {maxHp:100,hp:100,atk:10,def:3,crit:10,spd:10,xp:0,abilities:[],cooldowns:{},shield:0,shieldTurns:null,nextShield:0,cycleDmg:0,cyleDR:0});
-    logBox.innerHTML='';
-    log(`<b>Welcome!</b> Choose an enemy type, win, pick a buff. Every ${state.roomsPerCycle} rooms, face a boss for a new ability. Defeat ${state.finalBossesNeeded} bosses, then conquer the Final Boss.`);
-    showEnemyChoice();
-    refreshHUD();
+    Object.assign(state.player,{maxHp:100,hp:100,atk:10,def:3,crit:10,spd:10,xp:0,abilities:[],cooldowns:{},shield:0,shieldTurns:null,nextShield:0,cycleDmg:0,cyleDR:0});
+    logBox.innerHTML=''; log(`<b>Welcome!</b> Choose an enemy type, win, pick a buff. Every ${state.roomsPerCycle} rooms, face a boss for a new ability. Defeat ${state.finalBossesNeeded} bosses to unlock the Final Boss.`);
+    showEnemyChoice(); refreshHUD(); spawnBackdrop('room');
   }
-
-  function showEnemyChoice(){
-    state.phase='choose-enemy';
-    setStage('Pick your next fight', 'Swarmer / Brute / Arcanist');
-    const opts = ENEMY_TYPES.map(t=>{
-      return {
-        label:`${t.name} — ${t.desc}`,
-        class:'',
-        onClick:()=> spawnEnemy(t)
-      };
-    });
-    stageArea.appendChild(makeChoiceButtons(opts));
+  function showEnemyChoice(){ state.phase='choose-enemy'; setStage('Pick your next fight','Swarmer / Brute / Arcanist');
+    const opts = ENEMY_TYPES.map(t=>({label:`${t.name} — ${t.desc}`, onClick:()=>spawnEnemy(t)}));
+    stageArea.appendChild(makeChoiceButtons(opts)); }
+  function makeChoiceButtons(options){
+    const grid=el('div',{class:'grid two'});
+    options.forEach((opt,i)=>{ const btn=el('button',{class:`btn ${i===0?'primary': i===1?'warn':''}`,text:opt.label}); btn.addEventListener('click',opt.onClick); grid.appendChild(btn);
+      const hk=(i+1).toString(); document.addEventListener('keydown',function handler(e){ if(state.lock) return; if(e.key===hk){ e.preventDefault(); btn.click(); } },{once:true}); });
+    return grid;
   }
-
   function spawnEnemy(template){
-    const lvl = (state.cycle-1)*state.roomsPerCycle + state.room;
-    const scaled = template.scale(lvl);
-    state.enemy = {
-      name: template.name,
-      maxHp: scaled.maxHp, hp: scaled.maxHp,
-      atk: scaled.atk, def: scaled.def, spd: scaled.spd, crit: scaled.crit||10,
-      type: template.id, turn:0, boss:false
-    };
-    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); }
-    startFight();
+    const lvl=(state.cycle-1)*state.roomsPerCycle+state.room;
+    const s=template.scale(lvl);
+    state.enemy={name:template.name, maxHp:s.maxHp, hp:s.maxHp, atk:s.atk, def:s.def, spd:s.spd, crit:s.crit||10, type:template.id, turn:0, boss:false};
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); shieldPulse('player',0.8); }
+    spawnBackdrop('room'); startFight();
   }
-
-  function spawnBoss(){
-    const lvl = state.bossesDefeated+1;
-    const b = bossStats(lvl);
-    state.enemy = { name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, special:b.special };
-    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); }
-    state.phase='boss';
-    startFight(true);
+  function spawnBoss(){ const lvl=state.bossesDefeated+1; const b=bossStats(lvl);
+    state.enemy={name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, special:b.special};
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; shieldPulse('player',0.8); }
+    state.phase='boss'; spawnBackdrop('boss'); startFight(true);
   }
-
-  function spawnFinalBoss(){
-    const b = finalBoss();
-    state.enemy = { name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, final:true, special:b.special };
-    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); }
-    state.phase='final';
-    startFight(true);
+  function spawnFinalBoss(){ const b=finalBoss();
+    state.enemy={name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, final:true, special:b.special};
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; shieldPulse('player',0.8); }
+    state.phase='final'; spawnBackdrop('boss'); startFight(true);
   }
-
-  function startFight(isBoss){
-    setStage(`${isBoss? (state.enemy.final?'Final Boss':'Boss') : state.enemy.name} — Fight!`, isBoss?(state.enemy.special||'A dangerous foe'):state.enemy.name);
-    renderFightUI();
-    log(`<b>${isBoss? (state.enemy.final?'Final Boss':'Boss'):state.enemy.name} appears!</b>`);
+  function startFight(isBoss=false){
+    setStage(`${isBoss? (state.enemy.final?'Final Boss':'Boss') : state.enemy.name} — Fight!`, isBoss?(state.enemy.special||''):state.enemy.name);
+    renderFightUI(); log(`<b>${isBoss? (state.enemy.final?'Final Boss':'Boss'):state.enemy.name} appears!</b>`);
+    stageSpawnSprites();
   }
-
   function renderFightUI(){
     stageArea.innerHTML='';
-    const enemy = state.enemy;
-    const enemyCard = el('div',{class:'panel'},[
-      el('div',{class:'title'},[
-        el('h2',{text: enemy.name}),
-        el('span',{class:'tag',text:`HP ${enemy.hp} / ${enemy.maxHp}`})
-      ]),
-      el('div',{class:'bar'},[ el('i',{style:`width:${Math.round(100*enemy.hp/enemy.maxHp)}%`}) ]),
-      el('div',{class:'small',text: enemy.boss? (enemy.special||''): `Type: ${enemy.type} | ATK ${enemy.atk} DEF ${enemy.def} SPD ${enemy.spd}`})
+    const enemy=state.enemy;
+    const enemyCard=el('div',{class:'panel'},[
+      el('div',{class:'title'},[ el('h2',{text:enemy.name}), el('span',{class:'tag',text:`HP ${enemy.hp} / ${enemy.maxHp}`}) ]),
+      el('div',{class:'bar'},[ el('i',{id:'enemyHPInline',style:`width:${Math.round(100*enemy.hp/enemy.maxHp)}%`}) ]),
+      el('div',{class:'small',text:enemy.boss?(enemy.special||''):`Type: ${enemy.type} | ATK ${enemy.atk} DEF ${enemy.def} SPD ${enemy.spd}`})
     ]);
-    const actions = el('div',{class:'choice'});
-    const atkBtn = el('button',{class:'btn primary', text:'Attack (basic)'},
-      );
-    atkBtn.addEventListener('click',()=> playerTurnBasic());
-    const defendBtn = el('button',{class:'btn', text:'Defend (+50% DEF this turn)'},
-      );
-    defendBtn.addEventListener('click',()=> playerDefend());
-    const row = el('div',{class:'row'},[atkBtn, defendBtn]);
-    actions.appendChild(row);
-
-    stageArea.appendChild(enemyCard);
-    stageArea.appendChild(actions);
-    renderAbilities(); // enable ability buttons for fight phase
+    const actions=el('div',{class:'choice'});
+    const atkBtn=el('button',{class:'btn primary',text:'Attack (basic)'}); atkBtn.addEventListener('click',()=>playerTurnBasic());
+    const defendBtn=el('button',{class:'btn',text:'Defend (+50% DEF this turn)'}); defendBtn.addEventListener('click',()=>playerDefend());
+    actions.appendChild(el('div',{class:'row'},[atkBtn,defendBtn]));
+    stageArea.appendChild(enemyCard); stageArea.appendChild(actions); renderAbilities();
   }
 
-  function playerTurnBasic(extra=false){
-    if(state.lock) return;
-    actionLock(true);
-    const ctx = {player:state.player, enemy:state.enemy};
-    // apply temp buffs from abilities (one-turn)
-    let atkValue = state.player.atk + (state.tempAtkBoost||0);
-    if(state.player.cycleDmg) atkValue *= (1 + state.player.cycleDmg);
-    const dmg = calcDamage(atkValue, state.enemy.def, state.player.crit);
-    state.enemy.hp = Math.max(0, state.enemy.hp - dmg);
-    log(`You strike for ${dmg} damage.`);
-    state.tempAtkBoost=0;
-
-    setTimeout(()=>{
-      if(checkEnd()) { actionLock(false); return; }
-      enemyAct().then(()=>{ actionLock(false); });
-    }, 280);
+  // ========= Player/Enemy Actions with animations =========
+  function playerTurnBasic(){
+    if(state.lock) return; actionLock(true);
+    const ctxNow={player:state.player, enemy:state.enemy};
+    let atkValue=state.player.atk+(state.tempAtkBoost||0); if(state.player.cycleDmg) atkValue*=(1+state.player.cycleDmg);
+    // Visual lunge + slash
+    lunge('player', ()=> {
+      const dmg=calcDamage(atkValue, state.enemy.def, state.player.crit);
+      state.enemy.hp=Math.max(0,state.enemy.hp-dmg);
+      floatNum(state.enemy,-dmg); hitFlash('enemy'); slashArc();
+      stageShake(dmg>20?6:3);
+      state.tempAtkBoost=0;
+      updateEnemyHPInline();
+      setTimeout(()=>{ if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }, 260);
+    });
   }
-
   function playerDefend(){
-    if(state.lock) return;
-    actionLock(true);
-    const savedDef = state.player.def;
-    state.player.def = Math.floor(state.player.def*1.5) + 4;
+    if(state.lock) return; actionLock(true);
+    const saved=state.player.def; state.player.def=Math.floor(state.player.def*1.5)+4;
+    defendPose('player');
     log(`You brace yourself, boosting DEF this turn.`);
-    setTimeout(()=>{
-      enemyAct().then(()=>{
-        state.player.def = savedDef;
-        log(`Your defensive stance ends.`);
-        actionLock(false);
-      });
-    }, 220);
+    setTimeout(()=>{ enemyAct().then(()=>{ state.player.def=saved; log(`Your defensive stance ends.`); actionLock(false); }); }, 220);
   }
-
   function useAbility(abil){
     if(state.lock || (state.player.cooldowns[abil.id]||0)>0) return;
     actionLock(true);
-    const ctx = {player:state.player, enemy:state.enemy};
-    abil.use(ctx);
-    state.player.cooldowns[abil.id] = abil.cd;
-    refreshHUD();
+    const ctxNow={player:state.player, enemy:state.enemy};
+    abil.use(ctxNow); state.player.cooldowns[abil.id]=abil.cd; refreshHUD();
     setTimeout(()=>{
-      if(ctx.extraTurn){
-        ctx.extraTurn=false;
-        // grant immediate extra turn (no enemy act)
-        actionLock(false);
-        renderFightUI();
-      } else {
-        if(checkEnd()){ actionLock(false); return; }
-        enemyAct().then(()=> actionLock(false));
-      }
-    },250);
+      if(ctxNow.extraTurn){ ctxNow.extraTurn=false; actionLock(false); renderFightUI(); }
+      else { if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }
+    }, 280);
   }
 
   async function enemyAct(){
-    const e = state.enemy; e.turn++;
-    // Boss specials on cadence
-    let multi = 1; let modAtk = e.atk; let note='';
-    if(e.boss && !e.final && e.turn%3===0){
-      if((state.bossesDefeated+1)%2===1){ modAtk = Math.floor(e.atk*1.5); note='(Crushing Blow)'; }
-      else { multi=2; note='(Arcane Barrage)'; }
-    }
+    const e=state.enemy; e.turn++;
+    // Specials
+    let multi=1; let modAtk=e.atk; if(e.boss && !e.final && e.turn%3===0){ if((state.bossesDefeated+1)%2===1){ modAtk=Math.floor(e.atk*1.5); } else { multi=2; } }
     if(e.final && e.turn%4===0){
-      // Devour
-      const steal = Math.floor(state.player.maxHp*0.10);
-      applyIncomingDamage(steal);
-      e.hp = Math.min(e.maxHp, e.hp + Math.floor(steal*0.5));
+      // Devour visual: tether + heal
+      tetherToBoss(); const steal=Math.floor(state.player.maxHp*0.10);
+      applyIncomingDamage(steal); floatNum('player',-steal);
+      e.hp=Math.min(e.maxHp,e.hp+Math.floor(steal*0.5)); floatNum(state.enemy,'+'+Math.floor(steal*0.5));
       log(`<span class="k">Devour</span> steals ${steal} HP and heals the boss.`);
-      if(state.player.hp<=0){ refreshHUD(); checkEnd(); return; }
+      refreshHUD(); if(state.player.hp<=0){ checkEnd(); return; }
     }
-
     for(let i=0;i<multi;i++){
-      const dmg = calcDamage(modAtk, state.player.def, e.crit||10);
-      const taken = applyIncomingDamage(dmg);
-      log(`${e.name} hits you for ${taken} ${note}`);
-      if(state.player.hp<=0) break;
+      await new Promise(res=>{
+        lunge('enemy', ()=>{
+          const dmg=calcDamage(modAtk, state.player.def, e.crit||10);
+          const taken=applyIncomingDamage(dmg);
+          floatNum('player',-taken); hitFlash('player');
+          stageShake(taken>20?7:3);
+          log(`${e.name} hits you for ${taken}${multi>1?' (barrage)':''}.`);
+          refreshHUD(); res();
+        });
+      });
     }
-
-    endTurnTick();
-    refreshHUD();
-    checkEnd();
+    endTurnTick(); refreshHUD(); checkEnd();
   }
 
+  function updateEnemyHPInline(){ const bar=$('#enemyHPInline'); if(bar) bar.style.width=`${Math.max(0,Math.round(100*state.enemy.hp/state.enemy.maxHp))}%`; }
+
   function checkEnd(){
-    const p=state.player, e=state.enemy;
+    const p=state.player,e=state.enemy;
     if(p.hp<=0){
-      setStage('Defeat','Try again?');
-      stageArea.appendChild(makeChoiceButtons([
-        {label:'Restart', class:'danger', onClick:()=>startGame()}
-      ]));
-      log(`<b>You were defeated.</b>`);
-      state.phase='end';
-      return true;
+      setStage('Defeat','Try again?'); stageArea.appendChild(makeChoiceButtons([{label:'Restart',class:'danger',onClick:()=>startGame()}])); log(`<b>You were defeated.</b>`); state.phase='end'; return true;
     }
     if(e.hp<=0){
-      log(`<b>${e.name} is defeated!</b>`);
-      p.xp += e.boss ? 40 : 15;
-      // after a fight:
+      log(`<b>${e.name} is defeated!</b>`); p.xp += e.boss ? 40 : 15;
+      // small vanishing anim
+      vanish('enemy');
       if(e.boss){
         if(e.final){
-          setStage('Victory!','You defeated the Final Boss!');
-          stageArea.appendChild(makeChoiceButtons([
-            {label:'Play Again', class:'primary', onClick:()=>startGame()}
-          ]));
-          state.phase='end';
-          return true;
-        } else {
-          state.bossesDefeated++;
-          // choose an ability (3 random unique)
-          showAbilityRewards();
-        }
-      } else {
-        // choose a buff (3 random unique)
-        showBuffRewards();
-      }
-      return true;
+          setStage('Victory!','You defeated the Final Boss!'); stageArea.appendChild(makeChoiceButtons([{label:'Play Again',class:'primary',onClick:()=>startGame()}])); state.phase='end'; return true;
+        } else { state.bossesDefeated++; showAbilityRewards(); return true; }
+      } else { showBuffRewards(); return true; }
     }
     return false;
   }
 
   function showBuffRewards(){
-    state.phase='buffs';
-    setStage('Choose a Buff','Pick 1 of 3');
-    const picks = pickUnique(BUFFS,3);
-    const buttons = picks.map((b,i)=>({
-      label: b.name,
-      class: (i===0?'primary': i===1?'warn':'' ),
-      onClick: ()=> {
-        b.apply();
-        refreshHUD();
-        // advance room/boss logic
-        if(state.room>=state.roomsPerCycle){
-          // boss time
-          if(state.bossesDefeated>=state.finalBossesNeeded){
-            spawnFinalBoss();
-          } else {
-            setTimeout(spawnBoss, 50);
-          }
-          state.room=1;
-          state.cycle++;
-        } else {
-          state.room++;
-          setTimeout(showEnemyChoice, 50);
-        }
-      }
-    }));
-    stageArea.appendChild(makeChoiceButtons(buttons));
+    state.phase='buffs'; setStage('Choose a Buff','Pick 1 of 3');
+    const picks=pickUnique(BUFFS,3);
+    stageArea.appendChild(makeChoiceButtons(picks.map((b,i)=>({label:b.name, class:(i===0?'primary': i===1?'warn':''), onClick:()=>{ b.apply(); refreshHUD();
+      if(state.room>=state.roomsPerCycle){ if(state.bossesDefeated>=state.finalBossesNeeded){ spawnFinalBoss(); } else { spawnBoss(); } state.room=1; state.cycle++; }
+      else { state.room++; showEnemyChoice(); } }}))));
   }
-
   function showAbilityRewards(){
-    state.phase='ability-reward';
-    setStage('Choose a New Ability','Granted by the boss (pick 1)');
-    const pool = ABILITIES.filter(a => !state.player.abilities.find(x=>x.id===a.id));
-    const picks = pickUnique(pool.length>=3?pool:ABILITIES,3);
-    const buttons = picks.map((a,i)=>({
-      label: `${a.name} — ${a.desc}`,
-      class: (i===0?'primary': i===1?'warn':'' ),
-      onClick: ()=> {
-        state.player.abilities.push(a);
-        state.player.cooldowns[a.id]=0;
-        refreshHUD();
-        // next cycle start
-        if(state.bossesDefeated>=state.finalBossesNeeded){
-          spawnFinalBoss();
-        } else {
-          showEnemyChoice();
-        }
-      }
-    }));
-    stageArea.appendChild(makeChoiceButtons(buttons));
+    state.phase='ability-reward'; setStage('Choose a New Ability','Granted by the boss (pick 1)');
+    const pool=ABILITIES.filter(a=>!state.player.abilities.find(x=>x.id===a.id)); const picks=pickUnique(pool.length>=3?pool:ABILITIES,3);
+    stageArea.appendChild(makeChoiceButtons(picks.map((a,i)=>({label:`${a.name} — ${a.desc}`, class:(i===0?'primary': i===1?'warn':''), onClick:()=>{ state.player.abilities.push(a); state.player.cooldowns[a.id]=0; refreshHUD();
+      if(state.bossesDefeated>=state.finalBossesNeeded){ spawnFinalBoss(); } else { showEnemyChoice(); } }}))));
+  }
+  function pickUnique(arr,n){ const c=[...arr], out=[]; while(c.length&&out.length<n){ out.push(c.splice(rng(0,c.length-1),1)[0]); } return out; }
+  function actionLock(v){ state.lock=v; stageArea.querySelectorAll('button').forEach(b=> b.disabled=v || b.textContent.startsWith('Cooldown')); renderAbilities(); }
+
+  // ========= Stage Rendering & Anim System =========
+  const PPOS={x:160,y:230}, EPOS={x:560,y:230};
+  function stageSpawnSprites(){ // reset ambient
+    // idle bobbing is continuous; nothing to enqueue
+  }
+  function spawnBackdrop(kind){ // simple gradient bg
+    state.backdrop=kind; }
+
+  function enqueue(fn,dur=450){ state.animQ.push({t:0,d:dur,fn}); }
+  function lunge(who, onHit){ enqueue((p)=>{ drawStage({[who]:{offsetX:(who==='player'?+1:-1)*Math.sin(Math.PI*ease(p))*60}}); if(p>=1 && onHit){ onHit(); onHit=null; } }, 320); }
+  function defendPose(who){ enqueue((p)=>{ const amp=who==='player'?1:-1; drawStage({[who]:{defend:true,offsetX:amp*10*Math.sin(p*6)}}); shieldPulse(who,0.35); }, 300); }
+  function hitFlash(who){ enqueue((p)=>{ drawStage({[who]:{hit:true}}); }, 160); }
+  function vanish(who){ enqueue((p)=>{ drawStage({[who]:{alpha:1-p}}); }, 400); }
+  function slashArc(){ enqueue((p)=>{ effects.slash(p); drawStage(); }, 260); }
+  function shieldPulse(who,scale=1){ enqueue((p)=>{ effects.shield(who,p,scale); drawStage(); }, 420); }
+  function boltOverPlayer(){ enqueue((p)=>{ effects.bolt(p,PPOS); drawStage(); }, 380); }
+  function rippleCenter(){ enqueue((p)=>{ effects.ripple(p); drawStage(); }, 500); }
+  function fangsOnEnemy(){ enqueue((p)=>{ effects.fangs(p,EPOS); drawStage(); }, 420); }
+  function tetherToBoss(){ enqueue((p)=>{ effects.tether(p,EPOS,PPOS); drawStage(); }, 420); }
+  function enqueueSlash(ctx,dir){ enqueue((p)=>{ effects.dualSlash(p,dir); drawStage(); }, 260); }
+  function floatNum(target, val){ const str=(typeof val==='number'? (val>=0?`+${val}`:`${val}`) : `${val}`); const pos=(target==='player'?PPOS:EPOS);
+    const y0=pos.y-80, dy=30; const hue = (typeof val==='number' && val<0)? 0 : 150;
+    enqueue((p)=>{ drawStage(); const a=1-p; ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=`hsl(${hue} 70% 70%)`; ctx.font="24px system-ui,Segoe UI,Roboto"; ctx.textAlign='center'; ctx.fillText(str,pos.x, y0 - dy*p); ctx.restore(); }, 700);
+  }
+  function stageShake(intensity=4){ state.shake=Math.max(state.shake,intensity); }
+
+  // Effects drawing
+  const effects = {
+    slash(p){ const t=ease(p); ctx.save(); ctx.translate(stageCanvas.width/2,stageCanvas.height/2);
+      ctx.rotate(-.25); ctx.globalAlpha=1-t; ctx.lineWidth=16; ctx.strokeStyle='rgba(255,255,255,.8)';
+      ctx.beginPath(); ctx.arc(120,40, 60+80*t, 0, Math.PI*.9); ctx.stroke(); ctx.restore(); },
+    dualSlash(p,dir){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.lineWidth=10; ctx.strokeStyle='rgba(255,255,255,.85)';
+      ctx.beginPath(); ctx.arc(dir>0?EPOS.x-40:EPOS.x+20, EPOS.y-40, 40+60*t, dir>0?Math.PI*1.2:Math.PI*0.2, dir>0?Math.PI*1.8:Math.PI*0.8); ctx.stroke(); ctx.restore(); },
+    shield(who,p,scale){ const pos=(who==='player'?PPOS:EPOS); const t=ease(p); ctx.save(); ctx.globalAlpha=.25+.35*(1-t);
+      ctx.strokeStyle='rgba(102,255,204,.9)'; ctx.lineWidth=4; const r=46*(.8+0.6*(1-t))*scale*(who==='player'?1:1);
+      hex(pos.x,pos.y-20,r); ctx.restore(); },
+    bolt(p,center){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(173,216,255,.9)'; ctx.lineWidth=3;
+      zigzag(center.x,center.y-80, center.x, center.y-20, 6); ctx.restore(); },
+    ripple(p){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(180,220,255,.8)'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(stageCanvas.width/2,stageCanvas.height/2, 20+120*t, 0, Math.PI*2); ctx.stroke(); ctx.restore(); },
+    fangs(p,center){ const t=ease(p); ctx.save(); ctx.globalAlpha=.4+.6*(1-t); ctx.fillStyle='rgba(255,80,120,.8)';
+      ctx.beginPath(); ctx.moveTo(center.x-18,center.y-70); ctx.lineTo(center.x-6,center.y-40); ctx.lineTo(center.x-26,center.y-40); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(center.x+18,center.y-70); ctx.lineTo(center.x+6,center.y-40); ctx.lineTo(center.x+26,center.y-40); ctx.closePath(); ctx.fill(); ctx.restore(); },
+    tether(p,from,to){ const t=p; ctx.save(); ctx.globalAlpha=.6; ctx.strokeStyle='rgba(120,200,255,.75)'; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(from.x-20,from.y-40); ctx.quadraticCurveTo((from.x+to.x)/2, 120 + 30*Math.sin(t*6), to.x+10, to.y-50); ctx.stroke(); ctx.restore(); }
+  };
+  function hex(x,y,r){ ctx.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; const px=x+r*Math.cos(a), py=y+r*Math.sin(a); if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.closePath(); ctx.stroke(); }
+  function zigzag(x1,y1,x2,y2,steps){ ctx.beginPath(); ctx.moveTo(x1,y1); for(let i=1;i<=steps;i++){ const t=i/steps; const x=x1+(x2-x1)*t; const y = y1+(y2-y1)*t + (i%2? -10:10); ctx.lineTo(x,y); } }
+
+  // Draw loop
+  function drawStage(overrides={}){
+    const w=stageCanvas.width, h=stageCanvas.height;
+    // bg
+    const g=ctx.createLinearGradient(0,0,0,h); if(state.backdrop==='boss'){ g.addColorStop(0,'#0f0a26'); g.addColorStop(1,'#0b132b'); } else { g.addColorStop(0,'#0b1324'); g.addColorStop(1,'#0a1a36'); }
+    ctx.save();
+    // shake
+    if(state.shake>0){ const s=state.shake; ctx.translate(rng(-s,s), rng(-s,s)); state.shake*=0.85; if(state.shake<0.5) state.shake=0; }
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+    // platform
+    ctx.fillStyle='rgba(20,40,90,.8)'; ctx.beginPath(); ctx.ellipse(w/2,h-30, 260,18, 0,0,Math.PI*2); ctx.fill();
+
+    // ambient runes (boss) or corridors (room)
+    if(state.backdrop==='boss'){ ctx.strokeStyle='rgba(100,200,255,.15)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h-48, 160+6*Math.sin(state.t*.08), 0, Math.PI*2); ctx.stroke(); }
+
+    // sprites
+    drawActor('player', overrides.player||{});
+    if(state.enemy) drawActor('enemy', overrides.enemy||{});
+    ctx.restore();
   }
 
-  function pickUnique(arr, n){
-    const copy=[...arr]; const out=[];
-    while(copy.length && out.length<n){
-      const i = rng(0, copy.length-1);
-      out.push(copy.splice(i,1)[0]);
+  function drawActor(who, opt={}){
+    const t=state.t/60; const idleY=Math.sin(t*3)*4; const alpha=opt.alpha!=null?opt.alpha:1;
+    const offX=opt.offsetX||0, offY=opt.offsetY||0; const defend=opt.defend, hit=opt.hit;
+    const pos=(who==='player'?PPOS:EPOS); ctx.save(); ctx.globalAlpha=alpha;
+    ctx.translate(pos.x+offX, pos.y+offY+idleY);
+    // fallback vector silhouettes (replace with atlas draws if you add atlas)
+    if(state.sprites.hasAtlas){
+      // Example atlas usage (stub): ctx.drawImage(state.sprites.atlas, sx,sy,sw,sh, -48,-64,96,96);
+      // For now, use vector shapes so it works without assets.
     }
-    return out;
+    // body
+    ctx.fillStyle=who==='player'?'#63e6be':'#9fb3ff';
+    if(hit){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle='white'; }
+    ctx.beginPath(); ctx.roundRect(-24,-56,48,60,10); ctx.fill();
+    // head
+    ctx.beginPath(); ctx.arc(0,-68,14,0,Math.PI*2); ctx.fill();
+    // weapon / caster hand
+    ctx.fillStyle=who==='player'?'#aef4dd':'#c7d2ff';
+    ctx.fillRect(16,-38, 28,6);
+    // defend aura
+    if(defend){ ctx.strokeStyle='rgba(120,220,255,.8)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,-28,34,0,Math.PI*2); ctx.stroke(); }
+    ctx.restore();
   }
 
-  function actionLock(v){
-    state.lock = v;
-    // disable buttons in stage
-    stageArea.querySelectorAll('button').forEach(b=> b.disabled = v || b.textContent.startsWith('Cooldown'));
-    renderAbilities(); // refresh disabled state
+  // Master RAF loop to keep idle motion
+  function loop(ts){
+    state.t = ts; state.frame++;
+    if(state.animQ.length){
+      const a=state.animQ[0]; a.t+=16.67; const p=clamp(a.t/a.d,0,1); a.fn(p);
+      if(p>=1) state.animQ.shift();
+    } else {
+      drawStage(); // idle draw
+    }
+    requestAnimationFrame(loop);
   }
+  requestAnimationFrame(loop);
 
-  // Keyboard tips to avoid stuck listeners between screens:
-  // (We reattach single-use listeners per choice render; actionLock gates clicks.)
-
-  // Start
+  // ========= Start =========
   startGame();
+
+  // ========= End helpers =========
+  function pickEnemyMini(){} // kept for parity
 })();
 </script>
 </body>
