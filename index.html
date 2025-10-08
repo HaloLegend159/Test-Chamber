@@ -3,446 +3,630 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Alien Checkpoint</title>
+<title>Room-Boss Gauntlet</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
-    --bg:#0b0f1a; --panel:#0f1626; --ink:#e6f0ff; --muted:#9ab; --accent:#66e; --warn:#ffbe0b; --bad:#ef4444; --good:#22c55e; --paper:#f7f4e8; --inkpaper:#1e293b; --border:#1f2a44;
+    --bg:#0b1020; --panel:#0f172a; --ink:#e6edf7; --muted:#9fb3c8; --accent:#6ee7b7; --danger:#fca5a5; --warn:#fde68a; --border:#1f2a44;
+    --radius:16px; --gap:14px; --shadow:0 8px 30px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;background:linear-gradient(180deg,#0b0f1a,#0a0d17 60%);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
-  .wrap{max-width:1200px;margin:0 auto;padding:16px}
-  header{display:flex;align-items:center;gap:12px;padding:10px 12px;background:#0e1422;border:1px solid var(--border);border-radius:14px;position:sticky;top:0;z-index:10;backdrop-filter:blur(6px)}
-  header h1{font-size:18px;margin:0 8px 0 0;letter-spacing:.6px}
-  .stat{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0b1220;border:1px solid var(--border);border-radius:10px}
-  .stat b{font-weight:700}
-  .grow{flex:1}
-  .btn{appearance:none;border:1px solid var(--border);background:#121a2b;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;transition:transform .05s ease,background .2s}
-  .btn:hover{background:#141f34}
-  .btn:active{transform:translateY(1px)}
-  .grid{display:grid;grid-template-columns:360px 1fr 360px;gap:14px;margin-top:14px}
-  .panel{background:#0f1626;border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  .panel h2{margin:0;padding:10px 12px;background:#0c1220;border-bottom:1px solid var(--border);font-size:14px;color:#cde;text-transform:uppercase;letter-spacing:.7px}
-  .pad{padding:12px}
-  .queue{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow:auto}
-  .alienCard{display:flex;gap:10px;align-items:center;padding:10px;background:#10192d;border:1px dashed #233355;border-radius:12px}
-  .alienPic{width:54px;height:54px;border-radius:10px;background:#091225;display:grid;place-items:center;overflow:hidden}
-  .alienMeta{font-size:12px;color:var(--muted)}
-  .workspace{display:grid;grid-template-columns:1fr;gap:10px}
-  .desk{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .doc{background:var(--paper);color:var(--inkpaper);border:2px solid #c9c4b4;border-radius:10px;box-shadow:0 1px 0 #0004 inset, 0 8px 30px #0005;padding:10px;position:relative;min-height:160px}
-  .doc h3{margin:0 0 6px;font:700 14px ui-monospace,Consolas,monospace;letter-spacing:.4px}
-  .doc table{width:100%;border-collapse:collapse;font:13px ui-monospace,Consolas,monospace}
-  .doc td{padding:4px 6px;border-bottom:1px dashed #d7d2c2}
-  .doc td:first-child{width:44%}
-  .doc td.illegible{color:#b33;font-style:italic;text-decoration:underline dotted #b33}
-  .doc td.illegible::after{content:"  (illegible)";font-style:italic;font-size:12px}
-  .stamp{position:absolute;inset:auto auto 10px 10px;padding:6px 10px;border:3px solid #b33;border-radius:8px;color:#b33;font:700 16px ui-monospace,Consolas,monospace;transform:rotate(-6deg);opacity:0;pointer-events:none}
-  .stamp.ok{border-color:#1d7c3a;color:#1d7c3a}
-  .tools{display:flex;gap:10px}
-  .hammer{background:#0d172a;border:1px solid var(--border);border-radius:12px;padding:10px}
-  .big{display:flex;gap:10px}
-  .big .btn{font-size:16px;padding:12px 14px}
-  .rule{padding:10px;border-bottom:1px dashed #2a3b6b}
-  .rule:last-child{border-bottom:none}
-  .rule b{color:#cfe1ff}
-  .muted{color:var(--muted)}
-  .flex{display:flex;gap:10px;align-items:center}
-  .money{color:#86efac}
-  .strike{color:#fecaca}
-  .log{max-height:180px;overflow:auto;background:#0b1220;border:1px solid var(--border);border-radius:10px;padding:8px;font:12px ui-monospace,Consolas,monospace}
-  .log p{margin:0 0 6px}
-  .switches{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{font:12px ui-monospace,Consolas,monospace;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#0c1322}
-  .right{display:flex;flex-direction:column;gap:10px}
-  .footer{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted)}
-  .kbd{font:600 12px ui-monospace,Consolas,monospace;background:#0c1322;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
-  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0f1626;border:1px solid var(--border);padding:10px 14px;border-radius:10px;box-shadow:0 10px 30px #0007;display:none}
-  .rank{font-weight:700}
-  .progress{height:8px;background:#12203a;border-radius:999px;overflow:hidden}
-  .progress>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#2dd4bf,#60a5fa)}
-  .help{font-size:13px;color:#cbd5e1}
-  .disclaimer{font-size:12px;color:#8ea3c7}
-  .photo{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center}
-  /* Passport portrait bigger */
-  #passport .photo{grid-template-columns:96px 1fr}
-  #passport .photo img{width:96px;height:96px}
-  #passport .photo img, #photoid .photo img{object-fit:contain;background:white}
-  .photo img{width:72px;height:72px;border-radius:8px;border:2px solid #c9c4b4;background:white}
-  .faceRow{display:flex;gap:6px;flex-wrap:wrap;font:12px ui-monospace,Consolas,monospace}
-  /* Make main columns scrollable within the viewport */
-  .panel{ max-height: calc(100vh - 160px); overflow: auto; }
-  @media (max-width: 1200px){ .grid{ grid-template-columns: 280px 1fr 300px; } }
-  @media (max-width: 1000px){ .grid{ grid-template-columns: 1fr; } .desk{ grid-template-columns: 1fr; } .panel{ max-height: none; } }
-</style>
-<style id="compact-overrides">
-  /* Compact, no-scroll overrides */
-  body{font-size:13px;line-height:1.4}
-  .wrap{max-width:1200px;padding:8px}
-  header{padding:8px 10px}
-  header h1{font-size:16px}
-  .stat{padding:4px 8px}
-  .grid{height:calc(100vh - 88px);grid-template-columns:300px 1fr 300px;gap:8px}
-  .panel{max-height:unset;overflow:hidden}
-  .queue{gap:6px}
-  #queue{height:calc(100% - 40px)}
-  .alienCard{padding:6px}
-  .alienPic{width:46px;height:46px}
-  .desk{grid-template-columns:1fr 1fr;gap:8px}
-  .doc{padding:8px}
-  .doc h3{font-size:12px}
-  .doc table{font-size:12px}
-  .photo{grid-template-columns:68px 1fr}
-  #passport .photo{grid-template-columns:84px 1fr}
-  .tools{gap:6px}
-  .log{height:90px;overflow:hidden}
-  .rule{padding:6px}
-  .progress{height:6px}
+  body{margin:0; background:linear-gradient(180deg,var(--bg),#0b132b); color:var(--ink); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .hud{
+    display:grid; gap:var(--gap);
+    grid-template-columns: 1.2fr 1fr;
+  }
+  .panel{
+    background:rgba(15,23,42,.8); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px;
+  }
+  .title{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px}
+  .title h2{margin:0;font-size:18px}
+  .tag{font-size:12px;color:var(--muted)}
+  .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .bar{height:10px;background:#11203e;border-radius:999px;overflow:hidden;border:1px solid #1b2b4c}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#34d399)}
+  .grid{display:grid; gap:var(--gap)}
+  .grid.two{grid-template-columns:1fr 1fr}
+  .btn{
+    display:inline-flex;gap:8px;align-items:center;justify-content:center;
+    border:1px solid var(--border); background:#111b34; color:var(--ink);
+    padding:12px 14px; border-radius:12px; cursor:pointer; user-select:none;
+    transition:.15s transform,.15s background,.15s border-color;
+  }
+  .btn:hover{transform:translateY(-1px); background:#0f1a33}
+  .btn:disabled{opacity:.5; cursor:not-allowed; transform:none}
+  .btn.primary{border-color:#214b3f;background:#0f2b24}
+  .btn.warn{border-color:#4b3f21;background:#2b210f}
+  .btn.danger{border-color:#4b2121;background:#2b0f0f}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  .choice{display:grid; gap:10px}
+  .log{height:220px; overflow:auto; background:#0b152c; border:1px solid #122345; border-radius:12px; padding:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+  .log p{margin:0 0 6px; color:#c6d4e2}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px; padding:3px 8px; border-radius:999px; border:1px solid #234;
+    background:#0e1c34; color:#a7bed4; font-size:12px
+  }
+  .k{color:#a7ffcb}
+  .small{font-size:12px;color:var(--muted)}
+  .sp{height:10px}
+  .ability{
+    display:flex; flex-direction:column; gap:6px; padding:10px; border:1px dashed #2a3b60; border-radius:10px;
+    background:#0a162f;
+  }
+  .footer{margin-top:14px; color:var(--muted); font-size:12px}
+  @media (max-width:900px){
+    .hud{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Alien Checkpoint</h1>
-      <div class="stat"><b>Date:</b> <span id="ui-date">—</span></div>
-      <div class="stat"><b>Day:</b> <span id="ui-day">1</span></div>
-      <div class="stat"><b>Credits:</b> <span id="ui-credits" class="money">0</span></div>
-      <div class="stat"><b>Strikes:</b> <span id="ui-strikes" class="strike">0</span></div>
-      <div class="stat"><b>Rank:</b> <span id="ui-rank" class="rank">Recruit</span></div>
-      <div class="grow"></div>
-      <button class="btn" id="btn-manual" title="Training manual">Training Manual</button>
-      <button class="btn" id="btn-newday" title="Start/End Day (Space)">Start Day</button>
-      <button class="btn" id="btn-reset" title="Reset save">Reset</button>
-    </header>
-
-    <div class="grid">
-      <section class="panel">
-        <h2>Docking Queue</h2>
-        <div class="pad queue" id="queue"></div>
-      </section>
-
-      <section class="panel workspace">
-        <h2>Inspection Desk</h2>
-        <div class="pad desk">
-          <div class="doc" id="passport">
-            <h3>INTERSTELLAR PASSPORT</h3>
-            <div class="photo" style="margin-bottom:6px">
-              <img id="pp-live" alt="Live portrait" />
-              <div class="faceRow" id="pp-feats">—</div>
-            </div>
-            <table>
-              <tr><td>Species</td><td id="pp-species">—</td></tr>
-              <tr><td>Name</td><td id="pp-name">—</td></tr>
-              <tr><td>Planet of Origin</td><td id="pp-planet">—</td></tr>
-              <tr><td>Birth Cycle</td><td id="pp-dob">—</td></tr>
-              <tr><td>Expires</td><td id="pp-exp">—</td></tr>
-              <tr><td>Genetic Key</td><td id="pp-gk">—</td></tr>
-            </table>
-            <div class="hammer" style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button class="btn" id="scan-gk">Scan Genetic Key</button>
-              <input id="manual-gk" class="btn" style="background:#0b1220;border-style:dashed;min-width:220px" placeholder="Type genetic code to check (e.g. GK123456)" />
-              <button class="btn" id="check-gk">Check</button>
-            </div>
-            <div class="stamp" id="pp-stamp">DENIED</div>
-          </div>
-          <div class="doc" id="visa">
-            <h3>DOCKING VISA</h3>
-            <table>
-              <tr><td>Name</td><td id="vs-name">—</td></tr>
-              <tr><td>Purpose</td><td id="vs-purpose">—</td></tr>
-              <tr><td>Duration</td><td id="vs-duration">—</td></tr>
-              <tr><td>Planet Permit</td><td id="vs-planet">—</td></tr>
-              <tr><td>Quarantine</td><td id="vs-quar">—</td></tr>
-              <tr><td>Seal Code</td><td id="vs-seal">—</td></tr>
-            </table>
-            <div class="muted" style="margin-top:6px">Valid seal format: <code>NX-123</code> (exact). Forged visas may show <code>FORGE</code>.</div>
-            <div class="stamp ok" id="vs-stamp">APPROVED</div>
-          </div>
-          <div class="doc" id="photoid">
-            <h3>PHOTO IDENTIFICATION</h3>
-            <div class="photo">
-              <img id="pid-photo" alt="Recorded photo" />
-              <div>
-                <div id="pid-name" style="font-weight:700">—</div>
-                <div id="pid-caption" class="muted">—</div>
-                <div class="faceRow" id="pid-feats">—</div>
-              </div>
-            </div>
-            <div class="stamp" id="pid-stamp">MISMATCH</div>
-          </div>
-        </div>
-        <div class="pad">
-          <div class="tools big">
-            <button class="btn" id="approve">APPROVE (A)</button>
-            <button class="btn" id="deny">DENY (D)</button>
-            <button class="btn" id="detain">DETAIN (F)</button>
-            <button class="btn" id="next">NEXT SHIP (N)</button>
-          </div>
-          <div class="footer">
-            <div class="switches">
-              <span class="chip">Tip: Click a doc to reveal hidden stamps if forged</span>
-              <span class="chip">Shortcuts: <span class="kbd">A</span>/<span class="kbd">D</span>/<span class="kbd">F</span>/<span class="kbd">N</span>, <span class="kbd">Space</span> for Start/End Day</span>
-            </div>
-          </div>
-        </div>
-        <div class="pad">
-          <div class="log" id="log"></div>
-        </div>
-      </section>
-
-      <section class="panel right">
-        <h2>Regulations & Progress</h2>
-        <div class="pad" id="rules"></div>
-        <div class="pad">
-          <div class="help">Ensure names match on <b>Passport</b>, <b>Visa</b>, and <b>Photo ID</b> and are legible. Scan or manually check genetic keys against the wanted registry. Visa seals must be <code>NX-###</code>. Passport must be unexpired relative to today.</div>
-        </div>
-        <div class="pad">
-          <div>Progress to next rank</div>
-          <div class="progress"><i id="xpbar"></i></div>
-          <div class="disclaimer" style="margin-top:8px">Inspired by border-control puzzle games. Original parody mechanics—no copyrighted assets.</div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Lightbox for zooming portraits -->
-    <div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;">
-      <img id="lightbox-img" alt="zoom" style="max-width:90vw;max-height:90vh;border-radius:12px;background:white;border:2px solid #c9c4b4" />
-    </div>
-
-    <!-- Training Manual Modal -->
-    <div class="modal" id="manual" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:999">
-      <div class="modalCard" style="width:min(880px,92vw);max-height:80vh;background:#0f1626;border:1px solid #1f2a44;border-radius:12px;box-shadow:0 18px 60px #000a;display:flex;flex-direction:column">
-        <div class="modalHead" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #1f2a44">
-          <strong>Training Manual</strong>
-          <button class="closeX" id="manual-close" style="cursor:pointer;border:1px solid #1f2a44;border-radius:8px;background:#121a2b;padding:4px 8px;color:#e6f0ff">✕</button>
-        </div>
-        <div class="modalBody" style="padding:12px;overflow:auto;color:#cfe1ff">
-          <p>Verify each ship’s documents and decide to <b>APPROVE</b>, <b>DENY</b>, or <b>DETAIN</b>. Use the scanner and rules below.</p>
-          <ol>
-            <li><b>Names present & legible</b> on Passport, Visa, Photo ID and must match exactly. Smudged Visa name fails.</li>
-            <li><b>Passport unexpired</b> compared to today (shown at top).</li>
-            <li><b>Visa seal valid</b>: <code>NX-###</code> only. <code>FORGE</code> or any other format is invalid.</li>
-            <li><b>Genetic Key clean</b>. Use <b>Scan Genetic Key</b> or type a GK to check. If wanted, <b>DETAIN</b>.</li>
-            <li><b>Photo ID matches live portrait features</b> (eyes, arms, antennae, head, markings).</li>
-          </ol>
-          <p>Shortcuts: <b>A</b> Approve, <b>D</b> Deny, <b>F</b> Detain, <b>N</b> Next, <b>Space</b> Start/End Day.</p>
+<div class="wrap">
+  <div class="hud">
+    <section class="panel">
+      <div class="title">
+        <h2>Player</h2>
+        <div class="row">
+          <span class="pill">Cycle <b id="cycle">1</b></span>
+          <span class="pill">Room <b id="room">1</b></span>
+          <span class="pill">Bosses <b id="bosses">0</b>/3</span>
         </div>
       </div>
-    </div>
+      <div class="stats">
+        <div>
+          <div>HP: <b id="php">100 / 100</b></div>
+          <div class="bar"><i id="phpbar" style="width:100%"></i></div>
+        </div>
+        <div>
+          <div>XP: <b id="xp">0</b></div>
+          <div class="bar"><i id="xpbar" style="width:0%"></i></div>
+        </div>
+        <div>ATK: <b id="atk">10</b></div>
+        <div>DEF: <b id="def">3</b></div>
+        <div>CRIT: <b id="crit">10%</b></div>
+        <div>SPD: <b id="spd">10</b></div>
+      </div>
+      <div class="sp"></div>
+      <div>
+        <div class="row" id="abilitiesRow"><!-- abilities injected --></div>
+        <div class="small">Tip: Use keys <b>1/2/3</b> to pick choices. Abilities show cooldowns.</div>
+      </div>
+    </section>
 
-    <div class="toast" id="toast"></div>
+    <section class="panel">
+      <div class="title">
+        <h2 id="stageTitle">Choose an enemy</h2>
+        <span class="tag" id="stageTag">Plan your next fight</span>
+      </div>
+      <div id="stageArea" class="grid"></div>
+    </section>
   </div>
 
-<script>
-(function(){
-  // --- Game State ---
-  const SAVE_KEY = 'alien_checkpoint_save_v4';
-  const RANKS = [
-    {name:'Recruit', xp:0},
-    {name:'Officer', xp:120},
-    {name:'Inspector', xp:300},
-    {name:'Controller', xp:600},
-    {name:'Adjudicator', xp:1000}
-  ];
+  <section class="panel" style="margin-top:14px">
+    <div class="title"><h2>Battle Log</h2><span class="tag">What just happened</span></div>
+    <div class="log" id="log"></div>
+    <div class="footer">© Your mini roguelite loop | No data leaves your browser.</div>
+  </section>
+</div>
 
-  let state = {
-    day: 1,
-    credits: 0,
-    strikes: 0,
-    xp: 0,
-    inDay:false,
-    queue:[],
-    current:null,
-    seed: Math.floor(Math.random()*1e9)
+<script>
+(() => {
+  // --- Utilities ---
+  const $ = sel => document.querySelector(sel);
+  const el = (tag, props={}, children=[]) => {
+    const n = document.createElement(tag);
+    Object.entries(props).forEach(([k,v])=>{
+      if(k==='class') n.className=v;
+      else if(k==='text') n.textContent=v;
+      else if(k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v);
+      else n.setAttribute(k,v);
+    });
+    children.forEach(c => n.appendChild(c));
+    return n;
+  };
+  const rng = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+  // --- Game State ---
+  const state = {
+    cycle: 1,          // cycles of rooms+boss
+    room: 1,           // regular rooms within a cycle
+    bossesDefeated: 0,
+    finalBossesNeeded: 3, // after 3 bosses, next is Final Boss
+    roomsPerCycle: 3,  // rooms before a boss
+    player: {
+      maxHp: 100, hp: 100, atk: 10, def: 3, crit: 10, spd: 10,
+      xp: 0, abilities: [], cooldowns: {}
+    },
+    enemy: null,
+    phase: 'choose-enemy', // other: 'fight', 'buffs', 'boss', 'final'
+    lock:false
   };
 
-  // Wanted registry seeded each session
-  const wantedRegistry = new Set();
-  function genGK(){return 'GK'+Math.floor(100000 + Math.random()*900000)}
-  wantedRegistry.add(genGK());
-  wantedRegistry.add(genGK());
-
-  // --- Utilities ---
-  const byId = id=>document.getElementById(id);
-  const log = (msg)=>{ const el=byId('log'); const p=document.createElement('p'); p.textContent=msg; el.prepend(p); };
-  const toast=(m)=>{const t=byId('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1500)}
-  function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify({ day:state.day, credits:state.credits, xp:state.xp })); }
-  function load(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s){ state.day=s.day; state.credits=s.credits; state.xp=s.xp||0; } }catch(e){} }
-  function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-  byId('ui-date').textContent = todayISO();
-
-  function rand(){ // Mulberry32 PRNG
-    state.seed = (state.seed + 0x6D2B79F5) >>> 0; let t = state.seed;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-  const pick = arr => arr[Math.floor(rand()*arr.length)];
-  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-
-  // --- Content ---
-  const SPECIES = [
-    {name:'Zerulon', planets:['Aurex','Klyntar']},
-    {name:'Myridian', planets:['Doros','Myra-2']},
-    {name:'Vorx', planets:['Hask','Vortex-9']},
-    {name:'Eldari', planets:['Solace','Nyelle']},
-    {name:'Gubb', planets:['Pudra']}
+  // --- Abilities granted by bosses ---
+  const ABILITIES = [
+    {
+      id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK damage twice.',
+      cd:3, use: (ctx)=> {
+        const dmg1 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
+        const dmg2 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
+        ctx.enemy.hp = Math.max(0, ctx.enemy.hp - (dmg1+dmg2));
+        log(`You spin into a <span class="k">Whirlwind</span> for ${dmg1+dmg2} total damage.`);
+      }
+    },
+    {
+      id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% of max HP as a barrier for 3 turns.',
+      cd:4, use: (ctx)=> {
+        const val = Math.floor(ctx.player.maxHp * 0.3);
+        ctx.player.shield = Math.max(ctx.player.shield||0, val);
+        ctx.player.shieldTurns = 3;
+        log(`You conjure <span class="k">Arcane Shield</span> absorbing ${val} damage for 3 turns.`);
+      }
+    },
+    {
+      id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.',
+      cd:5, use: (ctx)=> {
+        ctx.extraTurn = true;
+        log(`You bend time with <span class="k">Time Warp</span> and act again!`);
+      }
+    },
+    {
+      id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.',
+      cd:4, use: (ctx)=> {
+        ctx.tempAtkBoost = (ctx.tempAtkBoost||0) + ctx.player.atk; // +100% this turn
+        log(`You surge with <span class="k">Overcharge</span>! ATK doubled for this strike.`);
+      }
+    },
+    {
+      id:'vamp_bite', name:'Vampiric Bite', desc:'Deal 120% ATK and heal for 50% of damage dealt.',
+      cd:4, use: (ctx)=> {
+        const dmg = calcDamage(ctx.player.atk*1.2, ctx.enemy.def, ctx.player.crit);
+        ctx.enemy.hp = Math.max(0, ctx.enemy.hp - dmg);
+        const heal = Math.floor(dmg*0.5);
+        healPlayer(heal);
+        log(`You drain with <span class="k">Vampiric Bite</span> for ${dmg} and heal ${heal}.`);
+      }
+    }
   ];
-  const PURPOSES = ['Transit','Trade','Tourism','Work','Diplomacy'];
-  const DURATIONS = ['1 day','3 days','7 days','14 days','30 days'];
-  const HEADS = ['round','tall','wide','tri'];
-  const MARKINGS = ['none','stripes','spots','chevrons'];
 
-  function pad(n){return String(n).padStart(2,'0')}
+  // --- Buff pool (for post-room rewards) ---
+  const BUFFS = [
+    {id:'hp10', name:'+10% Max HP', apply:()=>{ const add=Math.floor(state.player.maxHp*0.10); state.player.maxHp+=add; state.player.hp+=add; }},
+    {id:'atk6', name:'+6 ATK', apply:()=>{ state.player.atk+=6; }},
+    {id:'def3', name:'+3 DEF', apply:()=>{ state.player.def+=3; }},
+    {id:'crit8', name:'+8% CRIT', apply:()=>{ state.player.crit = clamp(state.player.crit+8,0,100); }},
+    {id:'spd5', name:'+5 SPD', apply:()=>{ state.player.spd+=5; }},
+    {id:'heal20', name:'Heal 20% HP now', apply:()=>{ healPlayer(Math.floor(state.player.maxHp*0.2)); }},
+    {id:'barrier', name:'Start next fight with 15 Shield', apply:()=>{ state.player.nextShield = (state.player.nextShield||0)+15; }},
+    {id:'vigor', name:'+10% damage this cycle', apply:()=>{ state.player.cycleDmg = (state.player.cycleDmg||0)+0.10; }},
+    {id:'guard', name:'-10% damage taken this cycle', apply:()=>{ state.player.cycleDR = (state.player.cycleDR||0)+0.10; }},
+  ];
 
-  function makeFeatures(){
-    return { eyes:1+Math.floor(rand()*5), arms:2+Math.floor(rand()*4), antennae:Math.floor(rand()*3), head:pick(HEADS), tint:`hsl(${Math.floor(rand()*360)} 70% 65%)`, markings:pick(MARKINGS)};
+  // --- Enemy templates ---
+  const ENEMY_TYPES = [
+    { id:'swarmer', name:'Swarmer', desc:'Fast, low HP, light hits.', scale:(lvl)=>({
+      maxHp: 50 + lvl*12, atk: 7 + lvl*2, def: 2 + Math.floor(lvl*0.6), spd: 14 + Math.floor(lvl*0.7)
+    })},
+    { id:'brute', name:'Brute', desc:'Slow, high HP, heavy hits.', scale:(lvl)=>({
+      maxHp: 110 + lvl*20, atk: 12 + lvl*4, def: 5 + Math.floor(lvl*1.2), spd: 7 + Math.floor(lvl*0.3)
+    })},
+    { id:'mage', name:'Arcanist', desc:'Glass cannon, crit happy.', scale:(lvl)=>({
+      maxHp: 70 + lvl*14, atk: 14 + lvl*4, def: 3 + Math.floor(lvl*0.8), spd: 10 + Math.floor(lvl*0.6), crit: 20 + Math.floor(lvl*1.5)
+    })},
+  ];
+
+  function bossStats(lvl){
+    return {
+      name: `Boss ${lvl}`,
+      maxHp: 220 + lvl*70, atk: 18 + lvl*6, def: 6 + Math.floor(lvl*1.5), spd: 10 + lvl, crit: 15 + lvl*2,
+      special: lvl%2? 'Crushing Blow (+50% ATK every 3 turns)':'Arcane Barrage (2x hits every 3 turns)'
+    };
+  }
+  function finalBoss(){
+    return {
+      name:'FINAL BOSS — The Shard Eater',
+      maxHp: 800, atk: 35, def: 12, spd: 14, crit: 20, special:'Devour: every 4th turn steals 10% of your max HP'
+    };
   }
 
-  function renderAlienSVG(f){
-    const w=72,h=72,cx=36; const headPath = { round:`M18,18 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0`, tall:`M24,14 h24 a8,12 0 0,1 8,12 v12 a20,16 0 0,1 -40,0 v-12 a8,12 0 0,1 8,-12 z`, wide:`M16,24 h40 a8,10 0 0,1 0,20 h-40 a8,10 0 0,1 0,-20 z`, tri:`M36,14 L56,44 H16 Z` }[f.head];
-    const eyes = Array.from({length:f.eyes},(_,i)=>{ const spread=Math.min(12,4*(f.eyes-1)); const x=cx-spread/2+(i*(spread/(Math.max(1,f.eyes-1)))); return `<circle cx="${x.toFixed(1)}" cy="32" r="3" fill="#111"/>`;}).join('');
-    const ants = Array.from({length:f.antennae},(_,i)=>{ const x=cx+(i-(f.antennae-1)/2)*8; return `<path d="M${x},18 q-4,-8 -8,-12" stroke="#333" stroke-width="2" fill="none"/>`;}).join('');
-    const mark = f.markings==='none'? '' : (f.markings==='stripes'? `<path d="M22,28 h28 M22,36 h28" stroke="#0005" stroke-width="3"/>` : f.markings==='spots'? `<circle cx="26" cy="30" r="2" fill="#0005"/><circle cx="46" cy="36" r="2" fill="#0005"/>` : `<path d="M24,34 l12,-8 l12,8" stroke="#0005" stroke-width="3" fill="none"/>`);
-    const arms = Array.from({length:f.arms},(_,i)=>{ const x=16+i*(40/(f.arms-1||1)); return `<rect x="${x-2}" y="44" width="4" height="14" rx="2" fill="#7aa3"/>`;}).join('');
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${w} ${h}'><rect width='${w}' height='${h}' fill='white'/><g><rect x='14' y='42' width='44' height='18' rx='8' fill='${f.tint}'/><path d='${headPath}' fill='${f.tint}' stroke='#0004' stroke-width='1'/>${mark}${ants}${eyes}${arms}</g></svg>`;
-    return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+  // --- UI helpers ---
+  const stageTitle = $('#stageTitle'), stageTag=$('#stageTag'), stageArea=$('#stageArea');
+  const php=$('#php'), phpbar=$('#phpbar'), xp=$('#xp'), xpbar=$('#xpbar');
+  const atk=$('#atk'), def=$('#def'), crit=$('#crit'), spd=$('#spd');
+  const cycleEl=$('#cycle'), roomEl=$('#room'), bossesEl=$('#bosses');
+  const abilitiesRow=$('#abilitiesRow');
+  const logBox=$('#log');
+
+  function log(html){
+    const p = el('p'); p.innerHTML = html;
+    logBox.appendChild(p);
+    logBox.scrollTop = logBox.scrollHeight;
   }
 
-  function featuresSummary(f){ return `eyes:${f.eyes} | arms:${f.arms} | ant:${f.antennae} | head:${f.head} | mark:${f.markings}`; }
-
-  function maybePhotoMismatch(real){
-    const f = JSON.parse(JSON.stringify(real));
-    const knob = pick(['eyes','arms','antennae','head','markings']);
-    if(knob==='eyes') f.eyes = clamp(f.eyes + (rand()>0.5?1:-1),1,5);
-    if(knob==='arms') f.arms = clamp(f.arms + (rand()>0.5?1:-1),2,5);
-    if(knob==='antennae') f.antennae = clamp(f.antennae + (rand()>0.5?1:-1),0,2);
-    if(knob==='head') f.head = pick(HEADS.filter(h=>h!==f.head));
-    if(knob==='markings') f.markings = pick(MARKINGS.filter(m=>m!==f.markings));
-    return f;
+  function refreshHUD(){
+    const p = state.player;
+    php.textContent = `${p.hp} / ${p.maxHp}`;
+    phpbar.style.width = `${Math.round(100*p.hp/p.maxHp)}%`;
+    xp.textContent = p.xp;
+    xpbar.style.width = `${Math.min(100, p.xp%100)}%`;
+    atk.textContent = Math.round(p.atk);
+    def.textContent = Math.round(p.def);
+    crit.textContent = `${Math.round(p.crit)}%`;
+    spd.textContent = Math.round(p.spd);
+    cycleEl.textContent = state.cycle;
+    roomEl.textContent = state.room;
+    bossesEl.textContent = state.bossesDefeated;
+    renderAbilities();
   }
 
-  function makeAlien(){
-    const sp = pick(SPECIES);
-    const name = pick(['Ryll','Kora','Jent','Zux','Mira','Torv','Plek','Lena','Qir','Brol']) + ' ' + pick(['Zeen','Tark','Vel','Qor','Dax','Meln','Iri','Sorn']);
-    const planet = pick(sp.planets);
-    const dob = `${2440+Math.floor(rand()*40)}-${pad(1+Math.floor(rand()*12))}-${pad(1+Math.floor(rand()*27))}`;
-    const expOk = rand()>0.18;
-    const exp = expOk? new Date(Date.now() + (2+Math.floor(rand()*30))*86400000).toISOString().slice(0,10)
-                      : new Date(Date.now() - (1+Math.floor(rand()*10))*86400000).toISOString().slice(0,10);
-    const purpose = pick(PURPOSES);
-    const duration = pick(DURATIONS);
-    const seal = (rand()>0.15)? ('NX-'+(100+Math.floor(rand()*900))) : 'FORGE';
-    const gk = 'GK'+Math.floor(100000 + rand()*900000);
-    const feats = makeFeatures();
-    const vsSmudged = rand()>0.85;
-    const vsName = vsSmudged ? name.split('').map((c,i)=> i>0 && i<name.length-1 && Math.random()>0.6 ? '·' : c).join('') : name;
-    const photoForged = rand()>0.82;
-    const photoFeats = photoForged? maybePhotoMismatch(feats) : JSON.parse(JSON.stringify(feats));
-    const hints=[]; if(seal==='FORGE') hints.push('Visa seal looks grainy'); if(!expOk) hints.push('Passport expired'); if(photoForged) hints.push('Photo ID features differ'); if(vsSmudged) hints.push('Visa name appears smudged');
-    return { sp:sp.name, planet, name, vsName, vsSmudged, pidName:name, dob, exp, purpose, duration, quarantine:'None', seal, gk, feats, photoFeats, hints, _gkScanned:false, _gkFlagged:false };
+  function setStage(title, tag){
+    stageTitle.textContent = title;
+    stageTag.textContent = tag;
+    stageArea.innerHTML = '';
   }
 
-  function buildQueue(){ state.queue = Array.from({length:5 + Math.floor(state.day/2)}, ()=>makeAlien()); state.todayRules = baseRules(); }
-
-  function baseRules(){
-    return [
-      { id:'name', text:'Names must be legible and present on Passport, Visa, and Photo ID and they must match exactly.', check: a => !!a.name && !!a.vsName && !!a.pidName && !a.vsSmudged && a.name===a.vsName && a.name===a.pidName },
-      { id:'expiry', text:'Passports must be unexpired (compared to current date).', check: a => new Date(a.exp+'T00:00:00') >= new Date(todayISO()+'T00:00:00') },
-      { id:'seal', text:'Visa must have a valid security seal (NX-###).', check: a => /^NX-\d{3}$/.test(a.seal) },
-      { id:'gk', text:'Genetic Key must not belong to a wanted registry when checked.', check: a => a._gkFlagged !== true },
-      { id:'photo', text:'Photo ID must match live portrait features (eyes/arms/antennae/head/markings).', check: a => a.feats.eyes===a.photoFeats.eyes && a.feats.arms===a.photoFeats.arms && a.feats.antennae===a.photoFeats.antennae && a.feats.head===a.photoFeats.head && a.feats.markings===a.photoFeats.markings }
-    ];
+  function makeChoiceButtons(options){
+    // options: [{label, class, onClick, hotkey}]
+    const grid = el('div', {class:'grid two'});
+    options.forEach((opt,i)=>{
+      const btn = el('button', {class:`btn ${opt.class||''}`, text: opt.label});
+      btn.addEventListener('click', opt.onClick);
+      grid.appendChild(btn);
+      // hotkeys
+      const hk = (i+1).toString();
+      if(!opt.hotkeyDisabled){
+        document.addEventListener('keydown', function handler(e){
+          if(state.lock) return;
+          if(e.key===hk){
+            e.preventDefault();
+            btn.click();
+          }
+        }, {once:true});
+      }
+    });
+    return grid;
   }
 
-  // --- UI ---
-  function renderHeader(){
-    byId('ui-day').textContent = state.day;
-    byId('ui-credits').textContent = state.credits;
-    byId('ui-strikes').textContent = state.strikes;
-    const rank = RANKS.reduce((acc,r)=> state.xp>=r.xp? r:acc, RANKS[0]);
-    byId('ui-rank').textContent = rank.name;
-    const next = RANKS.find(r=>r.xp>state.xp);
-    const pct = next? ( (state.xp - rank.xp) / (next.xp - rank.xp) * 100) : 100;
-    byId('xpbar').style.width = Math.min(100,Math.max(0,pct))+'%';
+  function renderAbilities(){
+    abilitiesRow.innerHTML='';
+    const p = state.player;
+    if(!p.abilities.length){
+      abilitiesRow.appendChild(el('span',{class:'pill',text:'No abilities yet — defeat a boss!'}));
+      return;
+    }
+    p.abilities.forEach(abil=>{
+      const cdLeft = p.cooldowns[abil.id]||0;
+      const wrap = el('div',{class:'ability'});
+      wrap.appendChild(el('div',{text:abil.name}));
+      wrap.appendChild(el('div',{class:'small',text:abil.desc}));
+      const btn = el('button',{class:'btn primary', text: cdLeft?`Cooldown: ${cdLeft}`:'Use'});
+      btn.disabled = !!cdLeft || state.lock || state.phase!=='fight';
+      btn.addEventListener('click', ()=> useAbility(abil));
+      wrap.appendChild(btn);
+      abilitiesRow.appendChild(wrap);
+    });
   }
 
-  function renderRules(){ const box=byId('rules'); box.innerHTML=''; state.todayRules.forEach(r=>{ const d=document.createElement('div'); d.className='rule'; d.innerHTML = `<b>Rule:</b> ${r.text}`; box.appendChild(d); }); }
-  function renderQueue(){ const q=byId('queue'); q.innerHTML=''; state.queue.forEach(a=>{ const card=document.createElement('div'); card.className='alienCard'; const thumb=renderAlienSVG(a.feats); card.innerHTML=`<div class=\"alienPic\"><img src=\"${thumb}\" alt=\"thumb\" style=\"width:100%;height:100%;object-fit:cover\"/></div><div><div><b>${a.name}</b> — ${a.sp}</div><div class=\"alienMeta\">${a.planet} • ${a.purpose} • ${a.duration}</div></div>`; q.appendChild(card); }); }
-
-  function showDoc(a){
-    byId('pp-species').textContent = a.sp; byId('pp-name').textContent = a.name; byId('pp-planet').textContent = a.planet; byId('pp-dob').textContent = a.dob; byId('pp-exp').textContent = a.exp; byId('pp-gk').textContent = a.gk;
-    const vsNameCell = byId('vs-name'); vsNameCell.textContent = (a.vsName && a.vsName.trim()) ? a.vsName : '—'; vsNameCell.classList.toggle('illegible', !!a.vsSmudged); vsNameCell.title = a.vsSmudged ? 'Visa name appears smudged/illegible' : '';
-    byId('vs-purpose').textContent = a.purpose; byId('vs-duration').textContent = a.duration; byId('vs-planet').textContent = a.planet; byId('vs-quar').textContent = a.quarantine; byId('vs-seal').textContent = a.seal;
-    const liveURL = renderAlienSVG(a.feats); const photoURL = renderAlienSVG(a.photoFeats); byId('pp-live').src = liveURL; byId('pid-photo').src = photoURL; byId('pid-name').textContent = a.pidName || a.name; byId('pid-caption').textContent = a.hints && a.hints.length ? a.hints[0] : 'Recorded at prior docking'; byId('pp-feats').textContent = featuresSummary(a.feats); byId('pid-feats').textContent = featuresSummary(a.photoFeats);
-    ['pp-stamp','vs-stamp','pid-stamp'].forEach(id=>byId(id).style.opacity=0);
+  function healPlayer(n){
+    const p=state.player; const before=p.hp;
+    p.hp = clamp(p.hp + n, 0, p.maxHp);
+    log(`Healed ${p.hp-before} HP.`);
   }
 
-  function popNext(){ if(!state.queue.length){ state.current=null; log('Queue empty. End the day to proceed.'); return; } state.current = state.queue.shift(); renderQueue(); showDoc(state.current); log(`Next ship: ${state.current.name} (${state.current.sp}) from ${state.current.planet}`); }
-
-  // Scanner & manual wanted check
-  function scanGK(){ const a=state.current; if(!a){toast('No ship selected'); return;} a._gkScanned=true; const flagged = wantedRegistry.has(a.gk); a._gkFlagged = flagged; byId('pp-gk').textContent = a.gk + (flagged ? ' (WANTED)' : ''); log('*SCANNER*: '+a.gk+(flagged?' — WANTED':' — CLEAR')); toast(flagged? 'WANTED genetic match!' : 'Genetic code scanned — clear'); }
-  function manualCheck(){ const code = byId('manual-gk').value.trim(); if(!code){ toast('Type a genetic code to check'); return; } const flagged = wantedRegistry.has(code); if(!state.current){ toast('No current applicant'); return; } if(flagged){ state.current._gkFlagged = true; byId('pp-gk').textContent = state.current.gk + ' (WANTED)'; log('Manual check: '+code+' flagged'); toast('Manual check: WANTED'); } else { log('Manual check: '+code+' not found'); toast('Manual check: not found'); } }
-
-  // Adjudication
-  function evaluate(answer){ if(!state.current){ toast('No ship selected'); return; } const a=state.current; const failures = state.todayRules.filter(r=>!r.check(a)); const wanted = !!a._gkFlagged; const correctDecision = wanted ? 'DETAIN' : (failures.length===0 ? 'APPROVE' : (failures.length>=2 ? 'DETAIN' : 'DENY'));
-    const ppStamp = byId('pp-stamp'); const vsStamp = byId('vs-stamp'); const pidStamp = byId('pid-stamp');
-    if(answer==='APPROVE'){ vsStamp.style.opacity=1; vsStamp.textContent='APPROVED'; vsStamp.classList.add('ok'); }
-    if(answer==='DENY'){ ppStamp.style.opacity=1; ppStamp.textContent='DENIED'; ppStamp.classList.remove('ok'); }
-    if(answer==='DETAIN'){ ppStamp.style.opacity=1; ppStamp.textContent='DETAINED'; ppStamp.classList.remove('ok'); }
-    if(a.feats.eyes!==a.photoFeats.eyes || a.feats.arms!==a.photoFeats.arms || a.feats.antennae!==a.photoFeats.antennae || a.feats.head!==a.photoFeats.head || a.feats.markings!==a.photoFeats.markings){ pidStamp.style.opacity=0.3; }
-    let delta=0, xp=0; if(answer===correctDecision){ delta=5+Math.max(0,3-failures.length); xp=15; state.credits+=delta; state.xp+=xp; log('✔ Correct: '+answer+' • +'+delta+' credits'); toast('Correct (+'+delta+'₵, +'+xp+'xp)'); } else { state.credits-=3; state.strikes++; log('✖ Wrong: chose '+answer+' expected '+correctDecision+' • -3 credits'); toast('Incorrect (−3₵) • Strike '+state.strikes); if(state.strikes>=3){ endDay('Too many strikes. Shift ended.'); return; } }
-    renderHeader(); }
-
-  function endDay(reason){ state.inDay=false; byId('btn-newday').textContent='Start Day'; if(reason) log('Day ended: '+reason); save(); renderHeader(); }
-
-  // Handlers
-  byId('approve').addEventListener('click',()=>evaluate('APPROVE'));
-  byId('deny').addEventListener('click',()=>evaluate('DENY'));
-  byId('detain').addEventListener('click',()=>evaluate('DETAIN'));
-  byId('next').addEventListener('click',popNext);
-  byId('scan-gk').addEventListener('click',scanGK);
-  byId('check-gk').addEventListener('click',manualCheck);
-
-  document.addEventListener('keydown',e=>{ if(e.key==='a'||e.key==='A') evaluate('APPROVE'); if(e.key==='d'||e.key==='D') evaluate('DENY'); if(e.key==='f'||e.key==='F') evaluate('DETAIN'); if(e.key==='n'||e.key==='N') popNext(); if(e.code==='Space'){ e.preventDefault(); byId('btn-newday').click(); } });
-
-  byId('btn-newday').addEventListener('click',()=>{ if(state.inDay){ endDay('You ended the day.'); return; } state.inDay=true; state.strikes=0; byId('btn-newday').textContent='End Day'; buildQueue(); renderRules(); renderQueue(); popNext(); log('Day '+state.day+' started'); save(); });
-  byId('btn-reset').addEventListener('click',()=>{ if(confirm('Reset progress?')){ localStorage.removeItem(SAVE_KEY); location.reload(); } });
-
-  // Manual modal handlers (fixed: removed stray brace/reload)
-  const manualEl = document.getElementById('manual');
-  const manualBtn = document.getElementById('btn-manual');
-  if(manualBtn){ manualBtn.addEventListener('click',()=>{ manualEl.style.display='flex'; }); }
-  const manualClose = document.getElementById('manual-close');
-  if(manualClose){ manualClose.addEventListener('click',()=>{ manualEl.style.display='none'; }); }
-  manualEl.addEventListener('click',e=>{ if(e.target===manualEl) manualEl.style.display='none'; });
-
-  // (Optional) click-to-zoom portraits
-  const lb=document.getElementById('lightbox'); const lbImg=document.getElementById('lightbox-img');
-  function enableZoom(img){ img.addEventListener('click',()=>{ lbImg.src=img.src; lb.style.display='flex'; }); }
-  lb.addEventListener('click',()=>{ lb.style.display='none'; lbImg.src=''; });
-  ['pp-live','pid-photo'].forEach(id=>{ const el=byId(id); if(el) enableZoom(el); });
-
-  // --- Self-tests (non-intrusive) ---
-  function runTests(){
-    const rules = baseRules();
-    const ok = makeAlien(); // valid-ish
-    ok.vsSmudged=false; ok.vsName=ok.name; ok.photoFeats=JSON.parse(JSON.stringify(ok.feats)); ok.seal='NX-123'; ok.exp=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const assert=(name,cond)=>{ log((cond?'[TEST PASS] ':'[TEST FAIL] ')+name); };
-    assert('name match', rules.find(r=>r.id==='name').check(ok));
-    assert('expiry future', rules.find(r=>r.id==='expiry').check(ok));
-    assert('seal valid', rules.find(r=>r.id==='seal').check(ok));
-    // negatives
-    const bad1={...ok, exp:new Date(Date.now()-86400000).toISOString().slice(0,10)}; assert('expiry rule fails on past', !rules.find(r=>r.id==='expiry').check(bad1));
-    const bad2={...ok, seal:'FORGE'}; assert('seal rejects FORGE', !rules.find(r=>r.id==='seal').check(bad2));
-    const bad3={...ok, vsSmudged:true}; assert('illegible visa name fails', !rules.find(r=>r.id==='name').check(bad3));
-    const bad4={...ok, _gkFlagged:true}; assert('wanted GK fails', !rules.find(r=>r.id==='gk').check(bad4));
-    const bad5={...ok, photoFeats:{...ok.photoFeats, arms:ok.photoFeats.arms+1}}; assert('photo mismatch fails', !rules.find(r=>r.id==='photo').check(bad5));
+  function calcDamage(atk, def, critChance){
+    const base = Math.max(1, Math.floor(atk - def*0.6));
+    const variance = rng(-2,2);
+    const crit = (rng(1,100) <= Math.round(critChance||0));
+    return Math.max(1, Math.floor((base+variance) * (crit?1.75:1)));
   }
 
-  // Boot
-  load(); renderHeader(); state.queue = Array.from({length:5}, ()=>makeAlien()); renderRules(); renderQueue(); runTests();
+  function applyIncomingDamage(amount){
+    const p=state.player;
+    // damage reduction buffs
+    const dr = p.cycleDR||0;
+    let dmg = Math.floor(amount * (1 - dr));
+    // shield
+    if(p.shield && p.shield>0){
+      const absorbed = Math.min(p.shield, dmg);
+      p.shield -= absorbed; dmg -= absorbed;
+      log(`Your shield absorbs ${absorbed} damage. (${p.shield||0} left)`);
+    }
+    p.hp = Math.max(0, p.hp - dmg);
+    return dmg;
+  }
+
+  function endTurnTick(){
+    const p=state.player;
+    // decay shield turns
+    if(p.shieldTurns!=null){
+      p.shieldTurns--;
+      if(p.shieldTurns<=0){ p.shield=0; p.shieldTurns=null; log(`Your Arcane Shield fades.`); }
+    }
+    // reduce ability cooldowns
+    for(const k of Object.keys(p.cooldowns)){
+      if(p.cooldowns[k]>0) p.cooldowns[k]--;
+    }
+  }
+
+  // --- Flow ---
+  function startGame(){
+    state.cycle=1; state.room=1; state.bossesDefeated=0;
+    Object.assign(state.player, {maxHp:100,hp:100,atk:10,def:3,crit:10,spd:10,xp:0,abilities:[],cooldowns:{},shield:0,shieldTurns:null,nextShield:0,cycleDmg:0,cyleDR:0});
+    logBox.innerHTML='';
+    log(`<b>Welcome!</b> Choose an enemy type, win, pick a buff. Every ${state.roomsPerCycle} rooms, face a boss for a new ability. Defeat ${state.finalBossesNeeded} bosses, then conquer the Final Boss.`);
+    showEnemyChoice();
+    refreshHUD();
+  }
+
+  function showEnemyChoice(){
+    state.phase='choose-enemy';
+    setStage('Pick your next fight', 'Swarmer / Brute / Arcanist');
+    const opts = ENEMY_TYPES.map(t=>{
+      return {
+        label:`${t.name} — ${t.desc}`,
+        class:'',
+        onClick:()=> spawnEnemy(t)
+      };
+    });
+    stageArea.appendChild(makeChoiceButtons(opts));
+  }
+
+  function spawnEnemy(template){
+    const lvl = (state.cycle-1)*state.roomsPerCycle + state.room;
+    const scaled = template.scale(lvl);
+    state.enemy = {
+      name: template.name,
+      maxHp: scaled.maxHp, hp: scaled.maxHp,
+      atk: scaled.atk, def: scaled.def, spd: scaled.spd, crit: scaled.crit||10,
+      type: template.id, turn:0, boss:false
+    };
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); }
+    startFight();
+  }
+
+  function spawnBoss(){
+    const lvl = state.bossesDefeated+1;
+    const b = bossStats(lvl);
+    state.enemy = { name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, special:b.special };
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); }
+    state.phase='boss';
+    startFight(true);
+  }
+
+  function spawnFinalBoss(){
+    const b = finalBoss();
+    state.enemy = { name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, final:true, special:b.special };
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); }
+    state.phase='final';
+    startFight(true);
+  }
+
+  function startFight(isBoss){
+    setStage(`${isBoss? (state.enemy.final?'Final Boss':'Boss') : state.enemy.name} — Fight!`, isBoss?(state.enemy.special||'A dangerous foe'):state.enemy.name);
+    renderFightUI();
+    log(`<b>${isBoss? (state.enemy.final?'Final Boss':'Boss'):state.enemy.name} appears!</b>`);
+  }
+
+  function renderFightUI(){
+    stageArea.innerHTML='';
+    const enemy = state.enemy;
+    const enemyCard = el('div',{class:'panel'},[
+      el('div',{class:'title'},[
+        el('h2',{text: enemy.name}),
+        el('span',{class:'tag',text:`HP ${enemy.hp} / ${enemy.maxHp}`})
+      ]),
+      el('div',{class:'bar'},[ el('i',{style:`width:${Math.round(100*enemy.hp/enemy.maxHp)}%`}) ]),
+      el('div',{class:'small',text: enemy.boss? (enemy.special||''): `Type: ${enemy.type} | ATK ${enemy.atk} DEF ${enemy.def} SPD ${enemy.spd}`})
+    ]);
+    const actions = el('div',{class:'choice'});
+    const atkBtn = el('button',{class:'btn primary', text:'Attack (basic)'},
+      );
+    atkBtn.addEventListener('click',()=> playerTurnBasic());
+    const defendBtn = el('button',{class:'btn', text:'Defend (+50% DEF this turn)'},
+      );
+    defendBtn.addEventListener('click',()=> playerDefend());
+    const row = el('div',{class:'row'},[atkBtn, defendBtn]);
+    actions.appendChild(row);
+
+    stageArea.appendChild(enemyCard);
+    stageArea.appendChild(actions);
+    renderAbilities(); // enable ability buttons for fight phase
+  }
+
+  function playerTurnBasic(extra=false){
+    if(state.lock) return;
+    actionLock(true);
+    const ctx = {player:state.player, enemy:state.enemy};
+    // apply temp buffs from abilities (one-turn)
+    let atkValue = state.player.atk + (state.tempAtkBoost||0);
+    if(state.player.cycleDmg) atkValue *= (1 + state.player.cycleDmg);
+    const dmg = calcDamage(atkValue, state.enemy.def, state.player.crit);
+    state.enemy.hp = Math.max(0, state.enemy.hp - dmg);
+    log(`You strike for ${dmg} damage.`);
+    state.tempAtkBoost=0;
+
+    setTimeout(()=>{
+      if(checkEnd()) { actionLock(false); return; }
+      enemyAct().then(()=>{ actionLock(false); });
+    }, 280);
+  }
+
+  function playerDefend(){
+    if(state.lock) return;
+    actionLock(true);
+    const savedDef = state.player.def;
+    state.player.def = Math.floor(state.player.def*1.5) + 4;
+    log(`You brace yourself, boosting DEF this turn.`);
+    setTimeout(()=>{
+      enemyAct().then(()=>{
+        state.player.def = savedDef;
+        log(`Your defensive stance ends.`);
+        actionLock(false);
+      });
+    }, 220);
+  }
+
+  function useAbility(abil){
+    if(state.lock || (state.player.cooldowns[abil.id]||0)>0) return;
+    actionLock(true);
+    const ctx = {player:state.player, enemy:state.enemy};
+    abil.use(ctx);
+    state.player.cooldowns[abil.id] = abil.cd;
+    refreshHUD();
+    setTimeout(()=>{
+      if(ctx.extraTurn){
+        ctx.extraTurn=false;
+        // grant immediate extra turn (no enemy act)
+        actionLock(false);
+        renderFightUI();
+      } else {
+        if(checkEnd()){ actionLock(false); return; }
+        enemyAct().then(()=> actionLock(false));
+      }
+    },250);
+  }
+
+  async function enemyAct(){
+    const e = state.enemy; e.turn++;
+    // Boss specials on cadence
+    let multi = 1; let modAtk = e.atk; let note='';
+    if(e.boss && !e.final && e.turn%3===0){
+      if((state.bossesDefeated+1)%2===1){ modAtk = Math.floor(e.atk*1.5); note='(Crushing Blow)'; }
+      else { multi=2; note='(Arcane Barrage)'; }
+    }
+    if(e.final && e.turn%4===0){
+      // Devour
+      const steal = Math.floor(state.player.maxHp*0.10);
+      applyIncomingDamage(steal);
+      e.hp = Math.min(e.maxHp, e.hp + Math.floor(steal*0.5));
+      log(`<span class="k">Devour</span> steals ${steal} HP and heals the boss.`);
+      if(state.player.hp<=0){ refreshHUD(); checkEnd(); return; }
+    }
+
+    for(let i=0;i<multi;i++){
+      const dmg = calcDamage(modAtk, state.player.def, e.crit||10);
+      const taken = applyIncomingDamage(dmg);
+      log(`${e.name} hits you for ${taken} ${note}`);
+      if(state.player.hp<=0) break;
+    }
+
+    endTurnTick();
+    refreshHUD();
+    checkEnd();
+  }
+
+  function checkEnd(){
+    const p=state.player, e=state.enemy;
+    if(p.hp<=0){
+      setStage('Defeat','Try again?');
+      stageArea.appendChild(makeChoiceButtons([
+        {label:'Restart', class:'danger', onClick:()=>startGame()}
+      ]));
+      log(`<b>You were defeated.</b>`);
+      state.phase='end';
+      return true;
+    }
+    if(e.hp<=0){
+      log(`<b>${e.name} is defeated!</b>`);
+      p.xp += e.boss ? 40 : 15;
+      // after a fight:
+      if(e.boss){
+        if(e.final){
+          setStage('Victory!','You defeated the Final Boss!');
+          stageArea.appendChild(makeChoiceButtons([
+            {label:'Play Again', class:'primary', onClick:()=>startGame()}
+          ]));
+          state.phase='end';
+          return true;
+        } else {
+          state.bossesDefeated++;
+          // choose an ability (3 random unique)
+          showAbilityRewards();
+        }
+      } else {
+        // choose a buff (3 random unique)
+        showBuffRewards();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function showBuffRewards(){
+    state.phase='buffs';
+    setStage('Choose a Buff','Pick 1 of 3');
+    const picks = pickUnique(BUFFS,3);
+    const buttons = picks.map((b,i)=>({
+      label: b.name,
+      class: (i===0?'primary': i===1?'warn':'' ),
+      onClick: ()=> {
+        b.apply();
+        refreshHUD();
+        // advance room/boss logic
+        if(state.room>=state.roomsPerCycle){
+          // boss time
+          if(state.bossesDefeated>=state.finalBossesNeeded){
+            spawnFinalBoss();
+          } else {
+            setTimeout(spawnBoss, 50);
+          }
+          state.room=1;
+          state.cycle++;
+        } else {
+          state.room++;
+          setTimeout(showEnemyChoice, 50);
+        }
+      }
+    }));
+    stageArea.appendChild(makeChoiceButtons(buttons));
+  }
+
+  function showAbilityRewards(){
+    state.phase='ability-reward';
+    setStage('Choose a New Ability','Granted by the boss (pick 1)');
+    const pool = ABILITIES.filter(a => !state.player.abilities.find(x=>x.id===a.id));
+    const picks = pickUnique(pool.length>=3?pool:ABILITIES,3);
+    const buttons = picks.map((a,i)=>({
+      label: `${a.name} — ${a.desc}`,
+      class: (i===0?'primary': i===1?'warn':'' ),
+      onClick: ()=> {
+        state.player.abilities.push(a);
+        state.player.cooldowns[a.id]=0;
+        refreshHUD();
+        // next cycle start
+        if(state.bossesDefeated>=state.finalBossesNeeded){
+          spawnFinalBoss();
+        } else {
+          showEnemyChoice();
+        }
+      }
+    }));
+    stageArea.appendChild(makeChoiceButtons(buttons));
+  }
+
+  function pickUnique(arr, n){
+    const copy=[...arr]; const out=[];
+    while(copy.length && out.length<n){
+      const i = rng(0, copy.length-1);
+      out.push(copy.splice(i,1)[0]);
+    }
+    return out;
+  }
+
+  function actionLock(v){
+    state.lock = v;
+    // disable buttons in stage
+    stageArea.querySelectorAll('button').forEach(b=> b.disabled = v || b.textContent.startsWith('Cooldown'));
+    renderAbilities(); // refresh disabled state
+  }
+
+  // Keyboard tips to avoid stuck listeners between screens:
+  // (We reattach single-use listeners per choice render; actionLock gates clicks.)
+
+  // Start
+  startGame();
 })();
 </script>
 </body>
