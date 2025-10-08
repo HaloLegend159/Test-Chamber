@@ -1,57 +1,37 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Room-Boss Gauntlet — DS-Style Battles (Polished)</title>
-<meta name="color-scheme" content="dark light" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gauntlet — Strategic DS-Style</title>
+<meta name="color-scheme" content="dark light"/>
 <style>
-  :root{
-    --bg:#0b1020; --panel:#0f172a; --ink:#e6edf7; --muted:#9fb3c8; --accent:#6ee7b7; --danger:#fca5a5; --warn:#fde68a; --border:#1f2a44;
-    --radius:16px; --gap:14px; --shadow:0 8px 30px rgba(0,0,0,.45);
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0; background:linear-gradient(180deg,var(--bg),#0b132b); color:var(--ink); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
+  :root{--bg:#0b1020;--panel:#0f172a;--ink:#e6edf7;--muted:#9fb3c8;--accent:#6ee7b7;--danger:#fca5a5;--warn:#fde68a;--border:#1f2a44;--radius:16px;--gap:14px;--shadow:0 8px 30px rgba(0,0,0,.45);}
+  *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:linear-gradient(180deg,var(--bg),#0b132b);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
   .wrap{max-width:1200px;margin:0 auto;padding:18px}
-
-  /* BIG, CENTERED STAGE */
-  .stagePanel{background:rgba(15,23,42,.9); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:14px}
-  .stageHead{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px}
-  .title{display:flex; gap:12px; align-items:baseline}
-  .title h2{margin:0;font-size:20px}
-  .tag{font-size:12px;color:var(--muted)}
-  .stageWrap{position:relative; background:#08112a; border:1px solid #13254a; border-radius:12px; overflow:hidden; max-width:1100px; margin:0 auto}
-  .stageHUD{display:flex; justify-content:space-between; gap:8px; padding:10px 10px 0}
-  .stageHUD .mini{flex:1; display:flex; align-items:center; gap:8px}
-  .bar{height:10px;background:#11203e;border-radius:999px;overflow:hidden;border:1px solid #1b2b4c}
-  .bar > i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#34d399); transition:width .25s ease}
-  canvas{width:100%; height:auto; display:block; image-rendering:crisp-edges; image-rendering:pixelated}
-
-  /* Difficulty buttons */
-  .modes{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-  .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;border:1px solid var(--border); background:#111b34; color:#e6edf7;
-       padding:10px 12px; border-radius:12px; cursor:pointer; user-select:none; transition:.15s transform,.15s background,.15s border-color}
-  .btn:hover{transform:translateY(-1px); background:#0f1a33}
-  .btn.on{outline:2px solid #2e8b57;}
-  .btn.tiny{padding:6px 10px; font-size:12px}
-  .btn.primary{border-color:#214b3f;background:#0f2b24}
-  .btn.warn{border-color:#4b3f21;background:#2b210f}
-
-  /* Lower HUD (stats + actions) */
-  .hud{display:grid; gap:var(--gap); grid-template-columns:1fr 1fr}
-  .panel{background:rgba(15,23,42,.86); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px}
-  .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .row{display:flex; gap:10px; flex-wrap:wrap}
-  .choice{display:grid; gap:10px}
-  .ability{display:flex; flex-direction:column; gap:6px; padding:10px; border:1px dashed #2a3b60; border-radius:10px; background:#0a162f}
-  .pill{display:inline-flex;align-items:center;gap:6px; padding:3px 8px; border-radius:999px; border:1px solid #234; background:#0e1c34; color:#a7bed4; font-size:12px}
-  .k{color:#a7ffcb}
-  .small{font-size:12px;color:var(--muted)}
-  .log{height:220px; overflow:auto; background:#0b152c; border:1px solid #122345; border-radius:12px; padding:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-  .log p{margin:0 0 6px; color:#c6d4e2}
-  .footer{margin-top:14px; color:var(--muted); font-size:12px}
-  @media (max-width:1000px){ .hud{grid-template-columns:1fr} }
+  .stagePanel{background:rgba(15,23,42,.9);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+  .stageHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .title{display:flex;gap:12px;align-items:baseline}.title h2{margin:0;font-size:20px}.tag{font-size:12px;color:var(--muted)}
+  .stageWrap{position:relative;background:#08112a;border:1px solid #13254a;border-radius:12px;overflow:hidden;max-width:1100px;margin:0 auto}
+  .stageHUD{display:flex;justify-content:space-between;gap:8px;padding:10px 10px 0}
+  .stageHUD .mini{flex:1;display:flex;align-items:center;gap:8px}.bar{height:10px;background:#11203e;border-radius:999px;overflow:hidden;border:1px solid #1b2b4c}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#34d399);transition:width .25s ease}
+  canvas{width:100%;height:auto;display:block;image-rendering:crisp-edges;image-rendering:pixelated}
+  .modes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;border:1px solid var(--border);background:#111b34;color:#e6edf7;padding:10px 12px;border-radius:12px;cursor:pointer;user-select:none;transition:.15s transform,.15s background,.15s border-color}
+  .btn:hover{transform:translateY(-1px);background:#0f1a33}.btn.on{outline:2px solid #2e8b57}.btn.tiny{padding:6px 10px;font-size:12px}
+  .btn.primary{border-color:#214b3f;background:#0f2b24}.btn.warn{border-color:#4b3f21;background:#2b210f}.btn.danger{border-color:#4b2121;background:#2b0f0f}
+  .hud{display:grid;gap:var(--gap);grid-template-columns:1fr 1fr}
+  .panel{background:rgba(15,23,42,.86);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.row{display:flex;gap:10px;flex-wrap:wrap}.choice{display:grid;gap:10px}
+  .ability{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px dashed #2a3b60;border-radius:10px;background:#0a162f}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;border:1px solid #234;background:#0e1c34;color:#a7bed4;font-size:12px}
+  .k{color:#a7ffcb}.small{font-size:12px;color:var(--muted)}
+  .log{height:240px;overflow:auto;background:#0b152c;border:1px solid #122345;border-radius:12px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .log p{margin:0 0 6px;color:#c6d4e2}
+  .badge{display:inline-flex;gap:4px;align-items:center;padding:2px 6px;border-radius:999px;border:1px solid #2b3d64;background:#0c1a36;font-size:11px;color:#9fb3ff}
+  .section{display:grid;gap:8px}
+  @media (max-width:1000px){.hud{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -66,8 +46,8 @@
       </div>
       <div class="modes">
         <span class="tag">Difficulty:</span>
-        <button class="btn tiny" data-diff="Easy" id="modeEasy">Easy</button>
-        <button class="btn tiny on" data-diff="Normal" id="modeNormal">Normal</button>
+        <button class="btn tiny on" data-diff="Easy" id="modeEasy">Easy</button>
+        <button class="btn tiny" data-diff="Normal" id="modeNormal">Normal</button>
         <button class="btn tiny" data-diff="Hard" id="modeHard">Hard</button>
       </div>
     </div>
@@ -83,12 +63,11 @@
           <div class="bar"><i id="ebarStage" style="width:100%"></i></div>
         </div>
       </div>
-      <!-- Bigger canvas (16:9) -->
       <canvas id="stage" width="960" height="540"></canvas>
     </div>
 
     <div class="sp" style="height:10px"></div>
-    <div id="stageArea" class="grid"></div>
+    <div id="stageArea" class="section"></div>
   </section>
 
   <!-- LOWER HUD -->
@@ -103,140 +82,162 @@
         </div>
       </div>
       <div class="stats">
-        <div>
-          <div>HP: <b id="php">100 / 100</b></div>
-          <div class="bar"><i id="phpbar" style="width:100%"></i></div>
-        </div>
-        <div>
-          <div>XP: <b id="xp">0</b></div>
-          <div class="bar"><i id="xpbar" style="width:0%"></i></div>
-        </div>
+        <div><div>HP: <b id="php">100 / 100</b></div><div class="bar"><i id="phpbar" style="width:100%"></i></div></div>
+        <div><div>XP: <b id="xp">0</b></div><div class="bar"><i id="xpbar" style="width:0%"></i></div></div>
         <div>ATK: <b id="atk">10</b></div>
         <div>DEF: <b id="def">3</b></div>
         <div>CRIT: <b id="crit">10%</b></div>
         <div>SPD: <b id="spd">10</b></div>
       </div>
-      <div class="sp" style="height:10px"></div>
+      <div class="sp" style="height:8px"></div>
+      <div class="row">
+        <span class="badge">Stance: <b id="stanceTxt">Balanced</b></span>
+        <span class="badge">Energy: <b id="energyTxt">3/3</b></span>
+        <span class="badge">Combo: <b id="comboTxt">0%</b></span>
+        <span class="badge">Items — Tonic: <b id="tonicTxt">2</b>, Bomb: <b id="bombTxt">1</b>, Smoke: <b id="smokeTxt">1</b></span>
+      </div>
+      <div class="sp" style="height:8px"></div>
       <div class="row" id="abilitiesRow"></div>
-      <div class="small">Tip: Use keys <b>1/2/3</b> to pick choices. Abilities show cooldowns.</div>
+      <div class="small">Tip: hover buttons for costs/effects • Intent icon shows the enemy’s next move • Reduce <b>Poise</b> to Stagger and <b>Interrupt</b> charged attacks.</div>
     </section>
 
     <section class="panel">
       <div class="title"><h2>Battle Log</h2><span class="tag">What just happened</span></div>
       <div class="log" id="log"></div>
-      <div class="footer">© Your mini roguelite loop | No data leaves your browser.</div>
     </section>
   </div>
 </div>
 
 <script>
 (() => {
-  // ========= Utilities =========
+  // ===== Quick DOM helpers =====
   const $ = s => document.querySelector(s);
   const el = (t,p={},c=[]) => { const n=document.createElement(t);
-    Object.entries(p).forEach(([k,v])=>{ if(k==='class') n.className=v; else if(k==='text') n.textContent=v; else if(k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v); else n.setAttribute(k,v); });
-    c.forEach(ch=>n.appendChild(ch)); return n; };
-  const rng = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+    Object.entries(p).forEach(([k,v])=>{
+      if(k==='class') n.className=v; else if(k==='text') n.textContent=v;
+      else if(k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v); else n.setAttribute(k,v);
+    }); c.forEach(ch=>n.appendChild(ch)); return n;};
+  const rng=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
-  const ease=(t)=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 
-  // ========= DOM refs =========
-  const stageCanvas = $('#stage'); const ctx = stageCanvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  const stageTitle = $('#stageTitle'), stageTag=$('#stageTag'), stageArea=$('#stageArea');
-  const php=$('#php'), phpbar=$('#phpbar'), xp=$('#xp'), xpbar=$('#xpbar');
-  const atk=$('#atk'), def=$('#def'), crit=$('#crit'), spd=$('#spd');
-  const cycleEl=$('#cycle'), roomEl=$('#room'), bossesEl=$('#bosses');
-  const abilitiesRow=$('#abilitiesRow'); const logBox=$('#log');
+  // ===== Refs =====
+  const canvas=$('#stage'), ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
+  const stageTitle=$('#stageTitle'), stageTag=$('#stageTag'), stageArea=$('#stageArea');
+  const php=$('#php'),phpbar=$('#phpbar'),xp=$('#xp'),xpbar=$('#xpbar'),atk=$('#atk'),def=$('#def'),crit=$('#crit'),spd=$('#spd');
   const pbarStage=$('#pbarStage'), ebarStage=$('#ebarStage'), enemyMiniName=$('#enemyMiniName');
-
-  // ========= Difficulty & Assist =========
-  const DIFF = {
-    Easy:   { eHP:0.90, eATK:0.85, eDEF:0.90, playerDR:0.20, healClear:0.35, finisher:0.15, bossEvery:4, finalPct:0.08, finalEvery:5, cdMinus:1 },
-    Normal: { eHP:1.00, eATK:1.00, eDEF:1.00, playerDR:0.12, healClear:0.30, finisher:0.12, bossEvery:3, finalPct:0.10, finalEvery:4, cdMinus:0 },
-    Hard:   { eHP:1.12, eATK:1.12, eDEF:1.05, playerDR:0.05, healClear:0.20, finisher:0.08, bossEvery:3, finalPct:0.11, finalEvery:4, cdMinus:0 }
-  };
-
-  // ========= Game State =========
-  const state = {
-    difficulty:'Easy', // default to Easy so runs are beatable
-    cycle:1, room:1, bossesDefeated:0, finalBossesNeeded:3, roomsPerCycle:3,
-    player:{maxHp:120,hp:120,atk:11,def:4,crit:12,spd:10,xp:0,abilities:[],cooldowns:{},
-            shield:0,shieldTurns:null,nextShield:0,cycleDmg:0.05,cyleDR:0,globalDR:DIFF.Easy.playerDR, secondWindUsed:false},
-    enemy:null, phase:'choose-enemy', lock:false,
-    animQ:[], frame:0, t:0, shake:0, backdrop:'room'
-  };
-
-  // Difficulty UI
+  const cycleEl=$('#cycle'),roomEl=$('#room'),bossesEl=$('#bosses');
+  const stanceTxt=$('#stanceTxt'),energyTxt=$('#energyTxt'),comboTxt=$('#comboTxt');
+  const tonicTxt=$('#tonicTxt'),bombTxt=$('#bombTxt'),smokeTxt=$('#smokeTxt');
+  const logBox=$('#log');
   const modeBtns=[$('#modeEasy'),$('#modeNormal'),$('#modeHard')];
+
+  // ===== Difficulty =====
+  const DIFF={
+    Easy:{eHP:.95,eATK:.88,eDEF:.95,playerDR:.18,healClear:.35,finisher:.15,bossEvery:4,finalPct:.08,finalEvery:5,cdMinus:1,energyRegen:1},
+    Normal:{eHP:1,eATK:1,eDEF:1,playerDR:.12,healClear:.30,finisher:.12,bossEvery:3,finalPct:.10,finalEvery:4,cdMinus:0,energyRegen:1},
+    Hard:{eHP:1.12,eATK:1.12,eDEF:1.05,playerDR:.05,healClear:.20,finisher:.08,bossEvery:3,finalPct:.11,finalEvery:4,cdMinus:0,energyRegen:1}
+  };
+
+  // ===== State =====
+  const state={
+    difficulty:'Easy',
+    cycle:1, room:1, bossesDefeated:0, finalBossesNeeded:3, roomsPerCycle:3,
+    player:{
+      maxHp:120,hp:120,atk:11,def:4,crit:12,spd:10,xp:0,
+      stance:'Balanced', energy:3, maxEnergy:3, combo:0,
+      abilities:[], cooldowns:{}, shield:0, shieldTurns:null, nextShield:0,
+      cycleDmg:0.05,cyleDR:0, globalDR:DIFF.Easy.playerDR, secondWindUsed:false,
+      statuses:{}, // {burn:{stacks,dur}, shock:...}
+      items:{tonic:2,bomb:1,smoke:1}
+    },
+    enemy:null, phase:'choose-enemy', lock:false,
+    animQ:[], frame:0, t:0, shake:0, backdrop:'room',
+  };
+
+  // ===== Modes UI =====
   modeBtns.forEach(btn=>{
     btn.addEventListener('click',()=>{
-      modeBtns.forEach(b=>b.classList.remove('on'));
-      btn.classList.add('on');
+      modeBtns.forEach(b=>b.classList.remove('on')); btn.classList.add('on');
       setDifficulty(btn.dataset.diff);
     });
   });
   function setDifficulty(name){
     state.difficulty=name;
-    const cfg=DIFF[name];
-    state.player.globalDR=cfg.playerDR;
-    log(`<b>Difficulty:</b> ${name}`);
-    // Soft reset run to apply cleanly
+    state.player.globalDR=DIFF[name].playerDR;
+    log(`<b>Difficulty set:</b> ${name}`);
     startGame();
   }
 
-  // ========= COOL FIGHT PACK (VFX) =========
-  const rand=(min,max)=>Math.random()*(max-min)+min;
-  const clamp01=v=>Math.max(0,Math.min(1,v));
-  const VFX={particles:[],trails:[],pops:[],hitstop:0,starSeed:Math.random()*1000};
-  class Particle{constructor(x,y,o={}){this.x=x;this.y=y;this.vx=o.vx??rand(-1,1);this.vy=o.vy??rand(-2,-.5);this.g=o.g??0.18;this.life=o.life??400;this.age=0;this.size=o.size??rand(2,4);this.color=o.color??'rgba(255,255,255,.9)';this.spin=o.spin??rand(-.2,.2);this.shape=o.shape??'square';this.friction=o.friction??.98;this.fade=o.fade??true;this.light=o.light??0;}step(dt){this.age+=dt;this.vx*=this.friction;this.vy*=this.friction;this.vy+=this.g*(dt/16.67);this.x+=this.vx*(dt/16.67);this.y+=this.vy*(dt/16.67);}draw(c){const t=clamp01(1-this.age/this.life);c.save();if(this.light>0){c.globalCompositeOperation='lighter';}c.globalAlpha=this.fade?t:1;c.translate(this.x,this.y);c.rotate(this.spin*this.age/120);c.fillStyle=this.color;if(this.shape==='circle'){c.beginPath();c.arc(0,0,this.size,0,Math.PI*2);c.fill();}else{c.fillRect(-this.size/2,-this.size/2,this.size,this.size);}c.restore();}get dead(){return this.age>=this.life;}}
-  class Trail{constructor(points,life=200,width=10,color='rgba(255,255,255,.8)'){this.points=[...points];this.life=life;this.age=0;this.width=width;this.color=color;}step(dt){this.age+=dt;}draw(c){const t=clamp01(1-this.age/this.life);if(this.points.length<2)return;c.save();c.globalAlpha=t;c.strokeStyle=this.color;c.lineWidth=this.width*t;c.beginPath();c.moveTo(this.points[0].x,this.points[0].y);for(let i=1;i<this.points.length;i++)c.lineTo(this.points[i].x,this.points[i].y);c.stroke();c.restore();}get dead(){return this.age>=this.life;}}
-  function popText(text,x,y,o={}){VFX.pops.push({text,x,y,age:0,life:o.life??800,color:o.color??'#e6f0ff',vy:o.vy??-0.2,curve:o.curve??0.001,size:o.size??24,glow:o.glow??false});}
-  function addShake(p){state.shake=Math.max(state.shake||0,p);}
-  function hitStop(ms=90){VFX.hitstop=Math.max(VFX.hitstop,ms);}
-  function drawParallax(c,w,h,t){c.save();c.globalAlpha=.25;c.fillStyle='#0b1430';c.fillRect(0,0,w,h);const n=80,sway=Math.sin(t*.0004)*8+(state.shake||0)*.3;c.fillStyle='rgba(160,190,255,.15)';for(let i=0;i<n;i++){const sx=(i*97.7+VFX.starSeed*100+t*.02)%w;const sy=(i*53.9+VFX.starSeed*50+Math.sin(i+t*.001)*30+sway)%h;c.fillRect(sx,sy,2,2);}const g=c.createLinearGradient(0,h-120,0,h);g.addColorStop(0,'rgba(60,100,200,.08)');g.addColorStop(1,'rgba(20,40,90,.18)');c.fillStyle=g;c.fillRect(0,h-140,w,160);c.restore();}
-  function vfxStepAndDraw(c,dt){let eff=dt;if(VFX.hitstop>0){VFX.hitstop-=dt;eff=0.0001;}for(const p of VFX.particles)p.step(eff);VFX.particles=VFX.particles.filter(p=>!p.dead);for(const t of VFX.trails)t.step(eff);VFX.trails=VFX.trails.filter(t=>!t.dead);for(const f of VFX.pops){f.age+=dt;f.y+=f.vy*dt;f.vy-=f.curve*dt;}VFX.pops=VFX.pops.filter(f=>f.age<f.life);}
-  function vfxDrawOverlays(c){for(const p of VFX.particles)p.draw(c);for(const t of VFX.trails)t.draw(c);for(const f of VFX.pops){const a=Math.max(0,Math.min(1,1-f.age/f.life));c.save();if(f.glow)c.globalCompositeOperation='lighter';c.globalAlpha=a;c.fillStyle=f.color;c.font=`bold ${f.size}px system-ui, Segoe UI, Roboto`;c.textAlign='center';c.fillText(f.text,f.x,f.y);c.restore();}}
+  // ===== Content =====
+  const ENEMY_TYPES=[
+    { id:'swarmer', name:'Swarmer', desc:'Fast, low HP, light hits.',
+      scale:l=>({maxHp:50+l*10, atk:7+l*1.6, def:2+Math.floor(l*0.5), spd:14+Math.floor(l*0.6)})},
+    { id:'brute', name:'Brute', desc:'Slow, high HP, heavy hits.',
+      scale:l=>({maxHp:110+l*16, atk:12+l*3.4, def:5+Math.floor(l*1.0), spd:7+Math.floor(l*0.3)})},
+    { id:'mage', name:'Arcanist', desc:'Glass cannon, crit happy.',
+      scale:l=>({maxHp:70+l*12, atk:14+l*3.2, def:3+Math.floor(l*0.7), spd:10+Math.floor(l*0.5), crit:18+Math.floor(l*1.2)})},
+  ];
+  function bossStats(l){return {name:`Boss ${l}`,maxHp:220+l*60,atk:18+l*5,def:6+Math.floor(l*1.2),spd:10+l,crit:15+l*2,special:l%2?'Crushing Blow (+50% ATK)':'Arcane Barrage (2x hits)'};}
+  function finalBoss(){return {name:'FINAL BOSS — The Shard Eater',maxHp:720,atk:32,def:11,spd:14,crit:20,special:'Devour: steals HP periodically'};}
 
-  // ========= Content =========
-  const ABILITIES = [
-    {id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK damage twice.', cd:3, use:(c)=>{
-      enqueueSlash(1); const r1=dealDamage(c.player.atk*0.8, c.enemy.def, c.player.crit); c.enemy.hp=Math.max(0,c.enemy.hp-r1.dmg); floatNum(c.enemy,-r1.dmg);
-      enqueueSlash(-1); const r2=dealDamage(c.player.atk*0.8, c.enemy.def, c.player.crit); c.enemy.hp=Math.max(0,c.enemy.hp-r2.dmg); floatNum(c.enemy,-r2.dmg);
-      addShake(10); hitStop(120); popText('Whirlwind!', EPOS.x, EPOS.y-100, {size:22, color:'#a7ffcb'});
-      log(`You spin into a <span class="k">Whirlwind</span> for ${r1.dmg + r2.dmg} total damage.`);
+  // Starting SKILLS (cost Energy, have CDs)
+  const STARTING_SKILLS=[
+    {id:'power_slash',name:'Power Slash',cost:1,cd:2,tip:'120% ATK, -25 Poise',use:(c)=>{
+      lunge('player',()=>{
+        let dmg = calcPlayerDamage(1.2);
+        if(c.enemy.staggered) dmg=Math.floor(dmg*1.5);
+        c.enemy.poise=Math.max(0,c.enemy.poise-25);
+        dealToEnemy(dmg,'Power Slash');
+      });
+    })},
+    {id:'firebrand',name:'Firebrand',cost:1,cd:3,tip:'90% ATK + Burn(3)',use:(c)=>{
+      lunge('player',()=>{
+        let dmg=calcPlayerDamage(0.9);
+        if(c.enemy.staggered) dmg=Math.floor(dmg*1.5);
+        applyStatus(c.enemy,'burn',1,3); dealToEnemy(dmg,'Firebrand'); log('Enemy is <span class="k">Burning</span>.');
+      });
+    })},
+    {id:'thunder_lash',name:'Thunder Lash',cost:1,cd:3,tip:'80% ATK + Shock(2) (Vulnerable)',use:(c)=>{
+      lunge('player',()=>{
+        let dmg=calcPlayerDamage(0.8);
+        applyStatus(c.enemy,'shock',1,2); dealToEnemy(dmg,'Thunder Lash'); log('Enemy is <span class="k">Shocked</span> (takes more dmg).');
+      });
+    })},
+    {id:'focus',name:'Focus',cost:0,cd:3,tip:'Gain +1 Energy, +10% crit (2)',use:(c)=>{
+      c.player.energy=Math.min(c.player.maxEnergy,c.player.energy+1); applyStatus(c.player,'critup',1,2);
+      rippleCenter(); log('You center yourself, restoring <b>Energy</b> and sharpening focus.');
+    })},
+    {id:'interrupt',name:'Interrupt',cost:2,cd:4,tip:'Light dmg; if enemy Charging or Poise ≤30, cancel and Stagger',use:(c)=>{
+      lunge('player',()=>{
+        const dmg=calcPlayerDamage(0.6,true); // true-ish small
+        c.enemy.hp=Math.max(0,c.enemy.hp-dmg); floatNum(c.enemy,-dmg);
+        if(c.enemy.intent?.kind==='charge' || c.enemy.poise<=30){ staggerEnemy(); log('<b>Interrupted!</b> Enemy staggered.'); }
+        updateEnemyHPInline();
+      });
+    })},
+  ];
+
+  // Boss abilities from your previous build (kept)
+  const BOSS_ABILITIES=[
+    {id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK twice.', cd:3, use:(c)=>{
+      enqueueSlash(1); let r1=calcPlayerDamage(0.8); dealToEnemy(r1,'Whirlwind (1)');
+      enqueueSlash(-1); let r2=calcPlayerDamage(0.8); dealToEnemy(r2,'Whirlwind (2)');
     }},
-    {id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% of max HP as a barrier for 3 turns.', cd:4, use:(c)=>{
-      const val=Math.floor(c.player.maxHp*0.3); c.player.shield=Math.max(c.player.shield||0,val); c.player.shieldTurns=3; shieldPulse('player');
-      for(let i=0;i<16;i++){ VFX.particles.push(new Particle(PPOS.x, PPOS.y-40, {vx:rand(-1.2,1.2), vy:rand(-2,-.2), g:0.12, life:rand(360,640), size:rand(2,3), color:'rgba(120,255,220,.8)', shape:'circle', light:1})); }
-      popText('Shielded', PPOS.x, PPOS.y-90, {color:'#6ee7b7', size:20}); log(`You conjure <span class="k">Arcane Shield</span>.`);
+    {id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% Max HP as barrier (3t).', cd:4, use:(c)=>{
+      const val=Math.floor(c.player.maxHp*0.3); c.player.shield=Math.max(c.player.shield||0,val); c.player.shieldTurns=3; shieldPulse('player'); log(`Shield absorbs ${val}.`);
     }},
-    {id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.', cd:5, use:(c)=>{ rippleCenter(); hitStop(180); c.extraTurn=true; popText('Extra Turn', PPOS.x, PPOS.y-110, {color:'#9fb3ff', size:22, glow:true}); }},
-    {id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.', cd:4, use:(c)=>{ c.tempAtkBoost=(c.tempAtkBoost||0)+c.player.atk; boltOverPlayer(); addShake(6); popText('Overcharge!', PPOS.x, PPOS.y-120, {color:'#ffd166', size:22, glow:true}); }},
-    {id:'vamp_bite', name:'Vampiric Bite', desc:'Deal 120% ATK and heal 50% of dmg.', cd:4, use:(c)=>{ fangsOnEnemy(); const r=dealDamage(c.player.atk*1.2, c.enemy.def, c.player.crit); c.enemy.hp=Math.max(0,c.enemy.hp-r.dmg); floatNum(c.enemy,-r.dmg); const heal=Math.floor(r.dmg*0.5); healPlayer(heal); floatNum('player',+heal); popText('Drain', EPOS.x, EPOS.y-110, {color:'#ff6b9a', size:20}); }}
+    {id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.', cd:5, use:(c)=>{ rippleCenter(); c.extraTurn=true; popText('Extra Turn', PPOS.x, PPOS.y-110,{color:'#9fb3ff',size:22,glow:true}); }},
+    {id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.', cd:4, use:(c)=>{ c.tempAtkBoost=(c.tempAtkBoost||0)+c.player.atk; boltOverPlayer(); popText('Overcharge!',PPOS.x,PPOS.y-120,{color:'#ffd166',size:22,glow:true}); }},
+    {id:'vamp_bite', name:'Vampiric Bite', desc:'120% ATK and heal 50% dealt.', cd:4, use:(c)=>{
+      fangsOnEnemy(); const r=calcPlayerDamage(1.2); dealToEnemy(r,'Vamp Bite'); const heal=Math.floor(r*0.5); healPlayer(heal); floatNum('player',+heal);
+    }}
   ];
 
-  const BUFFS = [
-    {id:'hp10', name:'+10% Max HP', apply:()=>{ const add=Math.floor(state.player.maxHp*0.10); state.player.maxHp+=add; state.player.hp+=add; }},
-    {id:'atk6', name:'+6 ATK', apply:()=>{ state.player.atk+=6; }},
-    {id:'def3', name:'+3 DEF', apply:()=>{ state.player.def+=3; }},
-    {id:'crit8', name:'+8% CRIT', apply:()=>{ state.player.crit=clamp(state.player.crit+8,0,100); }},
-    {id:'spd5', name:'+5 SPD', apply:()=>{ state.player.spd+=5; }},
-    {id:'heal25', name:'Heal 25% HP now', apply:()=>{ healPlayer(Math.floor(state.player.maxHp*0.25)); }},
-    {id:'barrier', name:'Start next fight with 15 Shield', apply:()=>{ state.player.nextShield=(state.player.nextShield||0)+15; }},
-    {id:'vigor', name:'+10% dmg this cycle', apply:()=>{ state.player.cycleDmg=(state.player.cycleDmg||0)+0.10; }},
-    {id:'guard', name:'-10% dmg taken this cycle', apply:()=>{ state.player.cycleDR=(state.player.cycleDR||0)+0.10; }},
-  ];
+  // ====== Enemy intent icons ======
+  const INTENT_ICON = { strike:'✦', barrage:'≋', charge:'⇧', buff:'✚', debuff:'↯' };
 
-  const ENEMY_TYPES = [
-    { id:'swarmer', name:'Swarmer', desc:'Fast, low HP, light hits.', scale:(lvl)=>({maxHp:50+lvl*10, atk:7+lvl*1.6, def:2+Math.floor(lvl*0.5), spd:14+Math.floor(lvl*0.6)})},
-    { id:'brute',   name:'Brute',   desc:'Slow, high HP, heavy hits.', scale:(lvl)=>({maxHp:110+lvl*16, atk:12+lvl*3.4, def:5+Math.floor(lvl*1.0), spd:7+Math.floor(lvl*0.3)})},
-    { id:'mage',    name:'Arcanist',desc:'Glass cannon, crit happy.', scale:(lvl)=>({maxHp:70+lvl*12, atk:14+lvl*3.2, def:3+Math.floor(lvl*0.7), spd:10+Math.floor(lvl*0.5), crit:20+Math.floor(lvl*1.3)})},
-  ];
-  function bossStats(lvl){ return {name:`Boss ${lvl}`, maxHp:220+lvl*60, atk:18+lvl*5, def:6+Math.floor(lvl*1.2), spd:10+lvl, crit:15+lvl*2, special:lvl%2?'Crushing Blow (+50% ATK)':'Arcane Barrage (2x hits)'}; }
-  function finalBoss(){ return {name:'FINAL BOSS — The Shard Eater', maxHp:720, atk:32, def:11, spd:14, crit:20, special:'Devour: steals HP periodically'}; }
-
-  // ========= Logging & HUD =========
+  // ===== Logging & HUD =====
   function log(html){ const p=el('p'); p.innerHTML=html; logBox.appendChild(p); logBox.scrollTop=logBox.scrollHeight; }
   function refreshHUD(){
     const p=state.player;
@@ -245,359 +246,505 @@
     atk.textContent=Math.round(p.atk); def.textContent=Math.round(p.def);
     crit.textContent=`${Math.round(p.crit)}%`; spd.textContent=Math.round(p.spd);
     cycleEl.textContent=state.cycle; roomEl.textContent=state.room; bossesEl.textContent=state.bossesDefeated;
+    stanceTxt.textContent=p.stance; energyTxt.textContent=`${p.energy}/${p.maxEnergy}`; comboTxt.textContent=`${p.combo}%`;
+    tonicTxt.textContent=p.items.tonic; bombTxt.textContent=p.items.bomb; smokeTxt.textContent=p.items.smoke;
     pbarStage.style.width=`${Math.round(100*p.hp/p.maxHp)}%`;
-    if(state.enemy){ ebarStage.style.width=`${Math.round(100*state.enemy.hp/state.enemy.maxHp)}%`; enemyMiniName.textContent=state.enemy.name; }
+    if(state.enemy){ ebarStage.style.width=`${Math.round(100*state.enemy.hp/state.enemy.maxHp)}%`; enemyMiniName.textContent = state.enemy.name + (state.enemy.intent? ` • ${INTENT_ICON[state.enemy.intent.kind]}`:'');}
     renderAbilities();
   }
-  function setStage(title, tag){ stageTitle.textContent=title; stageTag.textContent=tag; stageArea.innerHTML=''; }
-  function renderAbilities(){
-    abilitiesRow.innerHTML='';
-    const p=state.player;
-    if(!p.abilities.length){ abilitiesRow.appendChild(el('span',{class:'pill',text:'No abilities yet — defeat a boss!'})); return; }
-    p.abilities.forEach(abil=>{
-      const cdLeft=p.cooldowns[abil.id]||0;
-      const wrap=el('div',{class:'ability'});
-      wrap.appendChild(el('div',{text:abil.name}));
-      wrap.appendChild(el('div',{class:'small',text:abil.desc}));
-      const btn=el('button',{class:'btn primary',text:cdLeft?`Cooldown: ${cdLeft}`:'Use'});
-      btn.disabled=!!cdLeft||state.lock||state.phase!=='fight';
-      btn.addEventListener('click',()=>useAbility(abil));
-      wrap.appendChild(btn); abilitiesRow.appendChild(wrap);
-    });
-  }
 
-  // ========= Combat Math =========
-  function dealDamage(atk,def,critChance){
-    const base=Math.max(1,Math.floor(atk-def*0.55)); // slightly kinder base
-    const variance=rng(-2,2);
-    const isCrit=(rng(1,100)<=Math.round(critChance||0));
-    const dmg=Math.max(1,Math.floor((base+variance)*(isCrit?1.75:1)));
-    return {dmg,crit:isCrit};
+  // ===== Combat Math & Status =====
+  function calcPlayerDamage(mult=1, trueDmg=false){
+    const p=state.player, e=state.enemy;
+    let atk = p.atk + (state.tempAtkBoost||0);
+    // stance effects
+    if(p.stance==='Aggressive') atk = Math.floor(atk*1.3);
+    if(p.stance==='Defensive') atk = Math.floor(atk*0.8);
+    if(p.stance==='Arcane')    atk = Math.floor(atk*1.05);
+    // buffs/debuffs
+    if(hasStatus(p,'weaken')) atk=Math.floor(atk*0.8);
+    // multiplier
+    let base = Math.max(1, Math.floor(atk*mult - (trueDmg?0:e.def*0.55)));
+    // shock/expose on enemy amplify
+    let amp = 1;
+    if(hasStatus(e,'shock'))  amp+=0.15;
+    if(hasStatus(e,'expose')) amp+=0.15;
+    // crit
+    const critChance = (p.crit + (hasStatus(p,'critup')?10:0));
+    const isCrit = rng(1,100) <= critChance;
+    let dmg = Math.max(1, Math.floor(base * amp * (isCrit?1.75:1)));
+    // combo bonus (small)
+    dmg = Math.floor(dmg * (1 + p.combo/300)); // + up to ~33% at 100 combo
+    return dmg;
   }
-  function healPlayer(n){ const p=state.player; const before=p.hp; p.hp=clamp(p.hp+n,0,p.maxHp); log(`Healed ${p.hp-before} HP.`); }
+  function dealToEnemy(dmg, label='Hit'){
+    const e=state.enemy;
+    if(e.staggered) dmg=Math.floor(dmg*1.5);
+    e.hp=Math.max(0,e.hp-dmg); floatNum(e,-dmg); hitFlash('enemy'); slashArc(); addShake(dmg>20?7:4); updateEnemyHPInline();
+    state.player.combo = clamp(state.player.combo + 12, 0, 100);
+    log(`You use <span class="k">${label}</span> for ${dmg} dmg.`);
+  }
+  function dealDamageIncoming(atk,def,critChance){
+    const base=Math.max(1,Math.floor(atk-def*0.55));
+    const variance=rng(-2,2); const isCrit=(rng(1,100)<=Math.round(critChance||0));
+    return {dmg:Math.max(1,Math.floor((base+variance)*(isCrit?1.6:1))), crit:isCrit};
+  }
   function applyIncomingDamage(amount){
-    const p=state.player; const dr=(p.cycleDR||0) + (p.globalDR||0);
+    const p=state.player; const dr=(p.cycleDR||0) + (p.globalDR||0) + (p.stance==='Defensive'?0.10:0);
     let dmg=Math.floor(amount*(1-dr));
-    // SECOND WIND (once per cycle)
+    if(hasStatus(p,'smoke')){ dmg=Math.floor(dmg*0.5); }
     if(p.hp - dmg <= 0 && !p.secondWindUsed){
-      p.secondWindUsed=true;
-      p.hp=Math.floor(p.maxHp*0.35);
-      p.shield=(p.shield||0)+20; p.shieldTurns=2;
-      shieldPulse('player',0.8);
-      log(`<b>Second Wind!</b> You revive with shielding.`);
-      return 0;
+      p.secondWindUsed=true; p.hp=Math.floor(p.maxHp*0.35); p.shield=(p.shield||0)+20; p.shieldTurns=2; shieldPulse('player',0.8);
+      log(`<b>Second Wind!</b> You revive with shielding.`); return 0;
     }
-    if(p.shield>0){ const absorbed=Math.min(p.shield,dmg); p.shield-=absorbed; dmg-=absorbed; log(`Your shield absorbs ${absorbed} damage. (${p.shield||0} left)`); shieldPulse('player',0.6); }
+    if(p.shield>0){ const absorbed=Math.min(p.shield,dmg); p.shield-=absorbed; dmg-=absorbed; log(`Shield absorbs ${absorbed}. (${p.shield||0} left)`); shieldPulse('player',0.6); }
     p.hp=Math.max(0,p.hp-dmg); return dmg;
   }
-  function endTurnTick(){ const p=state.player; if(p.shieldTurns!=null){ p.shieldTurns--; if(p.shieldTurns<=0){ p.shield=0; p.shieldTurns=null; log(`Your Arcane Shield fades.`); } }
-    for(const k of Object.keys(p.cooldowns)){ if(p.cooldowns[k]>0) p.cooldowns[k]--; } }
 
-  // ========= Flow =========
+  function applyStatus(target,type,stacks,dur){
+    const s = target.statuses || (target.statuses={});
+    if(!s[type]) s[type]={stacks:0,dur:0};
+    s[type].stacks += stacks; s[type].dur = Math.max(s[type].dur||0, dur);
+  }
+  function hasStatus(target,type){ return target.statuses && target.statuses[type] && target.statuses[type].dur>0; }
+  function tickStatusesStart(target,isPlayer){
+    // e.g., weaken/expose timers could tick here if needed at start
+  }
+  function tickStatusesEnd(target,isPlayer){
+    const s=target.statuses||{}; for(const k of Object.keys(s)){
+      if(!s[k].dur) continue;
+      // DoTs at end of turn:
+      if(k==='burn'){ const dot=Math.floor((isPlayer?state.enemy.atk:state.player.atk)*0.3)+s[k].stacks*2; // scales lightly
+        if(isPlayer){ const taken=applyIncomingDamage(dot); floatNum('player',-taken); log(`You take ${taken} from <span class="k">Burn</span>.`);}
+        else { target.hp=Math.max(0,target.hp-dot); floatNum(target,-dot); log(`Enemy takes ${dot} from <span class="k">Burn</span>.`); }
+      }
+      if(k==='poison'){ const dot=2*s[k].stacks + 4; if(isPlayer){ state.player.hp=Math.max(0,state.player.hp-dot); floatNum('player',-dot); log(`Poison ticks for ${dot}.`);} else { target.hp=Math.max(0,target.hp-dot); floatNum(target,-dot); log(`Poison ticks for ${dot}.`);} }
+      s[k].dur--; if(s[k].dur<=0){ delete s[k]; }
+    }
+  }
+
+  // ===== Flow =====
   function startGame(){
     const cfg=DIFF[state.difficulty];
     state.cycle=1; state.room=1; state.bossesDefeated=0;
-    Object.assign(state.player,{maxHp:120,hp:120,atk:11,def:4,crit:12,spd:10,xp:0,abilities:[],cooldowns:{},shield:0,shieldTurns:null,nextShield:0,cycleDmg:0.05,cyleDR:0,globalDR:cfg.playerDR, secondWindUsed:false});
-    logBox.innerHTML=''; log(`<b>New Run (${state.difficulty})!</b> Heal on clear: ${Math.round(cfg.healClear*100)}%, Second Wind active.`);
+    Object.assign(state.player,{
+      maxHp:120,hp:120,atk:11,def:4,crit:12,spd:10,xp:0,stance:'Balanced',
+      energy:3,maxEnergy:3,combo:0,abilities:[],cooldowns:{},shield:0,shieldTurns:null,nextShield:0,
+      cycleDmg:0.05,cyleDR:0,globalDR:cfg.playerDR,secondWindUsed:false,
+      statuses:{},items:{tonic:2,bomb:1,smoke:1}
+    });
+    logBox.innerHTML=''; log(`<b>New Run (${state.difficulty})!</b>Use Skills (Energy), Stances, Items, Intents, and Stagger to win.`);
     showEnemyChoice(); refreshHUD(); spawnBackdrop('room');
   }
-  function showEnemyChoice(){ state.phase='choose-enemy'; setStage('Pick your next fight','Swarmer / Brute / Arcanist');
-    const opts = ENEMY_TYPES.map(t=>({label:`${t.name} — ${t.desc}`, onClick:()=>spawnEnemy(t)}));
-    stageArea.appendChild(makeChoiceButtons(opts)); }
-  function makeChoiceButtons(options){
-    const grid=el('div',{class:'choice'});
-    options.forEach((opt,i)=>{ const btn=el('button',{class:`btn ${i===0?'primary': i===1?'warn':''}`,text:opt.label}); btn.addEventListener('click',opt.onClick); grid.appendChild(btn);
-      const hk=(i+1).toString(); document.addEventListener('keydown',function handler(e){ if(state.lock) return; if(e.key===hk){ e.preventDefault(); btn.click(); } },{once:true}); });
-    return grid;
+
+  function showEnemyChoice(){
+    state.phase='choose-enemy'; setStage('Pick your next fight','Swarmer / Brute / Arcanist');
+    const opts=ENEMY_TYPES.map(t=>({label:`${t.name} — ${t.desc}`,onClick:()=>spawnEnemy(t)}));
+    stageArea.innerHTML=''; stageArea.appendChild(makeButtons(opts));
   }
 
-  function applyDiffToStats(s){
-    const cfg=DIFF[state.difficulty];
-    s.maxHp=Math.floor(s.maxHp*cfg.eHP); s.atk=Math.floor(s.atk*cfg.eATK); s.def=Math.floor(s.def*cfg.eDEF);
-    return s;
-  }
+  function applyDiff(s){ const cfg=DIFF[state.difficulty]; s.maxHp=Math.floor(s.maxHp*cfg.eHP); s.atk=Math.floor(s.atk*cfg.eATK); s.def=Math.floor(s.def*cfg.eDEF); return s; }
 
-  function spawnEnemy(template){
-    const lvl=(state.cycle-1)*state.roomsPerCycle+state.room;
-    const s=applyDiffToStats(template.scale(lvl));
-    state.enemy={name:template.name, maxHp:s.maxHp, hp:s.maxHp, atk:s.atk, def:s.def, spd:s.spd, crit:s.crit||10, type:template.id, turn:0, boss:false};
-    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; log(`You start with a carryover shield.`); shieldPulse('player',0.8); }
-    spawnBackdrop('room'); startFight();
+  function spawnEnemy(tmpl){
+    const lvl=(state.cycle-1)*state.roomsPerCycle+state.room; const s=applyDiff(tmpl.scale(lvl));
+    state.enemy={name:tmpl.name,maxHp:s.maxHp,hp:s.maxHp,atk:s.atk,def:s.def,spd:s.spd,crit:s.crit||10,type:tmpl.id,turn:0,boss:false,
+                 poise:100, staggered:false, statuses:{}, intent:null};
+    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; shieldPulse('player',0.8); log('Carryover shield.'); }
+    setEnemyIntent(); spawnBackdrop('room'); startFight();
   }
-  function spawnBoss(){ const cfg=DIFF[state.difficulty]; const lvl=state.bossesDefeated+1; const b=applyDiffToStats(bossStats(lvl));
-    state.enemy={name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, special:b.special, specialEvery:cfg.bossEvery};
-    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; shieldPulse('player',0.8); }
-    state.phase='boss'; spawnBackdrop('boss'); startFight(true);
+  function spawnBoss(){
+    const cfg=DIFF[state.difficulty]; const l=state.bossesDefeated+1; const b=applyDiff(bossStats(l));
+    state.enemy={name:b.name,maxHp:b.maxHp,hp:b.maxHp,atk:b.atk,def:b.def,spd:b.spd,crit:b.crit,turn:0,boss:true,final:false,
+                 poise:120, staggered:false, statuses:{}, intent:null, special:b.special, specialEvery:cfg.bossEvery};
+    setEnemyIntent(); state.phase='boss'; spawnBackdrop('boss'); startFight(true);
   }
-  function spawnFinalBoss(){ const cfg=DIFF[state.difficulty]; const b=applyDiffToStats(finalBoss());
-    state.enemy={name:b.name, maxHp:b.maxHp, hp:b.maxHp, atk:b.atk, def:b.def, spd:b.spd, crit:b.crit, turn:0, boss:true, final:true, special:b.special, finalPct:cfg.finalPct, specialEvery:cfg.finalEvery};
-    if(state.player.nextShield){ state.player.shield=(state.player.shield||0)+state.player.nextShield; state.player.shieldTurns=3; state.player.nextShield=0; shieldPulse('player',0.8); }
-    state.phase='final'; spawnBackdrop('boss'); startFight(true);
+  function spawnFinalBoss(){
+    const cfg=DIFF[state.difficulty]; const b=applyDiff(finalBoss());
+    state.enemy={name:b.name,maxHp:b.maxHp,hp:b.maxHp,atk:b.atk,def:b.def,spd:b.spd,crit:b.crit,turn:0,boss:true,final:true,
+                 poise:140, staggered:false, statuses:{}, intent:null, special:b.special, finalPct:cfg.finalPct, specialEvery:cfg.finalEvery};
+    setEnemyIntent(); state.phase='final'; spawnBackdrop('boss'); startFight(true);
   }
 
   function startFight(isBoss=false){
     setStage(`${isBoss? (state.enemy.final?'Final Boss':'Boss') : state.enemy.name} — Fight!`, isBoss?(state.enemy.special||''):state.enemy.name);
     renderFightUI(); log(`<b>${isBoss? (state.enemy.final?'Final Boss':'Boss'):state.enemy.name} appears!</b>`);
-    popText(state.enemy.final ? 'FINAL BOSS' : (isBoss?'BOSS':''), stageCanvas.width/2, 90, {size:38, color:'#9fb3ff', glow:true, life:1200});
+    popText(isBoss?(state.enemy.final?'FINAL BOSS':'BOSS'):'', canvas.width/2, 90, {size:38,color:'#9fb3ff',glow:true,life:1200});
     addShake(6);
   }
-  function renderFightUI(){
-    stageArea.innerHTML='';
-    const enemy=state.enemy;
-    const enemyCard=el('div',{class:'panel'},[
-      el('div',{class:'title'},[ el('h2',{text:enemy.name}), el('span',{class:'tag',text:`HP ${enemy.hp} / ${enemy.maxHp}`}) ]),
-      el('div',{class:'bar'},[ el('i',{id:'enemyHPInline',style:`width:${Math.round(100*enemy.hp/enemy.maxHp)}%`}) ]),
-      el('div',{class:'small',text:enemy.boss?(enemy.special||''):`Type: ${enemy.type} | ATK ${enemy.atk} DEF ${enemy.def} SPD ${enemy.spd}`})
-    ]);
-    const actions=el('div',{class:'choice'});
-    const atkBtn=el('button',{class:'btn primary',text:'Attack (basic)'}); atkBtn.addEventListener('click',()=>playerTurnBasic());
-    const defendBtn=el('button',{class:'btn',text:'Defend (+50% DEF this turn)'}); defendBtn.addEventListener('click',()=>playerDefend());
-    actions.appendChild(el('div',{class:'row'},[atkBtn,defendBtn]));
-    stageArea.appendChild(enemyCard); stageArea.appendChild(actions); renderAbilities();
+
+  function setEnemyIntent(){
+    const e=state.enemy; if(!e) return;
+    // Make a weighted pick depending on type
+    const roll=Math.random();
+    if(e.boss && roll<0.2) e.intent={kind:'charge',info:'Powering up'};
+    else if(roll<0.5) e.intent={kind:'strike',info:'Single strong hit'};
+    else if(roll<0.75) e.intent={kind:'barrage',info:'Multi-hit'};
+    else if(roll<0.875) e.intent={kind:'buff',info:'Self buff'};
+    else e.intent={kind:'debuff',info:'Weaken you'};
+    refreshHUD();
   }
 
-  // ========= Player/Enemy Actions =========
-  function playerTurnBasic(){
+  // ===== UI Rendering =====
+  function setStage(t,tag){ stageTitle.textContent=t; stageTag.textContent=tag; stageArea.innerHTML=''; }
+
+  function renderFightUI(){
+    const e=state.enemy, p=state.player; stageArea.innerHTML='';
+    // Enemy card with Poise & Intent
+    const card=el('div',{class:'panel'},[
+      el('div',{class:'title'},[ el('h2',{text:e.name}), el('span',{class:'tag',text:`HP ${e.hp}/${e.maxHp} • Poise ${e.poise}`}) ]),
+      el('div',{class:'bar'},[el('i',{id:'enemyHPInline',style:`width:${Math.round(100*e.hp/e.maxHp)}%`})]),
+      el('div',{class:'small',text:e.boss?(e.special||''):`Type: ${e.type}`}),
+      el('div',{class:'row'},[ el('span',{class:'badge',text:`Intent: ${INTENT_ICON[e.intent?.kind||'strike']} ${e.intent?.info||''}`}) ])
+    ]);
+
+    // Core actions
+    const core=el('div',{class:'row'});
+    const strike=el('button',{class:'btn primary',text:'Strike'},[]); strike.title='Basic attack. Builds Combo.';
+    strike.onclick=()=>doStrike();
+    const guard=el('button',{class:'btn',text:'Guard'},[]); guard.title='Boost DEF for this turn.';
+    guard.onclick=()=>playerDefend();
+    const finisher=el('button',{class:'btn warn',text:`Finisher (${p.combo}% )`}); finisher.title='Spend 100 Combo for a huge hit & big Poise break.';
+    finisher.disabled=p.combo<100;
+    finisher.onclick=()=>useFinisher();
+    core.append(strike,guard,finisher);
+
+    // Skills bar (starting skills + boss abilities)
+    const skillsWrap=el('div',{class:'choice'});
+    const skillButtons=[];
+    (state.player.skills||STARTING_SKILLS).forEach(sk=>{
+      if(!state.player.skills) state.player.skills = STARTING_SKILLS; // one time init
+      const cd=state.player.cooldowns[sk.id]||0;
+      const b=el('button',{class:'btn',text: cd?`${sk.name} (CD:${cd})`:`${sk.name} [${sk.cost}]`});
+      b.title=`${sk.tip} • Cost: ${sk.cost} Energy`; b.disabled=!!cd || p.energy<sk.cost || state.lock;
+      b.onclick=()=>useSkill(sk);
+      skillButtons.push(b); skillsWrap.appendChild(b);
+    });
+
+    // Stance + Items
+    const stanceRow=el('div',{class:'row'});
+    const stanceBtn=el('button',{class:'btn',text:`Stance: ${p.stance}`});
+    stanceBtn.title='Cycle stances: Balanced / Aggressive (+ATK,-DEF) / Defensive (+DEF,-ATK) / Arcane (+crit, +Energy on hit)';
+    stanceBtn.onclick=cycleStance;
+    const tonic=el('button',{class:'btn',text:`Tonic (${p.items.tonic})`}); tonic.title='Heal 30% HP';
+    tonic.disabled=p.items.tonic<=0; tonic.onclick=()=>useItem('tonic');
+    const bomb=el('button',{class:'btn',text:`Bomb (${p.items.bomb})`}); bomb.title='Deal 35 true damage. Big Poise hit.';
+    bomb.disabled=p.items.bomb<=0; bomb.onclick=()=>useItem('bomb');
+    const smoke=el('button',{class:'btn',text:`Smoke (${p.items.smoke})`}); smoke.title='Halve next hit received (1 turn).';
+    smoke.disabled=p.items.smoke<=0; smoke.onclick=()=>useItem('smoke');
+    stanceRow.append(stanceBtn,tonic,bomb,smoke);
+
+    stageArea.append(card, core, skillsWrap, stanceRow);
+    renderAbilities();
+  }
+
+  function useSkill(sk){
+    if(state.lock) return; const p=state.player;
+    if((p.cooldowns[sk.id]||0)>0 || p.energy<sk.cost) return;
+    actionLock(true); p.energy-=sk.cost; sk.use({player:p,enemy:state.enemy});
+    p.cooldowns[sk.id]=(sk.cd - (DIFF[state.difficulty].cdMinus||0));
+    setTimeout(()=>{ if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }, 280);
+    refreshHUD();
+  }
+
+  function doStrike(){
     if(state.lock) return; actionLock(true);
-    let atkValue=state.player.atk+(state.tempAtkBoost||0); if(state.player.cycleDmg) atkValue*=(1+state.player.cycleDmg);
-    lunge('player', ()=> {
-      const r=dealDamage(atkValue, state.enemy.def, state.player.crit);
-      state.enemy.hp = Math.max(0, state.enemy.hp - r.dmg);
-      floatNum(state.enemy,-r.dmg); hitFlash('enemy'); slashArc();
-      addShake(r.dmg>20?7:4); hitStop(70);
-      state.tempAtkBoost=0;
-      updateEnemyHPInline();
+    lunge('player',()=>{
+      let dmg=calcPlayerDamage(1.0);
+      if(state.player.stance==='Arcane' && Math.random()<0.25) state.player.energy=Math.min(state.player.maxEnergy,state.player.energy+1);
+      dealToEnemy(dmg,'Strike');
       setTimeout(()=>{ if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }, 260);
     });
   }
+  function useFinisher(){
+    if(state.lock||state.player.combo<100) return; actionLock(true);
+    lunge('player',()=>{
+      const dmg=calcPlayerDamage(2.0,true)+20; state.enemy.poise=Math.max(0,state.enemy.poise-50); dealToEnemy(dmg,'FINISHER');
+      state.player.combo=0;
+      setTimeout(()=>{ if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }, 260);
+    });
+  }
+
   function playerDefend(){
     if(state.lock) return; actionLock(true);
     const saved=state.player.def; state.player.def=Math.floor(state.player.def*1.5)+4;
-    defendPose('player'); log(`You brace yourself, boosting DEF this turn.`);
-    setTimeout(()=>{ enemyAct().then(()=>{ state.player.def=saved; log(`Your defensive stance ends.`); actionLock(false); }); }, 220);
-  }
-  function useAbility(abil){
-    if(state.lock || (state.player.cooldowns[abil.id]||0)>0) return;
-    actionLock(true);
-    const ctxNow={player:state.player, enemy:state.enemy};
-    abil.use(ctxNow); state.player.cooldowns[abil.id]=abil.cd; refreshHUD();
-    setTimeout(()=>{
-      if(ctxNow.extraTurn){ ctxNow.extraTurn=false; actionLock(false); renderFightUI(); }
-      else { if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }
-    }, 280);
+    defendPose('player'); log(`You brace yourself (+DEF).`);
+    setTimeout(()=>{ enemyAct().then(()=>{ state.player.def=saved; log(`Stance relaxes.`); actionLock(false); }); }, 220);
   }
 
+  function cycleStance(){
+    const order=['Balanced','Aggressive','Defensive','Arcane'];
+    const i=order.indexOf(state.player.stance); state.player.stance=order[(i+1)%order.length];
+    popText(state.player.stance, PPOS.x, PPOS.y-110, {size:22,color:'#ffd166'});
+    refreshHUD();
+  }
+
+  function useItem(kind){
+    const p=state.player; if(p.items[kind]<=0) return;
+    if(kind==='tonic'){ p.items.tonic--; healPlayer(Math.floor(p.maxHp*0.3)); }
+    if(kind==='bomb'){ p.items.bomb--; const e=state.enemy; e.hp=Math.max(0,e.hp-35); e.poise=Math.max(0,e.poise-35); floatNum(e,-35); updateEnemyHPInline(); addShake(8); log('You throw a Bomb for 35 true damage.'); }
+    if(kind==='smoke'){ p.items.smoke--; applyStatus(p,'smoke',1,1); log('You are veiled by smoke (next hit halved).'); }
+    refreshHUD();
+  }
+
+  // ===== Enemy turn =====
   async function enemyAct(){
-    const e=state.enemy; e.turn++;
-    // Boss specials (less frequent on Easy)
-    let multi=1; let modAtk=e.atk;
+    const p=state.player, e=state.enemy; e.turn++;
+    // regen energy & tick statuses
+    p.energy = clamp(p.energy + DIFF[state.difficulty].energyRegen, 0, p.maxEnergy);
+    tickStatusesStart(p,true); tickStatusesStart(e,false);
+
+    // specials (bosses)
+    let multi=1; let atkMod=e.atk;
     if(e.boss && !e.final && e.turn % (e.specialEvery||DIFF[state.difficulty].bossEvery) === 0){
-      if((state.bossesDefeated+1)%2===1){ modAtk=Math.floor(e.atk*1.35); } else { multi=2; }
+      if((state.bossesDefeated+1)%2===1) atkMod=Math.floor(e.atk*1.3); else multi=2;
     }
     if(e.final && e.turn % (e.specialEvery||DIFF[state.difficulty].finalEvery) === 0){
-      tetherToBoss(); const pct=(e.finalPct||DIFF[state.difficulty].finalPct); const steal=Math.floor(state.player.maxHp*pct);
+      tetherToBoss(); const steal=Math.floor(state.player.maxHp*(e.finalPct||DIFF[state.difficulty].finalPct));
       applyIncomingDamage(steal); floatNum('player',-steal);
-      e.hp=Math.min(e.maxHp,e.hp+Math.floor(steal*0.4)); floatNum(state.enemy,'+'+Math.floor(steal*0.4));
-      log(`<span class="k">Devour</span> steals ${steal} HP and heals the boss.`); refreshHUD(); if(state.player.hp<=0){ checkEnd(); return; }
+      e.hp=Math.min(e.maxHp,e.hp+Math.floor(steal*0.4)); floatNum(e,'+'+Math.floor(steal*0.4));
+      log(`<span class="k">Devour</span> steals ${steal} HP and heals the boss.`);
+      refreshHUD(); if(p.hp<=0){ checkEnd(); return; }
     }
-    for(let i=0;i<multi;i++){
-      await new Promise(res=>{
-        lunge('enemy', ()=>{
-          const r=dealDamage(modAtk, state.player.def, e.crit||10);
-          const taken=applyIncomingDamage(r.dmg);
-          floatNum('player',-taken); hitFlash('player');
-          addShake(taken>20?8:5); hitStop(taken>20?100:60);
-          popText(`-${taken}`, PPOS.x, PPOS.y-80, {color:'#fca5a5', size:22});
-          log(`${e.name} hits you for ${taken}${multi>1?' (barrage)':''}.`);
-          refreshHUD(); res();
+
+    // Execute intent
+    const intent=e.intent?.kind||'strike';
+    if(e.staggered){ log('<b>Enemy is staggered</b> and loses its action!'); e.staggered=false; e.poise = Math.max(e.poise, 60); }
+    else if(intent==='charge'){ log('Enemy is charging a powerful attack...'); e.poise = Math.min(100, e.poise+15); }
+    else if(intent==='buff'){ applyStatus(e,'expose',0,0); e.atk+=2; log('Enemy buffs itself (+ATK).'); }
+    else if(intent==='debuff'){ applyStatus(p,'weaken',1,2); log('You are <b>Weakened</b> (-ATK for 2 turns).'); }
+    else {
+      // attack-types
+      const hits = intent==='barrage' ? 2 : 1;
+      for(let i=0;i<hits;i++){
+        await new Promise(res=>{
+          lunge('enemy',()=>{
+            // enemy damage affected by Weaken
+            let eAtk=atkMod; if(hasStatus(e,'weaken')) eAtk=Math.floor(eAtk*0.85);
+            const r=dealDamageIncoming(eAtk, p.def, e.crit||10);
+            const taken=applyIncomingDamage(r.dmg); floatNum('player',-taken); hitFlash('player');
+            addShake(taken>20?8:5); hitStop(taken>20?100:60);
+            log(`${e.name} hits you for ${taken}${hits>1?' (barrage)':''}.`); refreshHUD(); res();
+          });
         });
-      });
+      }
     }
-    endTurnTick(); refreshHUD(); checkEnd();
+
+    // end-of-turn ticks
+    tickStatusesEnd(e,false); tickStatusesEnd(p,true);
+    // regen & cooldowns
+    endTurnTick();
+    // next intent
+    setEnemyIntent(); refreshHUD(); checkEnd();
   }
 
-  function updateEnemyHPInline(){ const bar=$('#enemyHPInline'); if(bar) bar.style.width=`${Math.max(0,Math.round(100*state.enemy.hp/state.enemy.maxHp))}%`; }
+  function staggerEnemy(){
+    const e=state.enemy; e.staggered=true; e.poise=0; addShake(10); popText('STAGGER', EPOS.x, EPOS.y-120, {size:24,color:'#ffd166',glow:true}); hitStop(120);
+  }
 
+  function endTurnTick(){
+    const p=state.player;
+    if(p.shieldTurns!=null){ p.shieldTurns--; if(p.shieldTurns<=0){ p.shield=0; p.shieldTurns=null; log(`Shield fades.`); } }
+    for(const k of Object.keys(p.cooldowns)){ if(p.cooldowns[k]>0) p.cooldowns[k]--; }
+  }
+
+  // ===== Rewards & progression =====
   function checkEnd(){
     const p=state.player,e=state.enemy;
     if(p.hp<=0){
-      setStage('Defeat','Try again?'); stageArea.appendChild(makeChoiceButtons([{label:'Restart',class:'primary',onClick:()=>startGame()}])); log(`<b>You were defeated.</b>`); state.phase='end'; return true;
+      setStage('Defeat','Try again?'); stageArea.appendChild(makeButtons([{label:'Restart',onClick:startGame}])); log(`<b>You were defeated.</b>`); state.phase='end'; return true;
     }
     if(e.hp<=0){
-      hitStop(160); addShake(10); popText('DOWN!', EPOS.x, EPOS.y-120, {size:28, color:'#a7ffcb', glow:true});
+      hitStop(160); addShake(10); popText('DOWN!', EPOS.x, EPOS.y-120,{size:28,color:'#a7ffcb',glow:true});
       log(`<b>${e.name} is defeated!</b>`); p.xp += e.boss ? 40 : 15;
-      // Momentum heals
-      const cfg=DIFF[state.difficulty];
-      const fin = Math.floor(p.maxHp*cfg.finisher);
-      healPlayer(fin);
+      const cfg=DIFF[state.difficulty]; const fin = Math.floor(p.maxHp*cfg.finisher); healPlayer(fin); // finisher heal
       vanish('enemy');
       if(e.boss){
-        if(e.final){
-          setStage('Victory!','You defeated the Final Boss!'); stageArea.appendChild(makeChoiceButtons([{label:'Play Again',class:'primary',onClick:()=>startGame()}])); state.phase='end'; return true;
-        } else { state.bossesDefeated++; showAbilityRewards(); return true; }
+        if(e.final){ setStage('Victory!','Final Boss down!'); stageArea.appendChild(makeButtons([{label:'Play Again',onClick:startGame}])); state.phase='end'; return true; }
+        else { state.bossesDefeated++; showAbilityRewards(); return true; }
       } else { showBuffRewards(); return true; }
     }
     return false;
   }
 
   function showBuffRewards(){
-    state.phase='buffs'; setStage('Choose a Buff','Pick 1 of 3');
-    // Always include a heal option + two randoms
-    const pool=[...BUFFS]; const heal=pool.find(x=>x.id==='heal25');
-    const others=pool.filter(x=>x.id!=='heal25'); const picks=[heal, ...pickUnique(others,2)];
-    stageArea.appendChild(makeChoiceButtons(picks.map((b,i)=>({label:b.name, class:(i===0?'primary': i===1?'warn':''), onClick:()=>{ b.apply(); refreshHUD();
-      // between-fight heal
+    state.phase='buffs'; setStage('Choose a Buff','Pick 1 of 3 (heal on pick)');
+    const BUFFS=[
+      {id:'hp10',name:'+10% Max HP',apply:()=>{const add=Math.floor(state.player.maxHp*0.10); state.player.maxHp+=add; state.player.hp+=add;}},
+      {id:'atk6',name:'+6 ATK',apply:()=>{state.player.atk+=6;}},
+      {id:'def3',name:'+3 DEF',apply:()=>{state.player.def+=3;}},
+      {id:'crit8',name:'+8% CRIT',apply:()=>{state.player.crit=clamp(state.player.crit+8,0,100);}},
+      {id:'energy',name:'+1 Max Energy',apply:()=>{state.player.maxEnergy++; state.player.energy=state.player.maxEnergy;}},
+      {id:'poison',name:'Poison Edge (attacks add Poison)',apply:()=>{state.player.passivePoison=true;}},
+      {id:'stance',name:'Stance Mastery (+stance bonuses)',apply:()=>{state.player.stanceMastery=true;}},
+      {id:'heal25',name:'Heal 25% now',apply:()=>{healPlayer(Math.floor(state.player.maxHp*0.25));}},
+    ];
+    const picks=[BUFFS.find(b=>b.id==='heal25'), ...pickUnique(BUFFS.filter(b=>b.id!=='heal25'),2)];
+    stageArea.appendChild(makeButtons(picks.map(b=>({label:b.name,onClick:()=>{b.apply(); refreshHUD();
       const cfg=DIFF[state.difficulty]; healPlayer(Math.floor(state.player.maxHp*cfg.healClear));
       if(state.room>=state.roomsPerCycle){ if(state.bossesDefeated>=state.finalBossesNeeded){ spawnFinalBoss(); } else { spawnBoss(); } state.room=1; state.cycle++; state.player.secondWindUsed=false; }
       else { state.room++; showEnemyChoice(); } }}))));
   }
 
   function showAbilityRewards(){
-    state.phase='ability-reward'; setStage('Choose a New Ability','Granted by the boss (pick 1)');
-    const pool=ABILITIES.filter(a=>!state.player.abilities.find(x=>x.id===a.id)); const picks=pickUnique(pool.length>=3?pool:ABILITIES,3);
-    stageArea.appendChild(makeChoiceButtons(picks.map((a,i)=>({label:`${a.name} — ${a.desc}`, class:(i===0?'primary': i===1?'warn':''), onClick:()=>{ 
-      const cfg=DIFF[state.difficulty];
-      const copy={...a, cd:Math.max(1, a.cd - cfg.cdMinus)}; // shorter CDs on easier modes
+    state.phase='ability-reward'; setStage('Choose a New Ability','Boss reward (pick 1)');
+    const pool=BOSS_ABILITIES.filter(a=>!state.player.abilities.find(x=>x.id===a.id));
+    const picks=pickUnique(pool.length>=3?pool:BOSS_ABILITIES,3);
+    stageArea.appendChild(makeButtons(picks.map(a=>({label:`${a.name} — ${a.desc}`,onClick:()=>{
+      const cfg=DIFF[state.difficulty]; const copy={...a, cd:Math.max(1,a.cd - (cfg.cdMinus||0))};
       state.player.abilities.push(copy); state.player.cooldowns[copy.id]=0; refreshHUD();
       if(state.bossesDefeated>=state.finalBossesNeeded){ spawnFinalBoss(); } else { showEnemyChoice(); } }}))));
   }
 
-  function pickUnique(arr,n){ const c=[...arr], out=[]; while(c.length&&out.length<n){ out.push(c.splice(rng(0,c.length-1),1)[0]); } return out; }
-  function actionLock(v){ state.lock=v; stageArea.querySelectorAll('button').forEach(b=> b.disabled=v || b.textContent.startsWith('Cooldown')); renderAbilities(); }
-
-  // ========= Stage Rendering & Anim System (same DS style as before) =========
-  const PPOS={x:250,y:360}, EPOS={x:710,y:340};
-
-  function spawnBackdrop(kind){ state.backdrop=kind; }
-  function enqueue(fn,dur=450){ state.animQ.push({t:0,d:dur,fn}); }
-  function lunge(who, onHit){ enqueue((p)=>{ drawStage({[who]:{offsetX:(who==='player'?+1:-1)*Math.sin(Math.PI*ease(p))*90}}); if(p>=1 && onHit){ onHit(); onHit=null; } }, 320); }
-  function defendPose(who){ enqueue((p)=>{ const amp=who==='player'?1:-1; drawStage({[who]:{defend:true,offsetX:amp*10*Math.sin(p*6)}}); shieldPulse(who,0.35); }, 300); }
-  function hitFlash(who){ enqueue((p)=>{ drawStage({[who]:{hit:true}}); }, 160); }
-  function vanish(who){ enqueue((p)=>{ drawStage({[who]:{alpha:1-p}}); }, 400); }
-  function slashArc(){ enqueue((p)=>{ effects.slash(p); drawStage(); }, 260); }
-  function shieldPulse(who,scale=1){ enqueue((p)=>{ effects.shield(who,p,scale); drawStage(); }, 420); }
-  function boltOverPlayer(){ enqueue((p)=>{ effects.bolt(p,PPOS); drawStage(); }, 380); }
-  function rippleCenter(){ enqueue((p)=>{ effects.ripple(p); drawStage(); }, 500); }
-  function fangsOnEnemy(){ enqueue((p)=>{ effects.fangs(p,EPOS); drawStage(); }, 420); }
-  function tetherToBoss(){ enqueue((p)=>{ effects.tether(p,EPOS,PPOS); drawStage(); }, 420); }
-  function enqueueSlash(dir){ enqueue((p)=>{ effects.dualSlash(p,dir); drawStage(); }, 260); }
-  function floatNum(target, val){ const str=(typeof val==='number'? (val>=0?`+${val}`:`${val}`) : `${val}`); const pos=(target==='player'?PPOS:EPOS);
-    const y0=pos.y-100, dy=34; const hue = (typeof val==='number' && val<0)? 0 : 150;
-    enqueue((p)=>{ drawStage(); const a=1-p; ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=`hsl(${hue} 70% 70%)`; ctx.font="24px system-ui,Segoe UI,Roboto"; ctx.textAlign='center'; ctx.fillText(str,pos.x, y0 - dy*p); ctx.restore(); }, 700);
+  // ===== Simple components =====
+  function makeButtons(options){
+    const wrap=el('div',{class:'choice'});
+    options.forEach((opt,i)=>{ const b=el('button',{class:`btn ${i===0?'primary': i===1?'warn':''}`,text:opt.label}); b.onclick=opt.onClick; wrap.appendChild(b); });
+    return wrap;
   }
+  function pickUnique(arr,n){ const c=[...arr], out=[]; while(c.length&&out.length<n){ out.push(c.splice(rng(0,c.length-1),1)[0]); } return out; }
 
-  const effects = {
-    slash(p){ const t=ease(p); ctx.save(); ctx.translate(stageCanvas.width/2,stageCanvas.height/2);
-      ctx.rotate(-.25); ctx.globalAlpha=1-t; ctx.lineWidth=18; ctx.strokeStyle='rgba(255,255,255,.8)';
-      ctx.beginPath(); ctx.arc(120,40, 60+90*t, 0, Math.PI*.9); ctx.stroke(); ctx.restore(); },
-    dualSlash(p,dir){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.lineWidth=10; ctx.strokeStyle='rgba(255,255,255,.85)';
-      ctx.beginPath(); ctx.arc(dir>0?EPOS.x-40:EPOS.x+20, EPOS.y-40, 40+60*t, dir>0?Math.PI*1.2:Math.PI*0.2, dir>0?Math.PI*1.8:Math.PI*0.8); ctx.stroke(); ctx.restore(); },
-    shield(who,p,scale){ const pos=(who==='player'?PPOS:EPOS); const t=ease(p); ctx.save(); ctx.globalAlpha=.25+.35*(1-t);
-      ctx.strokeStyle='rgba(102,255,204,.9)'; ctx.lineWidth=4; const r=52*(.8+0.6*(1-t))*scale; hex(pos.x,pos.y-20,r); ctx.restore(); },
-    bolt(p,center){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(173,216,255,.9)'; ctx.lineWidth=3; zigzag(center.x,center.y-120, center.x, center.y-40, 6); ctx.restore(); },
-    ripple(p){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(180,220,255,.8)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(stageCanvas.width/2,stageCanvas.height/2, 20+160*t, 0, Math.PI*2); ctx.stroke(); ctx.restore(); },
-    fangs(p,center){ const t=ease(p); ctx.save(); ctx.globalAlpha=.4+.6*(1-t); ctx.fillStyle='rgba(255,80,120,.8)'; tri(center.x-18,center.y-90, -12,28); tri(center.x+18,center.y-90, 12,28); ctx.restore(); },
-    tether(p,from,to){ const t=p; ctx.save(); ctx.globalAlpha=.6; ctx.strokeStyle='rgba(120,200,255,.75)'; ctx.lineWidth=4;
-      ctx.beginPath(); ctx.moveTo(from.x-20,from.y-40); ctx.quadraticCurveTo((from.x+to.x)/2, 140 + 30*Math.sin(t*6), to.x+10, to.y-50); ctx.stroke(); ctx.restore(); }
-  };
-  function hex(x,y,r){ ctx.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; const px=x+r*Math.cos(a), py=y+r*Math.sin(a); if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.closePath(); ctx.stroke(); }
-  function zigzag(x1,y1,x2,y2,steps){ ctx.beginPath(); ctx.moveTo(x1,y1); for(let i=1;i<=steps;i++){ const t=i/steps; const x=x1+(x2-x1)*t; const y = y1+(y2-y1)*t + (i%2? -12:12); ctx.lineTo(x,y); } }
-  function tri(x,y,dx,dy){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+dx,y+dy); ctx.lineTo(x-dx,y+dy); ctx.closePath(); ctx.fill(); }
-
-  // === ART STYLE (DS-like) ===
-  const PAL = { line:'#0a0f1c', white:'#e9efff', hero:'#e85678', hero2:'#ffb1c2', heroDetail:'#ffd166',
+  // ===== Rendering (DS-style) =====
+  const PPOS={x:250,y:360}, EPOS={x:710,y:340};
+  const PAL={ line:'#0a0f1c', white:'#e9efff', hero:'#e85678', hero2:'#ffb1c2', heroDetail:'#ffd166',
     enemyBlue:'#87a5ff', enemyRed:'#ff6b6b', enemyGreen:'#51e1b8', purple:'#a78bfa', gold:'#ffd166', cyan:'#7be3ff' };
 
+  function spawnBackdrop(k){ state.backdrop=k; }
+  function enqueue(fn,dur=450){ state.animQ.push({t:0,d:dur,fn}); }
+  function lunge(who,onHit){ enqueue(p=>{ drawStage({[who]:{offsetX:(who==='player'?+1:-1)*Math.sin(Math.PI*ease(p))*90}}); if(p>=1&&onHit){onHit(); onHit=null;} },320); }
+  function defendPose(who){ enqueue(p=>{ const amp=who==='player'?1:-1; drawStage({[who]:{defend:true,offsetX:amp*10*Math.sin(p*6)}}); shieldPulse(who,0.35); },300); }
+  function hitFlash(who){ enqueue(p=>{ drawStage({[who]:{hit:p}}); },160); }
+  function vanish(who){ enqueue(p=>{ drawStage({[who]:{alpha:1-p}}); },400); }
+  function slashArc(){ enqueue(p=>{ effects.slash(p); drawStage(); },260); }
+  function shieldPulse(who,scale=1){ enqueue(p=>{ effects.shield(who,p,scale); drawStage(); },420); }
+  function boltOverPlayer(){ enqueue(p=>{ effects.bolt(p,PPOS); drawStage(); },380); }
+  function rippleCenter(){ enqueue(p=>{ effects.ripple(p); drawStage(); },500); }
+  function fangsOnEnemy(){ enqueue(p=>{ effects.fangs(p,EPOS); drawStage(); },420); }
+  function tetherToBoss(){ enqueue(p=>{ effects.tether(p,EPOS,PPOS); drawStage(); },420); }
+  function enqueueSlash(dir){ enqueue(p=>{ effects.dualSlash(p,dir); drawStage(); },260); }
+  function floatNum(target,val){ const str=(typeof val==='number'?(val>=0?`+${val}`:`${val}`):`${val}`); const pos=(target==='player'?PPOS:EPOS);
+    const y0=pos.y-100,dy=34; const hue=(typeof val==='number'&&val<0)?0:150;
+    enqueue(p=>{ drawStage(); const a=1-p; ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=`hsl(${hue} 70% 70%)`; ctx.font="24px system-ui,Segoe UI,Roboto"; ctx.textAlign='center'; ctx.fillText(str,pos.x,y0-dy*p); ctx.restore(); },700);
+  }
+
+  const effects={
+    slash(p){ const t=ease(p); ctx.save(); ctx.translate(canvas.width/2,canvas.height/2); ctx.rotate(-.25); ctx.globalAlpha=1-t; ctx.lineWidth=18; ctx.strokeStyle='rgba(255,255,255,.8)';
+      ctx.beginPath(); ctx.arc(120,40,60+90*t,0,Math.PI*.9); ctx.stroke(); ctx.restore(); },
+    dualSlash(p,dir){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.lineWidth=10; ctx.strokeStyle='rgba(255,255,255,.85)';
+      ctx.beginPath(); ctx.arc(dir>0?EPOS.x-40:EPOS.x+20,EPOS.y-40,40+60*t,dir>0?Math.PI*1.2:Math.PI*0.2,dir>0?Math.PI*1.8:Math.PI*0.8); ctx.stroke(); ctx.restore(); },
+    shield(who,p,scale){ const pos=(who==='player'?PPOS:EPOS); const t=ease(p); ctx.save(); ctx.globalAlpha=.25+.35*(1-t); ctx.strokeStyle='rgba(102,255,204,.9)'; ctx.lineWidth=4; const r=52*(.8+0.6*(1-t))*scale; hex(pos.x,pos.y-20,r); ctx.restore(); },
+    bolt(p,c){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(173,216,255,.9)'; ctx.lineWidth=3; zigzag(c.x,c.y-120,c.x,c.y-40,6); ctx.restore(); },
+    ripple(p){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(180,220,255,.8)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(canvas.width/2,canvas.height/2,20+160*t,0,Math.PI*2); ctx.stroke(); ctx.restore(); },
+    fangs(p,c){ const t=ease(p); ctx.save(); ctx.globalAlpha=.4+.6*(1-t); ctx.fillStyle='rgba(255,80,120,.8)'; tri(c.x-18,c.y-90,-12,28); tri(c.x+18,c.y-90,12,28); ctx.restore(); },
+    tether(p,from,to){ const t=p; ctx.save(); ctx.globalAlpha=.6; ctx.strokeStyle='rgba(120,200,255,.75)'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(from.x-20,from.y-40);
+      ctx.quadraticCurveTo((from.x+to.x)/2,140+30*Math.sin(t*6),to.x+10,to.y-50); ctx.stroke(); ctx.restore(); }
+  };
+  function hex(x,y,r){ ctx.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; const px=x+r*Math.cos(a),py=y+r*Math.sin(a); if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);} ctx.closePath(); ctx.stroke(); }
+  function zigzag(x1,y1,x2,y2,steps){ ctx.beginPath(); ctx.moveTo(x1,y1); for(let i=1;i<=steps;i++){ const t=i/steps; const x=x1+(x2-x1)*t; const y=y1+(y2-y1)*t+(i%2?-12:12); ctx.lineTo(x,y);} }
+  function tri(x,y,dx,dy){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+dx,y+dy); ctx.lineTo(x-dx,y+dy); ctx.closePath(); ctx.fill(); }
+
   function drawStage(overrides={}){
-    const w=stageCanvas.width, h=stageCanvas.height;
+    const w=canvas.width,h=canvas.height;
     ctx.save();
-    if(state.shake>0){ const s=state.shake; ctx.translate(rng(-s,s), rng(-s,s)); state.shake*=0.85; if(state.shake<0.4) state.shake=0; }
-    const sky = ctx.createLinearGradient(0,0,0,h);
-    sky.addColorStop(0, state.backdrop==='boss' ? '#1b0f3a' : '#0d1a3a');
-    sky.addColorStop(.55, state.backdrop==='boss' ? '#0d1430' : '#0a1732');
-    sky.addColorStop(1, '#081228');
-    ctx.fillStyle=sky; ctx.fillRect(0,0,w,h);
-    ctx.globalAlpha = .08; ctx.fillStyle = '#ffffff'; for(let y=80;y<h;y+=16){ ctx.fillRect(0,y,w,2); } ctx.globalAlpha = 1;
-    drawPedestal(PPOS.x, PPOS.y+8, 150, 28, state.backdrop==='boss');
-    drawPedestal(EPOS.x, EPOS.y-2, 160, 26, state.backdrop==='boss');
-    if(state.backdrop==='boss'){ ctx.strokeStyle='rgba(120,200,255,.18)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h-72, 220+6*Math.sin(state.t*.008), 0, Math.PI*2); ctx.stroke(); }
-    drawActor('player', overrides.player||{});
-    if(state.enemy) drawActor('enemy', overrides.enemy||{});
+    if(state.shake>0){ const s=state.shake; ctx.translate(rng(-s,s),rng(-s,s)); state.shake*=0.85; if(state.shake<0.4) state.shake=0; }
+    const sky=ctx.createLinearGradient(0,0,0,h); sky.addColorStop(0,state.backdrop==='boss'?'#1b0f3a':'#0d1a3a'); sky.addColorStop(.55,state.backdrop==='boss'?'#0d1430':'#0a1732'); sky.addColorStop(1,'#081228'); ctx.fillStyle=sky; ctx.fillRect(0,0,w,h);
+    ctx.globalAlpha=.08; ctx.fillStyle='#ffffff'; for(let y=80;y<h;y+=16) ctx.fillRect(0,y,w,2); ctx.globalAlpha=1;
+    drawPedestal(PPOS.x, PPOS.y+8, 150, 28, state.backdrop==='boss'); drawPedestal(EPOS.x, EPOS.y-2, 160, 26, state.backdrop==='boss');
+    if(state.backdrop==='boss'){ ctx.strokeStyle='rgba(120,200,255,.18)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h-72,220+6*Math.sin(state.t*.008),0,Math.PI*2); ctx.stroke(); }
+    drawActor('player',overrides.player||{}); if(state.enemy) drawActor('enemy',overrides.enemy||{});
+    // status icons
+    drawStatusIcons(PPOS, state.player.statuses); if(state.enemy) drawStatusIcons(EPOS, state.enemy.statuses, true);
     ctx.restore();
   }
   function drawPedestal(cx,cy,rx,ry,isBoss){
-    const g=ctx.createLinearGradient(0,cy-ry,0,cy+ry);
-    g.addColorStop(0, isBoss?'#16264d':'#1a2a4d'); g.addColorStop(1, '#0a142e');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=2; ctx.stroke();
+    const g=ctx.createLinearGradient(0,cy-ry,0,cy+ry); g.addColorStop(0,isBoss?'#16264d':'#1a2a4d'); g.addColorStop(1,'#0a142e'); ctx.fillStyle=g;
+    ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=2; ctx.stroke();
     ctx.save(); ctx.globalAlpha=.18; ctx.beginPath(); ctx.ellipse(cx,cy,rx+14,ry+8,0,0,Math.PI*2); ctx.fillStyle=isBoss?'#6cc9ff':'#6ee7b7'; ctx.fill(); ctx.restore();
   }
 
-  function outline(fill){ ctx.strokeStyle=PAL.line; ctx.lineWidth=2.2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.fillStyle=fill; }
+  function outline(fill){ ctx.strokeStyle:'#0a0f1c'; ctx.lineWidth=2.2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.fillStyle=fill; }
   function circle(x,y,r,fill){ outline(fill); ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.stroke(); }
   function roundedRect(x,y,w,h,r,fill){ outline(fill); ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else {ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);} ctx.fill(); ctx.stroke(); }
 
   function drawActor(who,opt={}){
-    const idle = Math.sin(state.t*0.005*3)*4;
-    const alpha = opt.alpha!=null?opt.alpha:1;
-    const pos = (who==='player'? PPOS : EPOS);
-    const offX = opt.offsetX||0, offY=(opt.offsetY||0)+idle;
-    ctx.save(); ctx.globalAlpha=alpha; ctx.translate(pos.x+offX, pos.y-70+offY);
-    if(who==='player'){ drawHero(opt); }
-    else {
-      if(state.enemy?.final) drawFinalBoss(opt);
-      else if(state.enemy?.boss) drawBoss(opt);
-      else { const t=state.enemy?.type; if(t==='swarmer') drawSwarmer(); else if(t==='brute') drawBrute(); else drawArcanist(); }
+    const idle=Math.sin(state.t*0.015*3)*4; const alpha=opt.alpha!=null?opt.alpha:1; const pos=(who==='player'?PPOS:EPOS);
+    const offX=opt.offsetX||0, offY=(opt.offsetY||0)+idle; ctx.save(); ctx.globalAlpha=alpha; ctx.translate(pos.x+offX, pos.y-70+offY);
+    if(who==='player'){ drawHero(); } else { if(state.enemy?.final) drawFinalBoss(); else if(state.enemy?.boss) drawBoss(); else { const t=state.enemy?.type; if(t==='swarmer') drawSwarmer(); else if(t==='brute') drawBrute(); else drawArcanist(); } }
+    if(opt.hit!=null){ // soft radial glow
+      const intensity=(1-opt.hit); ctx.save(); ctx.globalCompositeOperation='screen'; const g=ctx.createRadialGradient(0,-20,0,0,-20,95);
+      g.addColorStop(0,`rgba(255,255,255,${0.45*intensity})`); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(0,-10,70,90,0,0,Math.PI*2); ctx.fill(); ctx.restore();
     }
-    if(opt.hit){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,255,255,.2)'; ctx.fillRect(-100,-110,200,190); }
     if(opt.defend){ ctx.strokeStyle='rgba(120,220,255,.85)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,20,46,0,Math.PI*2); ctx.stroke(); }
     ctx.restore();
   }
 
+  // simple character art (same as before)
   function drawHero(){ roundedRect(-36,-14,72,36,12,'#1a2a4d'); ctx.save(); ctx.globalAlpha=.8; circle(-28,-8,10, PAL.hero2); ctx.restore();
     roundedRect(-16,44,12,26,6,'#182238'); roundedRect(6,44,12,26,6,'#192945');
     roundedRect(-24,-8,48,56,10,'#243a6b'); roundedRect(-30,-4,22,16,6,'#1e2f58'); roundedRect(-8,-16,16,10,6,'#6b7280');
     circle(0,-28,14, '#e9efff'); roundedRect(-20,-44,40,10,6,'#1b2a46'); roundedRect(-16,-60,32,18,8, PAL.hero);
     roundedRect(-10,-36,20,8,6,'#a2d9ff'); roundedRect(-28,-8,56,14,8, PAL.hero); roundedRect(10,0,20,10,6, PAL.hero2);
     ctx.save(); ctx.translate(38,6); roundedRect(0,-4,38,8,4,'#9ad7ff'); circle(0,0,6, PAL.gold); ctx.restore(); }
-  function drawSwarmer(){ circle(0,-6,18, PAL.enemyGreen); roundedRect(-22,6,44,18,10, '#bdf7e9');
-    for(let i=-1;i<=1;i++){ roundedRect(-20+i*20,22,10,18,5,'#17324a'); } ctx.save(); ctx.globalAlpha=.25; circle(0,-14,26,'#bffbe9'); ctx.restore();
-    ctx.save(); ctx.translate(24,8); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(12,18); ctx.lineTo(-12,18); ctx.closePath(); outline(PAL.enemyGreen); ctx.fill(); ctx.stroke(); ctx.restore();
-    circle(-6,-10,3,'#ffffff'); circle(6,-10,3,'#ffffff'); }
-  function drawBrute(){ roundedRect(-30,-18,60,70,12, '#2a3c74'); roundedRect(-38,-8,76,20,10,'#1b2b58'); circle(-32,24,12, PAL.enemyRed); circle(32,24,12, PAL.enemyRed);
-    roundedRect(-18,-42,36,14,6,'#445a9c'); roundedRect(-8,-18,16,8,4,'#a3b9ff'); }
+  function drawSwarmer(){ circle(0,-6,18, PAL.enemyGreen); roundedRect(-22,6,44,18,10,'#bdf7e9'); for(let i=-1;i<=1;i++){ roundedRect(-20+i*20,22,10,18,5,'#17324a'); } ctx.save(); ctx.globalAlpha=.25; circle(0,-14,26,'#bffbe9'); ctx.restore();
+    ctx.save(); ctx.translate(24,8); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(12,18); ctx.lineTo(-12,18); ctx.closePath(); ctx.fillStyle=PAL.enemyGreen; ctx.fill(); ctx.restore(); circle(-6,-10,3,'#ffffff'); circle(6,-10,3,'#ffffff'); }
+  function drawBrute(){ roundedRect(-30,-18,60,70,12,'#2a3c74'); roundedRect(-38,-8,76,20,10,'#1b2b58'); circle(-32,24,12, PAL.enemyRed); circle(32,24,12, PAL.enemyRed); roundedRect(-18,-42,36,14,6,'#445a9c'); roundedRect(-8,-18,16,8,4,'#a3b9ff'); }
   function drawArcanist(){ roundedRect(-24,-14,48,64,14,'#3a2a6b'); circle(-28,-28,6, PAL.purple); circle(0,-40,7, PAL.cyan); circle(28,-28,6, PAL.gold);
-    circle(-20,12,6, '#e9efff'); circle(20,12,6, '#e9efff'); ctx.save(); ctx.globalAlpha=.18; ctx.strokeStyle='#a48bfa'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,-34,18,0,Math.PI*2); ctx.stroke(); ctx.restore(); roundedRect(-10,-26,20,14,6,'#dbe6ff'); }
-  function drawBoss(){ roundedRect(-28,-18,56,70,12,'#243a6b'); roundedRect(-34,-6,68,18,9,'#1b2b58'); roundedRect(-16,-44,32,16,8,'#314b8a');
-    ctx.save(); ctx.translate(30,10); roundedRect(-4,-30,8,44,4,'#6b7280'); roundedRect(-18,-30,36,12,6,'#9fb6ff'); ctx.restore();
-    ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#7be3ff'; ctx.fillRect(-6,-2,12,3); ctx.fillRect(-6,6,12,3); ctx.restore(); }
-  function drawFinalBoss(){ roundedRect(-36,-26,72,92,14,'#17304d'); roundedRect(-34,-24,30,20,6,'#2a5b92'); roundedRect(4,-22,30,20,6,'#2a5b92'); roundedRect(-34,4,30,26,6,'#2a5b92'); roundedRect(4,4,30,26,6,'#2a5b92');
-    circle(0,-4,10,'#8be7ff'); ctx.save(); ctx.globalAlpha=.18; circle(0,-4,24,'#8be7ff'); ctx.restore(); for(let i=-2;i<=2;i++){ circle(i*8,-12,3,'#dff6ff'); } }
+    circle(-20,12,6,'#e9efff'); circle(20,12,6,'#e9efff'); ctx.save(); ctx.globalAlpha=.18; ctx.strokeStyle='#a48bfa'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,-34,18,0,Math.PI*2); ctx.stroke(); ctx.restore(); roundedRect(-10,-26,20,14,6,'#dbe6ff'); }
+  function drawBoss(){ roundedRect(-28,-18,56,70,12,'#243a6b'); roundedRect(-34,-6,68,18,9,'#1b2b58'); roundedRect(-16,-44,32,16,8,'#314b8a'); ctx.save(); ctx.translate(30,10); roundedRect(-4,-30,8,44,4,'#6b7280'); roundedRect(-18,-30,36,12,6,'#9fb6ff'); ctx.restore(); ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#7be3ff'; ctx.fillRect(-6,-2,12,3); ctx.fillRect(-6,6,12,3); ctx.restore(); }
+  function drawFinalBoss(){ roundedRect(-36,-26,72,92,14,'#17304d'); roundedRect(-34,-24,30,20,6,'#2a5b92'); roundedRect(4,-22,30,20,6,'#2a5b92'); roundedRect(-34,4,30,26,6,'#2a5b92'); roundedRect(4,4,30,26,6,'#2a5b92'); circle(0,-4,10,'#8be7ff'); ctx.save(); ctx.globalAlpha=.18; circle(0,-4,24,'#8be7ff'); ctx.restore(); for(let i=-2;i<=2;i++){ circle(i*8,-12,3,'#dff6ff'); } }
 
-  // RAF loop
-  let last=performance.now();
-  function loop(ts){
-    const dt = ts - last; last = ts;
-    state.t = ts; state.frame++;
-    vfxStepAndDraw(ctx, dt);
-    if(state.animQ.length){
-      const a=state.animQ[0]; a.t+=dt; const p=clamp(a.t/a.d,0,1); a.fn(p);
-      if(p>=1) state.animQ.shift();
-    } else { drawStage(); }
-    vfxDrawOverlays(ctx);
-    requestAnimationFrame(loop);
+  function drawStatusIcons(pos, statuses, enemy=false){
+    const keys=Object.keys(statuses||{}).filter(k=>statuses[k].dur>0);
+    if(!keys.length) return;
+    const y=pos.y-120; let x=pos.x-(keys.length-1)*14;
+    keys.forEach(k=>{ ctx.save(); ctx.fillStyle= enemy?'#cfe3ff':'#e6ffd6'; ctx.strokeStyle='#0a0f1c';
+      ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#0a1430';
+      ctx.font='10px system-ui'; ctx.textAlign='center'; ctx.fillText(k.slice(0,2).toUpperCase(),x,y+3); ctx.restore(); x+=28; });
   }
-  requestAnimationFrame(loop);
 
-  // ========= Start =========
-  // set initial difficulty button state
-  modeBtns.forEach(b=>b.classList.remove('on')); $('#modeEasy').classList.add('on');
+  function updateEnemyHPInline(){ const b=$('#enemyHPInline'); if(b) b.style.width=`${Math.max(0,Math.round(100*state.enemy.hp/state.enemy.maxHp))}%`; }
+
+  // ===== Helpers =====
+  function addShake(p){ state.shake=Math.max(state.shake||0,p); }
+  function popText(t,x,y,o={}){ VFX.pops.push({text:t,x,y,age:0,life:o.life??800,color:o.color??'#e6f0ff',vy:o.vy??-0.2,curve:o.curve??0.001,size:o.size??24,glow:o.glow??false}); }
+  function healPlayer(n){ const p=state.player; const before=p.hp; p.hp=clamp(p.hp+n,0,p.maxHp); floatNum('player',+(p.hp-before)); log(`Healed ${p.hp-before}.`); }
+  function actionLock(v){ state.lock=v; stageArea.querySelectorAll('button').forEach(b=> b.disabled=v || b.textContent.includes('CD:')); renderAbilities(); }
+
+  // ===== VFX loop =====
+  const VFX={particles:[],trails:[],pops:[],hitstop:0,starSeed:Math.random()*1000};
+  class Particle{constructor(x,y,o={}){this.x=x;this.y=y;this.vx=o.vx??(Math.random()*2-1);this.vy=o.vy??(Math.random()*-1.5-0.5);this.g=o.g??0.18;this.life=o.life??400;this.age=0;this.size=o.size??(Math.random()*2+2);this.color=o.color??'rgba(255,255,255,.9)';this.spin=o.spin??(Math.random()*.4-.2);this.shape=o.shape??'square';this.friction=o.friction??.98;this.fade=o.fade??true;this.light=o.light??0;}step(dt){this.age+=dt;this.vx*=this.friction;this.vy*=this.friction;this.vy+=this.g*(dt/16.67);this.x+=this.vx*(dt/16.67);this.y+=this.vy*(dt/16.67);}draw(c){const t=Math.max(0,Math.min(1,1-this.age/this.life));c.save();if(this.light>0){c.globalCompositeOperation='lighter';}c.globalAlpha=this.fade?t:1;c.translate(this.x,this.y);c.rotate(this.spin*this.age/120);c.fillStyle=this.color;if(this.shape==='circle'){c.beginPath();c.arc(0,0,this.size,0,Math.PI*2);c.fill();}else{c.fillRect(-this.size/2,-this.size/2,this.size,this.size);}c.restore();}get dead(){return this.age>=this.life;}}
+  class Trail{constructor(points,life=200,width=10,color='rgba(255,255,255,.8)'){this.points=[...points];this.life=life;this.age=0;this.width=width;this.color=color;}step(dt){this.age+=dt;}draw(c){const t=Math.max(0,Math.min(1,1-this.age/this.life));if(this.points.length<2)return;c.save();c.globalAlpha=t;c.strokeStyle=this.color;c.lineWidth=this.width*t;c.beginPath();c.moveTo(this.points[0].x,this.points[0].y);for(let i=1;i<this.points.length;i++)c.lineTo(this.points[i].x,this.points[i].y);c.stroke();c.restore();}get dead(){return this.age>=this.life;}}
+  function vfxStepAndDraw(c,dt){let eff=dt;if(VFX.hitstop>0){VFX.hitstop-=dt;eff=0.0001;}for(const p of VFX.particles)p.step(eff);VFX.particles=VFX.particles.filter(p=>!p.dead);for(const t of VFX.trails)t.step(eff);VFX.trails=VFX.trails.filter(t=>!t.dead);for(const f of VFX.pops){f.age+=dt;f.y+=f.vy*dt;f.vy-=f.curve*dt;}VFX.pops=VFX.pops.filter(f=>f.age<f.life);}
+  function vfxDrawOverlays(c){for(const p of VFX.particles)p.draw(c);for(const t of VFX.trails)t.draw(c);for(const f of VFX.pops){const a=Math.max(0,Math.min(1,1-f.age/f.life));c.save();if(f.glow)c.globalCompositeOperation='lighter';c.globalAlpha=a;c.fillStyle=f.color;c.font=`bold ${f.size}px system-ui`;c.textAlign='center';c.fillText(f.text,f.x,f.y);c.restore();}}
+  function hitStop(ms=90){VFX.hitstop=Math.max(VFX.hitstop,ms);}
+
+  // RAF
+  let last=performance.now();
+  (function loop(ts){const dt=ts-last; last=ts; state.t=ts; state.frame++; vfxStepAndDraw(ctx,dt);
+    if(state.animQ.length){ const a=state.animQ[0]; a.t+=dt; const p=clamp(a.t/a.d,0,1); a.fn(p); if(p>=1) state.animQ.shift(); } else drawStage();
+    vfxDrawOverlays(ctx); requestAnimationFrame(loop);})(last);
+
+  // ===== Abilities panel (boss unlocks) =====
+  function renderAbilities(){
+    const row=$('#abilitiesRow'); row.innerHTML='';
+    if(!state.player.abilities.length){ row.appendChild(el('span',{class:'pill',text:'Boss Abilities appear here'})); return; }
+    state.player.abilities.forEach(a=>{
+      const cd=state.player.cooldowns[a.id]||0; const b=el('button',{class:'btn',text:cd?`${a.name} (CD:${cd})`:a.name});
+      b.title=a.desc; b.disabled=!!cd||state.lock||state.phase!=='fight'; b.onclick=()=>useBossAbility(a); row.appendChild(b);
+    });
+  }
+  function useBossAbility(abil){
+    if(state.lock||(state.player.cooldowns[abil.id]||0)>0) return; actionLock(true);
+    const ctxNow={player:state.player,enemy:state.enemy}; abil.use(ctxNow); state.player.cooldowns[abil.id]=abil.cd; refreshHUD();
+    setTimeout(()=>{ if(ctxNow.extraTurn){ ctxNow.extraTurn=false; actionLock(false); renderFightUI(); } else { if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); } }, 280);
+  }
+
+  // ===== Start =====
   startGame();
 
-  // ===== helpers (buttons) =====
-  function makeChoiceButtons(options){
+  // ====== UI helpers ======
+  function makeButtonsWithHotkeys(options){
     const grid=el('div',{class:'choice'});
-    options.forEach((opt,i)=>{ const btn=el('button',{class:`btn ${i===0?'primary': i===1?'warn':''}`,text:opt.label}); btn.addEventListener('click',opt.onClick); grid.appendChild(btn);
+    options.forEach((opt,i)=>{ const btn=el('button',{class:`btn ${i===0?'primary':i===1?'warn':''}`,text:opt.label}); btn.addEventListener('click',opt.onClick); grid.appendChild(btn);
       const hk=(i+1).toString(); document.addEventListener('keydown',function handler(e){ if(state.lock) return; if(e.key===hk){ e.preventDefault(); btn.click(); } },{once:true}); });
     return grid;
   }
