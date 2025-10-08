@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Room-Boss Gauntlet — Animated</title>
+<title>Room-Boss Gauntlet — Cinematic</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
@@ -85,7 +85,7 @@
         <span class="tag" id="stageTag">Plan your next fight</span>
       </div>
 
-      <!-- NEW: Visual Stage -->
+      <!-- Visual Stage -->
       <div class="stageWrap">
         <div class="stageHUD" style="padding:10px 10px 0">
           <div class="mini">
@@ -139,54 +139,184 @@
             shield:0,shieldTurns:null,nextShield:0,cycleDmg:0,cyleDR:0},
     enemy:null, phase:'choose-enemy', lock:false,
     // Stage / anim
-    animQ:[], sprites:{atlas:null, hasAtlas:false}, frame:0, t:0, shake:0
+    animQ:[], sprites:{atlas:null, hasAtlas:false}, frame:0, t:0, shake:0, backdrop:'room'
   };
 
-  // Try to load an optional sprite atlas named "atlas.png" in same folder
+  // Optional sprite atlas (if you later add "atlas.png")
   (function loadAtlas(){
     const img = new Image(); img.src='atlas.png';
     img.onload=()=>{ state.sprites.atlas=img; state.sprites.hasAtlas=true; };
     img.onerror=()=>{ state.sprites.hasAtlas=false; };
   })();
 
-  // ========= Content Pools (same as before, trimmed explanation) =========
+  // ========= COOL FIGHT PACK =========
+  const L = (a,b,t)=>a+(b-a)*t;
+  const rand = (min,max)=>Math.random()*(max-min)+min;
+  const rgba = (r,g,b,a)=>`rgba(${r},${g},${b},${a})`;
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+
+  const VFX = { particles:[], trails:[], pops:[], hitstop:0, timescale:1, starSeed: Math.random()*1000 };
+
+  class Particle {
+    constructor(x,y,opts={}){
+      this.x=x; this.y=y;
+      this.vx=opts.vx??rand(-1,1);
+      this.vy=opts.vy??rand(-2,-.5);
+      this.g = opts.g??0.18;
+      this.life=opts.life??400; this.age=0;
+      this.size=opts.size??rand(2,4);
+      this.color=opts.color??'rgba(255,255,255,.9)';
+      this.spin=opts.spin??rand(-.2,.2);
+      this.shape=opts.shape??'square';
+      this.friction=opts.friction??0.98;
+      this.fade=opts.fade??true;
+      this.light=opts.light??0;
+    }
+    step(dt){
+      this.age+=dt;
+      this.vx*=this.friction; this.vy*=this.friction;
+      this.vy+=this.g*(dt/16.67);
+      this.x+=this.vx*(dt/16.67); this.y+=this.vy*(dt/16.67);
+    }
+    draw(ctx){
+      const t = clamp01(1 - this.age/this.life);
+      ctx.save();
+      if(this.light>0){ ctx.globalCompositeOperation='lighter'; }
+      ctx.globalAlpha = this.fade ? t : 1;
+      ctx.translate(this.x,this.y); ctx.rotate(this.spin*this.age/120);
+      ctx.fillStyle=this.color;
+      if(this.shape==='circle'){ ctx.beginPath(); ctx.arc(0,0, this.size, 0, Math.PI*2); ctx.fill(); }
+      else { ctx.fillRect(-this.size/2,-this.size/2,this.size,this.size); }
+      ctx.restore();
+    }
+    get dead(){ return this.age>=this.life; }
+  }
+
+  class Trail {
+    constructor(points, life=200, width=10, color='rgba(255,255,255,.8)'){
+      this.points=[...points]; this.life=life; this.age=0; this.width=width; this.color=color;
+    }
+    step(dt){ this.age+=dt; }
+    draw(ctx){
+      const t=clamp01(1-this.age/this.life);
+      if(this.points.length<2) return;
+      ctx.save();
+      ctx.globalAlpha=t; ctx.strokeStyle=this.color; ctx.lineWidth=this.width*t;
+      ctx.beginPath(); ctx.moveTo(this.points[0].x, this.points[0].y);
+      for(let i=1;i<this.points.length;i++) ctx.lineTo(this.points[i].x, this.points[i].y);
+      ctx.stroke(); ctx.restore();
+    }
+    get dead(){ return this.age>=this.life; }
+  }
+
+  function popText(text,x,y,opts={}){
+    VFX.pops.push({
+      text, x, y, age:0, life:opts.life??800,
+      color:opts.color??'#e6f0ff',
+      vy:opts.vy??-0.2, curve:opts.curve??0.001, size:opts.size??24, glow:opts.glow??false
+    });
+  }
+  function addShake(power){ state.shake=Math.max(state.shake||0, power); }
+  function hitStop(ms=90){ VFX.hitstop = Math.max(VFX.hitstop, ms); }
+
+  function drawParallax(ctx,w,h,t){
+    ctx.save();
+    ctx.globalAlpha=0.25;
+    ctx.fillStyle='#0b1430'; ctx.fillRect(0,0,w,h);
+    const n=80; const sway=Math.sin(t*0.0004)*8 + (state.shake||0)*0.3;
+    ctx.fillStyle='rgba(160,190,255,.15)';
+    for(let i=0;i<n;i++){
+      const sx = (i*97.7 + VFX.starSeed*100 + t*0.02)%w;
+      const sy = (i*53.9 + VFX.starSeed*50 + Math.sin(i+ t*0.001)*30 + sway)%h;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    const g = ctx.createLinearGradient(0,h-120,0,h);
+    g.addColorStop(0,'rgba(60,100,200,.08)'); g.addColorStop(1,'rgba(20,40,90,.18)');
+    ctx.fillStyle=g; ctx.fillRect(0,h-140,w,160);
+    ctx.restore();
+  }
+
+  function vfxStepAndDraw(ctx,dt){
+    let effective = dt;
+    if(VFX.hitstop>0){ VFX.hitstop -= dt; effective = 0.0001; }
+    for(const p of VFX.particles) p.step(effective);
+    VFX.particles = VFX.particles.filter(p=>!p.dead);
+    for(const tr of VFX.trails) tr.step(effective);
+    VFX.trails = VFX.trails.filter(tr=>!tr.dead);
+    for(const f of VFX.pops){ f.age+=dt; f.y += f.vy*dt; f.vy -= f.curve*dt; }
+    VFX.pops = VFX.pops.filter(f=>f.age<f.life);
+  }
+
+  function vfxDrawOverlays(ctx){
+    for(const p of VFX.particles) p.draw(ctx);
+    for(const tr of VFX.trails) tr.draw(ctx);
+    for(const f of VFX.pops){
+      const t=1 - f.age/f.life; const a=Math.max(0, Math.min(1, t));
+      ctx.save();
+      if(f.glow){ ctx.globalCompositeOperation='lighter'; }
+      ctx.globalAlpha = a;
+      ctx.fillStyle = f.color;
+      ctx.font = `bold ${f.size}px system-ui, Segoe UI, Roboto`;
+      ctx.textAlign='center';
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+  }
+
+  // ========= Content Pools =========
   const ABILITIES = [
-    {id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK damage twice.', cd:3, use:(ctx)=>{
-      enqueueSlash(ctx,1); // first
-      const d1 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
-      ctx.enemy.hp=Math.max(0,ctx.enemy.hp-d1);
-      floatNum(ctx.enemy,-d1);
-      log(`You spin into a <span class="k">Whirlwind</span> for ${d1} damage.`);
-      enqueueSlash(ctx,-1);
-      const d2 = calcDamage(ctx.player.atk*0.8, ctx.enemy.def, ctx.player.crit);
-      ctx.enemy.hp=Math.max(0,ctx.enemy.hp-d2);
-      floatNum(ctx.enemy,-d2);
-      stageShake(6);
+    {id:'whirlwind', name:'Whirlwind', desc:'Deal 80% ATK damage twice.', cd:3, use:(c)=>{
+      enqueueSlash(c,1);
+      let r1 = dealDamage(c.player.atk*0.8, c.enemy.def, c.player.crit);
+      c.enemy.hp=Math.max(0,c.enemy.hp-r1.dmg); floatNum(c.enemy,-r1.dmg);
+      if(r1.crit){ addShake(10); hitStop(120); popText('CRIT!', EPOS.x, EPOS.y-110, {size:30, color:'#ffd166', glow:true}); }
+      enqueueSlash(c,-1);
+      let r2 = dealDamage(c.player.atk*0.8, c.enemy.def, c.player.crit);
+      c.enemy.hp=Math.max(0,c.enemy.hp-r2.dmg); floatNum(c.enemy,-r2.dmg);
+      addShake(10); hitStop(120);
+      VFX.trails.push(new Trail([{x:EPOS.x-50,y:EPOS.y-30},{x:EPOS.x+10,y:EPOS.y-60},{x:EPOS.x+60,y:EPOS.y-10}], 280, 14, 'rgba(200,240,255,.85)'));
+      popText('Whirlwind!', EPOS.x, EPOS.y-100, {size:22, color:'#a7ffcb'});
+      log(`You spin into a <span class="k">Whirlwind</span> for ${r1.dmg + r2.dmg} total damage.`);
     }},
-    {id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% of max HP as a barrier for 3 turns.', cd:4, use:(ctx)=>{
-      const val=Math.floor(ctx.player.maxHp*0.3);
-      ctx.player.shield=Math.max(ctx.player.shield||0,val);
-      ctx.player.shieldTurns=3;
+    {id:'arcane_shield', name:'Arcane Shield', desc:'Gain 30% of max HP as a barrier for 3 turns.', cd:4, use:(c)=>{
+      const val=Math.floor(c.player.maxHp*0.3);
+      c.player.shield=Math.max(c.player.shield||0,val); c.player.shieldTurns=3;
       shieldPulse('player');
+      for(let i=0;i<16;i++){
+        VFX.particles.push(new Particle(PPOS.x, PPOS.y-40, {
+          vx:rand(-1.2,1.2), vy:rand(-2,-.2), g:0.12, life:rand(360,640),
+          size:rand(2,3), color:'rgba(120,255,220,.8)', shape:'circle', light:1
+        }));
+      }
+      popText('Shielded', PPOS.x, PPOS.y-90, {color:'#6ee7b7', size:20});
       log(`You conjure <span class="k">Arcane Shield</span> absorbing ${val} dmg for 3 turns.`);
     }},
-    {id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.', cd:5, use:(ctx)=>{
-      rippleCenter();
-      ctx.extraTurn=true;
+    {id:'time_warp', name:'Time Warp', desc:'Take an immediate extra turn.', cd:5, use:(c)=>{
+      rippleCenter(); hitStop(180);
+      c.extraTurn=true;
+      popText('Extra Turn', PPOS.x, PPOS.y-110, {color:'#9fb3ff', size:22, glow:true});
       log(`You bend time with <span class="k">Time Warp</span> and act again!`);
     }},
-    {id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.', cd:4, use:(ctx)=>{
-      ctx.tempAtkBoost=(ctx.tempAtkBoost||0)+ctx.player.atk; boltOverPlayer();
+    {id:'overcharge', name:'Overcharge', desc:'Double ATK this turn.', cd:4, use:(c)=>{
+      c.tempAtkBoost=(c.tempAtkBoost||0)+c.player.atk;
+      boltOverPlayer(); addShake(6);
+      VFX.trails.push(new Trail([{x:PPOS.x-20,y:PPOS.y-90},{x:PPOS.x,y:PPOS.y-30}], 260, 10, 'rgba(170,210,255,.9)'));
+      popText('Overcharge!', PPOS.x, PPOS.y-120, {color:'#ffd166', size:22, glow:true});
       log(`You surge with <span class="k">Overcharge</span>! ATK doubled this strike.`);
     }},
-    {id:'vamp_bite', name:'Vampiric Bite', desc:'Deal 120% ATK and heal 50% of dmg.', cd:4, use:(ctx)=>{
+    {id:'vamp_bite', name:'Vampiric Bite', desc:'Deal 120% ATK and heal 50% of dmg.', cd:4, use:(c)=>{
       fangsOnEnemy();
-      const dmg=calcDamage(ctx.player.atk*1.2, ctx.enemy.def, ctx.player.crit);
-      ctx.enemy.hp=Math.max(0,ctx.enemy.hp-dmg); floatNum(ctx.enemy,-dmg);
-      const heal=Math.floor(dmg*0.5); healPlayer(heal); floatNum('player',+heal);
-      log(`You drain with <span class="k">Vampiric Bite</span> for ${dmg} and heal ${heal}.`);
+      const r=dealDamage(c.player.atk*1.2, c.enemy.def, c.player.crit);
+      c.enemy.hp=Math.max(0,c.enemy.hp-r.dmg); floatNum(c.enemy,-r.dmg);
+      const heal=Math.floor(r.dmg*0.5); healPlayer(heal); floatNum('player',+heal);
+      for(let i=0;i<10;i++){
+        VFX.particles.push(new Particle(EPOS.x, EPOS.y-50, {vx:rand(-.8,.8), vy:rand(-1.6,-.2), g:.08, life:rand(340,520), size:rand(2,3), color:'rgba(255,80,120,.85)', shape:'circle', light:1}));
+      }
+      popText('Drain', EPOS.x, EPOS.y-110, {color:'#ff6b9a', size:20});
+      log(`You drain with <span class="k">Vampiric Bite</span> for ${r.dmg} and heal ${heal}.`);
     }}
   ];
+
   const BUFFS = [
     {id:'hp10', name:'+10% Max HP', apply:()=>{ const add=Math.floor(state.player.maxHp*0.10); state.player.maxHp+=add; state.player.hp+=add; }},
     {id:'atk6', name:'+6 ATK', apply:()=>{ state.player.atk+=6; }},
@@ -198,6 +328,7 @@
     {id:'vigor', name:'+10% dmg this cycle', apply:()=>{ state.player.cycleDmg=(state.player.cycleDmg||0)+0.10; }},
     {id:'guard', name:'-10% dmg taken this cycle', apply:()=>{ state.player.cycleDR=(state.player.cycleDR||0)+0.10; }},
   ];
+
   const ENEMY_TYPES = [
     { id:'swarmer', name:'Swarmer', desc:'Fast, low HP, light hits.', scale:(lvl)=>({maxHp:50+lvl*12, atk:7+lvl*2, def:2+Math.floor(lvl*0.6), spd:14+Math.floor(lvl*0.7)})},
     { id:'brute',   name:'Brute',   desc:'Slow, high HP, heavy hits.', scale:(lvl)=>({maxHp:110+lvl*20, atk:12+lvl*4, def:5+Math.floor(lvl*1.2), spd:7+Math.floor(lvl*0.3)})},
@@ -215,7 +346,6 @@
     atk.textContent=Math.round(p.atk); def.textContent=Math.round(p.def);
     crit.textContent=`${Math.round(p.crit)}%`; spd.textContent=Math.round(p.spd);
     cycleEl.textContent=state.cycle; roomEl.textContent=state.room; bossesEl.textContent=state.bossesDefeated;
-    // stage bars
     pbarStage.style.width=`${Math.round(100*p.hp/p.maxHp)}%`;
     if(state.enemy){ ebarStage.style.width=`${Math.round(100*state.enemy.hp/state.enemy.maxHp)}%`; enemyMiniName.textContent=state.enemy.name; }
     renderAbilities();
@@ -238,7 +368,13 @@
   }
 
   // ========= Combat Math =========
-  function calcDamage(atk,def,critChance){ const base=Math.max(1,Math.floor(atk-def*0.6)); const variance=rng(-2,2); const crit=(rng(1,100)<=Math.round(critChance||0)); return Math.max(1,Math.floor((base+variance)*(crit?1.75:1))); }
+  function dealDamage(atk,def,critChance){
+    const base=Math.max(1,Math.floor(atk-def*0.6));
+    const variance=rng(-2,2);
+    const isCrit=(rng(1,100)<=Math.round(critChance||0));
+    const dmg=Math.max(1,Math.floor((base+variance)*(isCrit?1.75:1)));
+    return {dmg,crit:isCrit};
+  }
   function healPlayer(n){ const p=state.player; const before=p.hp; p.hp=clamp(p.hp+n,0,p.maxHp); log(`Healed ${p.hp-before} HP.`); }
   function applyIncomingDamage(amount){ const p=state.player; const dr=p.cycleDR||0; let dmg=Math.floor(amount*(1-dr));
     if(p.shield&&p.shield>0){ const absorbed=Math.min(p.shield,dmg); p.shield-=absorbed; dmg-=absorbed; log(`Your shield absorbs ${absorbed} damage. (${p.shield||0} left)`); shieldPulse('player',0.6); }
@@ -246,7 +382,7 @@
   function endTurnTick(){ const p=state.player; if(p.shieldTurns!=null){ p.shieldTurns--; if(p.shieldTurns<=0){ p.shield=0; p.shieldTurns=null; log(`Your Arcane Shield fades.`); } }
     for(const k of Object.keys(p.cooldowns)){ if(p.cooldowns[k]>0) p.cooldowns[k]--; } }
 
-  // ========= Flow (same structure as before, with stage calls) =========
+  // ========= Flow =========
   function startGame(){
     state.cycle=1; state.room=1; state.bossesDefeated=0;
     Object.assign(state.player,{maxHp:100,hp:100,atk:10,def:3,crit:10,spd:10,xp:0,abilities:[],cooldowns:{},shield:0,shieldTurns:null,nextShield:0,cycleDmg:0,cyleDR:0});
@@ -282,6 +418,8 @@
   function startFight(isBoss=false){
     setStage(`${isBoss? (state.enemy.final?'Final Boss':'Boss') : state.enemy.name} — Fight!`, isBoss?(state.enemy.special||''):state.enemy.name);
     renderFightUI(); log(`<b>${isBoss? (state.enemy.final?'Final Boss':'Boss'):state.enemy.name} appears!</b>`);
+    popText(state.enemy.final ? 'FINAL BOSS' : (isBoss?'BOSS':''), stageCanvas.width/2, 90, {size:38, color:'#9fb3ff', glow:true, life:1200});
+    addShake(6);
     stageSpawnSprites();
   }
   function renderFightUI(){
@@ -304,12 +442,21 @@
     if(state.lock) return; actionLock(true);
     const ctxNow={player:state.player, enemy:state.enemy};
     let atkValue=state.player.atk+(state.tempAtkBoost||0); if(state.player.cycleDmg) atkValue*=(1+state.player.cycleDmg);
-    // Visual lunge + slash
     lunge('player', ()=> {
-      const dmg=calcDamage(atkValue, state.enemy.def, state.player.crit);
-      state.enemy.hp=Math.max(0,state.enemy.hp-dmg);
-      floatNum(state.enemy,-dmg); hitFlash('enemy'); slashArc();
-      stageShake(dmg>20?6:3);
+      const r=dealDamage(atkValue, state.enemy.def, state.player.crit);
+      state.enemy.hp = Math.max(0, state.enemy.hp - r.dmg);
+      floatNum(state.enemy,-r.dmg); hitFlash('enemy'); slashArc();
+      if(r.crit){
+        addShake(10); hitStop(120);
+        popText('CRIT!', EPOS.x, EPOS.y-110, {size:30, color:'#ffd166', glow:true});
+      } else { addShake(r.dmg>20?7:4); hitStop(70); }
+      for(let i=0;i<12;i++){
+        VFX.particles.push(new Particle(EPOS.x+rand(-8,8), EPOS.y-40+rand(6,-6), {
+          vx:rand(-1.8,1.8), vy:rand(-2.6,-0.6), g:0.22, life:rand(260,520),
+          size:rand(2,4), color:r.crit? 'rgba(255,210,100,.9)':'rgba(200,225,255,.85)', shape:i%3?'square':'circle', light:r.crit?1:0
+        }));
+      }
+      VFX.trails.push(new Trail([{x:EPOS.x-30,y:EPOS.y-60},{x:EPOS.x+10,y:EPOS.y-30},{x:EPOS.x+40,y:EPOS.y-10}], 220, 12, r.crit?'rgba(255,220,120,.9)':'rgba(200,230,255,.9)'));
       state.tempAtkBoost=0;
       updateEnemyHPInline();
       setTimeout(()=>{ if(checkEnd()){ actionLock(false); return; } enemyAct().then(()=>actionLock(false)); }, 260);
@@ -318,8 +465,7 @@
   function playerDefend(){
     if(state.lock) return; actionLock(true);
     const saved=state.player.def; state.player.def=Math.floor(state.player.def*1.5)+4;
-    defendPose('player');
-    log(`You brace yourself, boosting DEF this turn.`);
+    defendPose('player'); log(`You brace yourself, boosting DEF this turn.`);
     setTimeout(()=>{ enemyAct().then(()=>{ state.player.def=saved; log(`Your defensive stance ends.`); actionLock(false); }); }, 220);
   }
   function useAbility(abil){
@@ -338,20 +484,26 @@
     // Specials
     let multi=1; let modAtk=e.atk; if(e.boss && !e.final && e.turn%3===0){ if((state.bossesDefeated+1)%2===1){ modAtk=Math.floor(e.atk*1.5); } else { multi=2; } }
     if(e.final && e.turn%4===0){
-      // Devour visual: tether + heal
       tetherToBoss(); const steal=Math.floor(state.player.maxHp*0.10);
       applyIncomingDamage(steal); floatNum('player',-steal);
       e.hp=Math.min(e.maxHp,e.hp+Math.floor(steal*0.5)); floatNum(state.enemy,'+'+Math.floor(steal*0.5));
-      log(`<span class="k">Devour</span> steals ${steal} HP and heals the boss.`);
-      refreshHUD(); if(state.player.hp<=0){ checkEnd(); return; }
+      log(`<span class="k">Devour</span> steals ${steal} HP and heals the boss.`); refreshHUD(); if(state.player.hp<=0){ checkEnd(); return; }
     }
     for(let i=0;i<multi;i++){
       await new Promise(res=>{
         lunge('enemy', ()=>{
-          const dmg=calcDamage(modAtk, state.player.def, e.crit||10);
-          const taken=applyIncomingDamage(dmg);
+          const r=dealDamage(modAtk, state.player.def, e.crit||10);
+          const taken=applyIncomingDamage(r.dmg);
           floatNum('player',-taken); hitFlash('player');
-          stageShake(taken>20?7:3);
+          if(r.crit){ addShake(9); hitStop(100); popText('CRIT!', PPOS.x, PPOS.y-110, {size:28, color:'#ffd166', glow:true}); }
+          else { addShake(taken>20?8:5); hitStop(taken>20?100:60); }
+          for(let k=0;k<10;k++){
+            VFX.particles.push(new Particle(PPOS.x+rand(-6,6), PPOS.y-40+rand(-4,8), {
+              vx:rand(-1.4,1.4), vy:rand(-2.2,-0.4), g:0.22, life:rand(240,480),
+              size:rand(2,4), color:'rgba(170,220,255,.85)', shape:k%2?'circle':'square'
+            }));
+          }
+          popText(`-${taken}`, PPOS.x, PPOS.y-80, {color:'#fca5a5', size:22});
           log(`${e.name} hits you for ${taken}${multi>1?' (barrage)':''}.`);
           refreshHUD(); res();
         });
@@ -368,8 +520,8 @@
       setStage('Defeat','Try again?'); stageArea.appendChild(makeChoiceButtons([{label:'Restart',class:'danger',onClick:()=>startGame()}])); log(`<b>You were defeated.</b>`); state.phase='end'; return true;
     }
     if(e.hp<=0){
+      hitStop(220); addShake(12); popText('DOWN!', EPOS.x, EPOS.y-120, {size:28, color:'#a7ffcb', glow:true});
       log(`<b>${e.name} is defeated!</b>`); p.xp += e.boss ? 40 : 15;
-      // small vanishing anim
       vanish('enemy');
       if(e.boss){
         if(e.final){
@@ -398,11 +550,9 @@
 
   // ========= Stage Rendering & Anim System =========
   const PPOS={x:160,y:230}, EPOS={x:560,y:230};
-  function stageSpawnSprites(){ // reset ambient
-    // idle bobbing is continuous; nothing to enqueue
-  }
-  function spawnBackdrop(kind){ // simple gradient bg
-    state.backdrop=kind; }
+
+  function stageSpawnSprites(){ /* idle handled in draw loop */ }
+  function spawnBackdrop(kind){ state.backdrop=kind; }
 
   function enqueue(fn,dur=450){ state.animQ.push({t:0,d:dur,fn}); }
   function lunge(who, onHit){ enqueue((p)=>{ drawStage({[who]:{offsetX:(who==='player'?+1:-1)*Math.sin(Math.PI*ease(p))*60}}); if(p>=1 && onHit){ onHit(); onHit=null; } }, 320); }
@@ -415,14 +565,13 @@
   function rippleCenter(){ enqueue((p)=>{ effects.ripple(p); drawStage(); }, 500); }
   function fangsOnEnemy(){ enqueue((p)=>{ effects.fangs(p,EPOS); drawStage(); }, 420); }
   function tetherToBoss(){ enqueue((p)=>{ effects.tether(p,EPOS,PPOS); drawStage(); }, 420); }
-  function enqueueSlash(ctx,dir){ enqueue((p)=>{ effects.dualSlash(p,dir); drawStage(); }, 260); }
+  function enqueueSlash(ctxx,dir){ enqueue((p)=>{ effects.dualSlash(p,dir); drawStage(); }, 260); }
   function floatNum(target, val){ const str=(typeof val==='number'? (val>=0?`+${val}`:`${val}`) : `${val}`); const pos=(target==='player'?PPOS:EPOS);
     const y0=pos.y-80, dy=30; const hue = (typeof val==='number' && val<0)? 0 : 150;
     enqueue((p)=>{ drawStage(); const a=1-p; ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=`hsl(${hue} 70% 70%)`; ctx.font="24px system-ui,Segoe UI,Roboto"; ctx.textAlign='center'; ctx.fillText(str,pos.x, y0 - dy*p); ctx.restore(); }, 700);
   }
   function stageShake(intensity=4){ state.shake=Math.max(state.shake,intensity); }
 
-  // Effects drawing
   const effects = {
     slash(p){ const t=ease(p); ctx.save(); ctx.translate(stageCanvas.width/2,stageCanvas.height/2);
       ctx.rotate(-.25); ctx.globalAlpha=1-t; ctx.lineWidth=16; ctx.strokeStyle='rgba(255,255,255,.8)';
@@ -430,7 +579,7 @@
     dualSlash(p,dir){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.lineWidth=10; ctx.strokeStyle='rgba(255,255,255,.85)';
       ctx.beginPath(); ctx.arc(dir>0?EPOS.x-40:EPOS.x+20, EPOS.y-40, 40+60*t, dir>0?Math.PI*1.2:Math.PI*0.2, dir>0?Math.PI*1.8:Math.PI*0.8); ctx.stroke(); ctx.restore(); },
     shield(who,p,scale){ const pos=(who==='player'?PPOS:EPOS); const t=ease(p); ctx.save(); ctx.globalAlpha=.25+.35*(1-t);
-      ctx.strokeStyle='rgba(102,255,204,.9)'; ctx.lineWidth=4; const r=46*(.8+0.6*(1-t))*scale*(who==='player'?1:1);
+      ctx.strokeStyle='rgba(102,255,204,.9)'; ctx.lineWidth=4; const r=46*(.8+0.6*(1-t))*scale;
       hex(pos.x,pos.y-20,r); ctx.restore(); },
     bolt(p,center){ const t=ease(p); ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle='rgba(173,216,255,.9)'; ctx.lineWidth=3;
       zigzag(center.x,center.y-80, center.x, center.y-20, 6); ctx.restore(); },
@@ -445,22 +594,13 @@
   function hex(x,y,r){ ctx.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; const px=x+r*Math.cos(a), py=y+r*Math.sin(a); if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.closePath(); ctx.stroke(); }
   function zigzag(x1,y1,x2,y2,steps){ ctx.beginPath(); ctx.moveTo(x1,y1); for(let i=1;i<=steps;i++){ const t=i/steps; const x=x1+(x2-x1)*t; const y = y1+(y2-y1)*t + (i%2? -10:10); ctx.lineTo(x,y); } }
 
-  // Draw loop
   function drawStage(overrides={}){
     const w=stageCanvas.width, h=stageCanvas.height;
-    // bg
-    const g=ctx.createLinearGradient(0,0,0,h); if(state.backdrop==='boss'){ g.addColorStop(0,'#0f0a26'); g.addColorStop(1,'#0b132b'); } else { g.addColorStop(0,'#0b1324'); g.addColorStop(1,'#0a1a36'); }
     ctx.save();
-    // shake
-    if(state.shake>0){ const s=state.shake; ctx.translate(rng(-s,s), rng(-s,s)); state.shake*=0.85; if(state.shake<0.5) state.shake=0; }
-    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-    // platform
+    if(state.shake>0){ const s=state.shake; ctx.translate(rng(-s,s), rng(-s,s)); state.shake*=0.85; if(state.shake<0.4) state.shake=0; }
+    drawParallax(ctx,w,h,state.t);
     ctx.fillStyle='rgba(20,40,90,.8)'; ctx.beginPath(); ctx.ellipse(w/2,h-30, 260,18, 0,0,Math.PI*2); ctx.fill();
-
-    // ambient runes (boss) or corridors (room)
-    if(state.backdrop==='boss'){ ctx.strokeStyle='rgba(100,200,255,.15)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h-48, 160+6*Math.sin(state.t*.08), 0, Math.PI*2); ctx.stroke(); }
-
-    // sprites
+    if(state.backdrop==='boss'){ ctx.strokeStyle='rgba(100,200,255,.15)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h-48, 160+6*Math.sin(state.t*.008), 0, Math.PI*2); ctx.stroke(); }
     drawActor('player', overrides.player||{});
     if(state.enemy) drawActor('enemy', overrides.enemy||{});
     ctx.restore();
@@ -471,34 +611,34 @@
     const offX=opt.offsetX||0, offY=opt.offsetY||0; const defend=opt.defend, hit=opt.hit;
     const pos=(who==='player'?PPOS:EPOS); ctx.save(); ctx.globalAlpha=alpha;
     ctx.translate(pos.x+offX, pos.y+offY+idleY);
-    // fallback vector silhouettes (replace with atlas draws if you add atlas)
     if(state.sprites.hasAtlas){
-      // Example atlas usage (stub): ctx.drawImage(state.sprites.atlas, sx,sy,sw,sh, -48,-64,96,96);
-      // For now, use vector shapes so it works without assets.
+      // If you add atlas.png, you can draw frames here via ctx.drawImage(...)
+      // Placeholder vector art below:
     }
-    // body
     ctx.fillStyle=who==='player'?'#63e6be':'#9fb3ff';
     if(hit){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle='white'; }
-    ctx.beginPath(); ctx.roundRect(-24,-56,48,60,10); ctx.fill();
-    // head
+    if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(-24,-56,48,60,10); ctx.fill(); }
+    else { ctx.fillRect(-24,-56,48,60); }
     ctx.beginPath(); ctx.arc(0,-68,14,0,Math.PI*2); ctx.fill();
-    // weapon / caster hand
     ctx.fillStyle=who==='player'?'#aef4dd':'#c7d2ff';
     ctx.fillRect(16,-38, 28,6);
-    // defend aura
     if(defend){ ctx.strokeStyle='rgba(120,220,255,.8)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,-28,34,0,Math.PI*2); ctx.stroke(); }
     ctx.restore();
   }
 
-  // Master RAF loop to keep idle motion
+  // RAF loop with VFX
+  let last=performance.now();
   function loop(ts){
+    const dt = ts - last; last = ts;
     state.t = ts; state.frame++;
+    vfxStepAndDraw(ctx, dt);
     if(state.animQ.length){
-      const a=state.animQ[0]; a.t+=16.67; const p=clamp(a.t/a.d,0,1); a.fn(p);
+      const a=state.animQ[0]; a.t+=dt; const p=clamp(a.t/a.d,0,1); a.fn(p);
       if(p>=1) state.animQ.shift();
     } else {
-      drawStage(); // idle draw
+      drawStage();
     }
+    vfxDrawOverlays(ctx);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -506,8 +646,16 @@
   // ========= Start =========
   startGame();
 
-  // ========= End helpers =========
-  function pickEnemyMini(){} // kept for parity
+  // Dummy for parity
+  function pickEnemyMini(){} 
+
+  // ========= UI helpers reused =========
+  function makeChoiceButtons(options){
+    const grid=el('div',{class:'grid two'});
+    options.forEach((opt,i)=>{ const btn=el('button',{class:`btn ${i===0?'primary': i===1?'warn':''}`,text:opt.label}); btn.addEventListener('click',opt.onClick); grid.appendChild(btn);
+      const hk=(i+1).toString(); document.addEventListener('keydown',function handler(e){ if(state.lock) return; if(e.key===hk){ e.preventDefault(); btn.click(); } },{once:true}); });
+    return grid;
+  }
 })();
 </script>
 </body>
