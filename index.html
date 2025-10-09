@@ -3,36 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Bridge Defense: Fake Ad Edition</title>
+<title>Bridge Defense — Simple Fake Ad</title>
 <style>
   :root{
-    --bg:#0b1220; --rail:#1a2a45; --lane:#0e1a32; --ink:#e7f0ff; --muted:#a9bde4;
-    --good:#36d399; --warn:#ffb86b; --bad:#ff6b6b; --coin:#ffd166; --accent:#60a5fa;
+    --ink:#e7f0ff; --muted:#a9bde4;
+    --lane:#0d1830; --rail:#10203a; --tileA:#101d38; --tileB:#122243;
+    --good:#36d399; --boost:#60a5fa; --gold:#ffd166; --bad:#ff6b6b;
   }
   html,body{height:100%}
   body{margin:0;background:radial-gradient(900px 600px at 50% -120px,#13264a,#0b1220);color:var(--ink);font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif;overflow:hidden}
   .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto}
-  header,footer{display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(#0e1b33,#0a1324);border-bottom:1px solid #172a4e}
+  header,footer{
+    display:flex;gap:8px;align-items:center;justify-content:center;
+    background:linear-gradient(#0e1b33,#0a1324);
+    border-bottom:1px solid #172a4e
+  }
   footer{border-top:1px solid #172a4e;border-bottom:none;padding:8px}
   header{padding:8px 6px;flex-wrap:wrap}
   .pill{background:#0f213d;border:1px solid #1e3c72;border-radius:999px;padding:6px 10px}
-  .note{color:#a9bde4;opacity:.8}
-  #game{display:block;margin:0 auto;/* narrow lane feel: canvas scaled, logical size locked */ background:#081224}
-  .panel{
+  .btn{background:#11264a;border:1px solid #2b5598;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+  .btn:hover{filter:brightness(1.1)}
+  #game{display:block;margin:0 auto;background:#081224}
+  .tip{
     position:absolute;top:64px;left:50%;transform:translateX(-50%);
     background:rgba(10,18,36,.55);border:1px solid #16305a;border-radius:12px;padding:6px 10px;backdrop-filter:blur(4px);font-weight:700
   }
   .pop{
-    position:absolute;pointer-events:none;left:50%;transform:translateX(-50%);
-    top:90px;background:#132a52;border:1px solid #2d5aa0;border-radius:12px;padding:6px 10px;display:none
+    position:absolute;top:96px;left:50%;transform:translateX(-50%);
+    background:#132a52;border:1px solid #2d5aa0;border-radius:12px;padding:6px 10px;display:none;font-weight:800
   }
-  .log{position:absolute;left:10px;bottom:88px;width:min(420px,88vw);max-height:36vh;overflow:auto;background:rgba(9,16,30,.55);border:1px solid #153058;border-radius:12px;padding:8px}
-  .log p{margin:.25em 0;color:#cfe0ff}
-  .btn{
-    background:#11264a;border:1px solid #2b5598;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700
-  }
-  .btn:hover{filter:brightness(1.1)}
-  @media (max-height:640px){ header{padding:6px 4px} }
+  .note{color:var(--muted);opacity:.85}
 </style>
 </head>
 <body>
@@ -40,347 +40,235 @@
   <header>
     <div class="pill">❤️ HP: <span id="hp">100</span></div>
     <div class="pill">🔫 Turrets: <span id="tcount">1</span></div>
-    <div class="pill">⚡ Fire/s: <span id="fire">1.0</span></div>
+    <div class="pill">⚡ Fire/s: <span id="fire">0.8</span></div>
     <div class="pill">💥 Damage: <span id="dmg">6</span></div>
-    <div class="pill">🏆 Wave: <span id="wave">1</span></div>
+    <div class="pill">🌊 Wave: <span id="wave">1</span></div>
     <button class="btn" id="newRun">New Run</button>
   </header>
 
+  <!-- Narrow phone-like battlefield -->
   <canvas id="game" width="360" height="640" aria-label="narrow bridge battlefield"></canvas>
 
-  <div class="panel">Drag / tap to aim. Decide: shoot enemies or shoot upgrades.</div>
-  <div class="pop" id="pop">+1 TURRET</div>
-  <div class="log" id="log"></div>
+  <div class="tip">Drag left/right to slide your turrets. Shoot enemies or the upgrade targets.</div>
+  <div class="pop" id="pop">UPGRADE!</div>
 
-  <footer><span class="note">No menus. Destroy an upgrade target → it applies instantly (x2/x3 fire, +turrets, x2 dmg).</span></footer>
+  <footer><span class="note">Upgrades: x2 FIRE, +1 TURRET, x2 DMG. They apply instantly when destroyed.</span></footer>
 </div>
 
 <script>
 (() => {
-  // ====== helpers
+  // ---------- helpers
   const rnd=(a,b)=>Math.random()*(b-a)+a;
   const irnd=(a,b)=>Math.floor(rnd(a,b+1));
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const choice = a => a[Math.floor(Math.random()*a.length)];
-  const dist2=(x1,y1,x2,y2)=>{const dx=x1-x2,dy=y1-y2;return dx*dx+dy*dy};
+  const dist2=(x1,y1,x2,y2)=>{const dx=x1-x2,dy=y1-y2;return dx*dx+dy*dy;};
 
-  const logEl = document.getElementById('log');
-  const ui = {
-    hp: document.getElementById('hp'),
-    tcount: document.getElementById('tcount'),
-    fire: document.getElementById('fire'),
-    dmg: document.getElementById('dmg'),
-    wave: document.getElementById('wave'),
-    newRun: document.getElementById('newRun'),
-    pop: document.getElementById('pop'),
-  };
-  function log(msg){ const p=document.createElement('p'); p.textContent=msg; logEl.appendChild(p); logEl.scrollTop=logEl.scrollHeight; }
-  function pop(msg,color='#132a52',border='#2d5aa0'){
-    ui.pop.textContent=msg; ui.pop.style.display='block';
-    ui.pop.style.background=color; ui.pop.style.borderColor=border;
-    setTimeout(()=>ui.pop.style.display='none', 900);
-  }
-
-  // ====== canvas and sizing (keep it visually narrow; scale CSS size for screen)
+  // ---------- canvas (locked narrow; CSS scales)
   const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
-  let W=cvs.width, H=cvs.height;
-  function rescale(){
-    // Keep visual width narrow (~360px) but scale up for device
-    const maxScale = Math.min(window.innerWidth/360, (window.innerHeight-130)/640);
-    cvs.style.width = 360*maxScale+'px';
-    cvs.style.height = 640*maxScale+'px';
+  const W=cvs.width, H=cvs.height;
+  function scaleCanvas(){
+    const s=Math.min(window.innerWidth/360,(window.innerHeight-130)/640);
+    cvs.style.width=360*s+'px'; cvs.style.height=640*s+'px';
   }
-  addEventListener('resize', rescale); rescale();
+  addEventListener('resize',scaleCanvas); scaleCanvas();
 
-  // ====== input: aim point
-  let aimX=W/2, aimY=60, pointerDown=false;
-  function pointerToLocal(e){
-    const rect=cvs.getBoundingClientRect();
-    const x=(e.clientX-rect.left)/rect.width*W;
-    const y=(e.clientY-rect.top)/rect.height*H;
-    return {x,y};
+  // ---------- UI
+  const ui={
+    hp:document.getElementById('hp'), tcount:document.getElementById('tcount'),
+    fire:document.getElementById('fire'), dmg:document.getElementById('dmg'),
+    wave:document.getElementById('wave'), newRun:document.getElementById('newRun'),
+    pop:document.getElementById('pop'),
+  };
+  function setUI(st){
+    ui.hp.textContent=Math.max(0,Math.ceil(st.hp));
+    ui.tcount.textContent=st.turrets.length;
+    ui.fire.textContent=st.firePerSec.toFixed(1);
+    ui.dmg.textContent=st.dmg;
+    ui.wave.textContent=st.wave;
   }
-  cvs.addEventListener('pointerdown', e=>{ pointerDown=true; const p=pointerToLocal(e); aimX=p.x; aimY=p.y; });
-  addEventListener('pointerup', ()=>pointerDown=false);
-  addEventListener('pointercancel', ()=>pointerDown=false);
-  cvs.addEventListener('pointermove', e=>{ if(!pointerDown) return; const p=pointerToLocal(e); aimX=p.x; aimY=p.y; });
+  function pop(msg,bg='#132a52',bd='#2d5aa0'){ ui.pop.textContent=msg; ui.pop.style.display='block'; ui.pop.style.background=bg; ui.pop.style.borderColor=bd; setTimeout(()=>ui.pop.style.display='none',800); }
 
-  // ====== game state
+  // ---------- input: slide horizontally
+  let drag=false, targetX=W/2;
+  function toLocal(e){const r=cvs.getBoundingClientRect(); return (e.clientX-r.left)/r.width*W;}
+  cvs.addEventListener('pointerdown',e=>{drag=true; targetX=toLocal(e);});
+  addEventListener('pointerup',()=>drag=false);
+  addEventListener('pointercancel',()=>drag=false);
+  cvs.addEventListener('pointermove',e=>{ if(drag){ targetX=toLocal(e);} });
+
+  // ---------- game state
   const state = {
     running:true, time:0, wave:1, hp:100,
-    turrets:[], bullets:[], enemies:[], upgrades:[], coins:[],
-    firePerSec:1.0, dmg:6, spread:0, // spread = extra bullets per shot (0 = single)
-    nextEnemy:1.4, nextUpgrade:2.6, enemyScale:1, // spawn timers
+    groupX:W/2, turrets:[], bullets:[], enemies:[], upgrades:[],
+    firePerSec:0.8, dmg:6, nextEnemy:1.2, nextUpgrade:2.8,
   };
-
-  function setUI(){
-    ui.hp.textContent = Math.max(0,Math.ceil(state.hp));
-    ui.tcount.textContent = state.turrets.length;
-    ui.fire.textContent = state.firePerSec.toFixed(1);
-    ui.dmg.textContent = state.dmg;
-    ui.wave.textContent = state.wave;
-  }
-
-  // ====== entities
-  function addTurrets(n){
-    for(let i=0;i<n;i++){ state.turrets.push({x:W/2,y:H-70,cool:0}); }
-    layoutTurrets();
-  }
-  function layoutTurrets(){
-    const n = state.turrets.length;
-    const margin=34;
-    if(n===1){ state.turrets[0].x=W/2; return; }
-    for(let i=0;i<n;i++){
-      const t = state.turrets[i];
-      const x = margin + i*( (W-2*margin)/(n-1) );
-      t.x = x; t.y = H-70;
-    }
-  }
-  function spawnEnemy(){
-    const e = {
-      x:rnd(60,W-60),
-      y:-40,
-      r:16,
-      hp: Math.round(22 + state.wave*6 + rnd(0,8)),
-      speed: 0.7 + state.wave*0.05 + rnd(0,0.15),
-      hitT:0
-    };
-    state.enemies.push(e);
-  }
-  function spawnFastEnemy(){
-    const e = {
-      x:rnd(60,W-60),
-      y:-40,
-      r:13,
-      hp: Math.round(16 + state.wave*4),
-      speed: 1.35 + state.wave*0.06,
-      hitT:0
-    };
-    state.enemies.push(e);
-  }
-  const UPTYPES = [
-    {key:'FIRE2', label:'x2 FIRE', color:'#36d399', apply:()=>{ state.firePerSec=Math.min(30, state.firePerSec*2); pop('x2 FIRE', '#0b3a2a','#36d399'); }},
-    {key:'FIRE3', label:'x3 FIRE', color:'#36d399', apply:()=>{ state.firePerSec=Math.min(30, state.firePerSec*3); pop('x3 FIRE', '#0b3a2a','#36d399'); }},
-    {key:'T1', label:'+1 TURRET', color:'#60a5fa', apply:()=>{ addTurrets(1); pop('+1 TURRET', '#0b2a4a','#60a5fa'); }},
-    {key:'T2', label:'+2 TURRETS', color:'#60a5fa', apply:()=>{ addTurrets(2); pop('+2 TURRETS', '#0b2a4a','#60a5fa'); }},
-    {key:'DMG2', label:'x2 DMG', color:'#ffd166', apply:()=>{ state.dmg=Math.min(999, state.dmg*2); pop('x2 DAMAGE', '#3b2a08','#ffd166'); }},
-  ];
-  function spawnUpgrade(){
-    // 2/3 positive fire muls & turrets, 1/3 dmg
-    let up;
-    const r=Math.random();
-    if(r<0.38) up=UPTYPES[0]; else if(r<0.60) up=UPTYPES[1];
-    else if(r<0.78) up=UPTYPES[2]; else if(r<0.90) up=UPTYPES[3]; else up=UPTYPES[4];
-
-    const hp = up.key.startsWith('T') ? irnd(50,100) : irnd(80,140);
-    const u = {
-      x:rnd(48,W-48), y:-30, r:18, hp, speed:0.5, up:up, hitT:0
-    };
-    state.upgrades.push(u);
-  }
-  function coinBurst(x,y,count=irnd(1,3)){
-    for(let i=0;i<count;i++){
-      state.coins.push({x,y,vy:rnd(0.6,1.1),life:3});
-    }
-  }
-
-  // ====== bullets
-  function shootFrom(x,y){
-    const bspd=8.8;
-    // aim vector
-    const dx = aimX - x, dy = aimY - y;
-    const d = Math.hypot(dx,dy) || 1;
-    const vx = bspd * (dx/d), vy = bspd * (dy/d);
-    // center bullet
-    state.bullets.push({x,y,vx,vy,dmg:state.dmg,life:2});
-    // spread extras (±6° each)
-    for(let i=0;i<state.spread;i++){
-      const angle = (i%2?1:-1) * (Math.ceil((i+1)/2)) * 0.105; // ~6 deg
-      const cos=Math.cos(angle), sin=Math.sin(angle);
-      const svx = vx*cos - vy*sin, svy = vx*sin + vy*cos;
-      state.bullets.push({x,y,vx:svx,vy:svy,dmg:Math.max(1,Math.round(state.dmg*0.7)),life:2});
-    }
-  }
-
-  // ====== control
-  ui.newRun.onclick = () => startNewRun();
 
   function startNewRun(){
     state.running=true; state.time=0; state.wave=1; state.hp=100;
-    state.turrets.length=0; state.bullets.length=0; state.enemies.length=0; state.upgrades.length=0; state.coins.length=0;
-    state.firePerSec=1.0; state.dmg=6; state.spread=0;
-    state.nextEnemy=1.2; state.nextUpgrade=2.2; state.enemyScale=1;
+    state.groupX=W/2; state.turrets.length=0; state.bullets.length=0; state.enemies.length=0; state.upgrades.length=0;
+    state.firePerSec=0.8; state.dmg=6; state.nextEnemy=1.2; state.nextUpgrade=2.8;
     addTurrets(1);
-    logEl.innerHTML='';
-    log('🎯 New run: 1 turret, slow fire. Shoot enemies OR shoot upgrade targets.');
-    setUI();
+    setUI(state);
+  }
+  document.getElementById('newRun').onclick=()=>startNewRun();
+
+  function addTurrets(n){
+    for(let i=0;i<n;i++) state.turrets.push({x:W/2,y:H-72,cool:0});
+    layoutTurrets();
+  }
+  function layoutTurrets(){
+    // Keep the line centered on groupX and clamp inside lane
+    const n=state.turrets.length, spacing=34, laneL=28, laneR=W-28;
+    const width = spacing*(n-1);
+    let left = state.groupX - width/2;
+    left = clamp(left, laneL, Math.max(laneL, laneR - width));
+    for(let i=0;i<n;i++){ state.turrets[i].x = left + i*spacing; state.turrets[i].y = H-72; }
   }
 
-  // ====== step/draw
+  // enemies
+  function spawnEnemy(){
+    state.enemies.push({x:rnd(40,W-40), y:-36, r:15, hp:Math.round(20+state.wave*5), speed:0.55+state.wave*0.04, hitT:0});
+  }
+  function spawnSlowChunky(){
+    state.enemies.push({x:rnd(40,W-40), y:-40, r:18, hp:Math.round(38+state.wave*7), speed:0.45+state.wave*0.03, hitT:0});
+  }
+
+  // upgrades
+  const UPTYPES=[
+    {label:'x2 FIRE', color:'#36d399', apply:()=>{ state.firePerSec=Math.min(20,state.firePerSec*2); pop('x2 FIRE','#0b3a2a','#36d399'); }},
+    {label:'+1 TURRET', color:'#60a5fa', apply:()=>{ addTurrets(1); pop('+1 TURRET','#0b2a4a','#60a5fa'); }},
+    {label:'x2 DMG', color:'#ffd166', apply:()=>{ state.dmg=Math.min(999,state.dmg*2); pop('x2 DAMAGE','#3b2a08','#ffd166'); }},
+  ];
+  function spawnUpgrade(){
+    const up=UPTYPES[irnd(0,UPTYPES.length-1)];
+    const hp = up.label.includes('TURRET') ? irnd(40,70) : irnd(70,110);
+    state.upgrades.push({x:rnd(48,W-48), y:-30, r:18, hp, speed:0.45, hitT:0, up});
+  }
+
+  // bullets (straight up)
+  function shootFrom(x,y){
+    const vy=-9; // straight up
+    state.bullets.push({x,y-8,vy,life:2.2,dmg:state.dmg});
+  }
+
+  // ---------- loop
   let last=0;
   function loop(ts){
     if(!last) last=ts;
     const dt=Math.min(0.033,(ts-last)/1000); last=ts;
-    if(state.running) step(dt), draw();
+    if(state.running){ step(dt); draw(); }
     requestAnimationFrame(loop);
   }
 
   function step(dt){
-    state.time += dt;
-    setUI();
+    state.time+=dt;
+    // slide group
+    state.groupX += (clamp(targetX, 40, W-40) - state.groupX) * 0.18;
+    layoutTurrets();
 
-    // spawn pacing
+    // spawn pacing (intentionally gentle)
     state.nextEnemy -= dt;
     if(state.nextEnemy<=0){
-      if(Math.random()<0.35) spawnFastEnemy(); else spawnEnemy();
-      // quicker spawns as wave rises
-      const base=1.0 - Math.min(0.6, state.wave*0.04);
-      state.nextEnemy = base + rnd(0.0,0.5);
+      (Math.random()<0.25?spawnSlowChunky:spawnEnemy)();
+      state.nextEnemy = 1.3 + rnd(0.2,0.8) - Math.min(.5,(state.wave-1)*0.05);
     }
     state.nextUpgrade -= dt;
     if(state.nextUpgrade<=0){
-      // often spawn 2 at staggered spots to force choices
       spawnUpgrade();
-      if(Math.random()<0.55) setTimeout(spawnUpgrade, irnd(300,800));
-      state.nextUpgrade = 4.0 + rnd(-0.5,1.2);
+      state.nextUpgrade = 3.4 + rnd(-0.3,0.8);
     }
 
     // turrets fire
-    const tReload = 1/Math.max(0.2, state.firePerSec);
-    state.turrets.forEach(t=>{
-      t.cool -= dt;
-      if(t.cool<=0){
-        shootFrom(t.x, t.y);
-        t.cool = tReload;
-      }
-    });
+    const reload = 1 / Math.max(0.2, state.firePerSec);
+    for(const t of state.turrets){ t.cool-=dt; if(t.cool<=0){ shootFrom(t.x, t.y); t.cool=reload; } }
 
     // bullets
-    state.bullets.forEach(b=>{
-      b.x += b.vx; b.y += b.vy; b.life -= dt;
-    });
-    state.bullets = state.bullets.filter(b=>b.life>0 && b.x>-20 && b.x<W+20 && b.y>-40 && b.y<H+20);
+    for(const b of state.bullets){ b.y += b.vy; b.life-=dt; }
+    state.bullets = state.bullets.filter(b=>b.life>0 && b.y>-30);
 
-    // enemies advance
-    state.enemies.forEach(e=>{
+    // enemies
+    for(const e of state.enemies){
       e.y += e.speed; e.hitT=Math.max(0,e.hitT-dt);
-      if(e.y>H-50){ // reached base
-        e.dead=true; state.hp -= 10; log('💢 Enemy slipped through! -10 HP');
-        if(state.hp<=0){ gameOver(); }
-      }
-    });
-
-    // upgrades drift
-    state.upgrades.forEach(u=>{ u.y += u.speed; u.hitT=Math.max(0,u.hitT-dt); if(u.y>H-40) u.dead=true; });
-
-    // bullets collide (enemies first, then upgrades, one hit per bullet)
-    for(const b of state.bullets){
-      // enemy hit?
-      let hitIdx = state.enemies.findIndex(e=>!e.dead && dist2(b.x,b.y,e.x,e.y) < (e.r+5)*(e.r+5));
-      if(hitIdx>=0){
-        const e=state.enemies[hitIdx]; e.hp -= b.dmg; e.hitT=0.08; b.life=0;
-        if(e.hp<=0){ e.dead=true; coinBurst(e.x,e.y); }
-        continue;
-      }
-      // upgrade hit?
-      hitIdx = state.upgrades.findIndex(u=>!u.dead && dist2(b.x,b.y,u.x,u.y) < (u.r+7)*(u.r+7));
-      if(hitIdx>=0){
-        const u=state.upgrades[hitIdx]; u.hp -= b.dmg; u.hitT=0.08; b.life=0;
-        if(u.hp<=0){ u.dead=true; u.up.apply(); setUI(); log('⬆️ Upgrade: '+u.up.label); }
-      }
+      if(e.y>H-56){ e.dead=true; state.hp -= 8; if(state.hp<=0) gameOver(); }
     }
 
-    // coin drift
-    state.coins.forEach(c=>{ c.y = (c.y||H-60); c.x = (c.x||W/2); c.y += c.vy; c.life-=dt; });
-    state.coins = state.coins.filter(c=>c.life>0);
+    // upgrades drift
+    for(const u of state.upgrades){ u.y += u.speed; u.hitT=Math.max(0,u.hitT-dt); if(u.y>H-40) u.dead=true; }
 
-    // clean
+    // bullet collisions (bigger bullets for easier play)
+    for(const b of state.bullets){
+      // hit upgrade?
+      let u = state.upgrades.find(u=>!u.dead && dist2(b.x,b.y,u.x,u.y) < (u.r+7)*(u.r+7));
+      if(u){ u.hp -= b.dmg; u.hitT=0.08; b.life=0; if(u.hp<=0){ u.dead=true; u.up.apply(); setUI(state);} continue; }
+      // hit enemy?
+      let e = state.enemies.find(e=>!e.dead && dist2(b.x,b.y,e.x,e.y) < (e.r+7)*(e.r+7));
+      if(e){ e.hp -= b.dmg; e.hitT=0.08; b.life=0; if(e.hp<=0) e.dead=true; }
+    }
+
+    // clean up
     state.enemies = state.enemies.filter(e=>!e.dead);
     state.upgrades = state.upgrades.filter(u=>!u.dead);
 
-    // escalate difficulty by time
-    if(state.time> 22 + state.wave*6){
-      state.wave++; state.time=0;
-      log(`🏁 Wave ${state.wave}`);
-      // small reward: add tiny spread every few waves for spectacle
-      if(state.wave%4===0 && state.spread<3){ state.spread++; pop('+SPREAD','rgba(37,99,235,.25)','#3b82f6'); }
-      // raise baseline spawn pressure
-      state.enemyScale += 0.1;
-    }
+    // wave up slowly
+    if(state.time > 24){ state.wave++; state.time=0; }
+
+    setUI(state);
   }
 
   function draw(){
-    // Background bridge with rails to sell the narrow-lane vibe
+    // rails + lane
     ctx.clearRect(0,0,W,H);
-    // rails
-    ctx.fillStyle='#10203a'; ctx.fillRect(0,0,20,H); ctx.fillRect(W-20,0,20,H);
-    // lane
-    ctx.fillStyle='#0d1830'; ctx.fillRect(20,0,W-40,H);
-    // lane tiles
+    ctx.fillStyle=varColor('--rail'); ctx.fillRect(0,0,20,H); ctx.fillRect(W-20,0,20,H);
+    ctx.fillStyle=varColor('--lane'); ctx.fillRect(20,0,W-40,H);
+    // tiles
     for(let y=0;y<H;y+=36){
-      ctx.fillStyle = (Math.floor((y + (performance.now()/60|0)) / 36) % 2) ? '#122243' : '#101d38';
+      ctx.fillStyle = (Math.floor((y + (performance.now()/60|0)) / 36) % 2) ? varColor('--tileB') : varColor('--tileA');
       ctx.fillRect(22,y,W-44,36);
     }
 
     // upgrades
-    state.upgrades.forEach(u=>{
+    for(const u of state.upgrades){
       ctx.save(); ctx.translate(u.x,u.y);
-      ctx.fillStyle = u.hitT>0 ? '#fff' : u.up.color;
-      circle(0,0,u.r,true);
-      ctx.fillStyle='#fff'; ctx.font='bold 14px system-ui'; ctx.textAlign='center';
+      ctx.fillStyle=u.hitT>0?'#fff':u.up.color; circle(0,0,18,true);
+      ctx.fillStyle='#fff'; ctx.font='bold 13px system-ui'; ctx.textAlign='center';
       ctx.fillText(u.up.label,0,-20);
       ctx.fillText(Math.max(0,Math.ceil(u.hp)),0,2);
       ctx.restore();
-    });
+    }
 
     // enemies
-    state.enemies.forEach(e=>{
+    for(const e of state.enemies){
       ctx.save(); ctx.translate(e.x,e.y);
-      ctx.fillStyle = e.hitT>0 ? '#ffd166' : '#e74c3c';
+      ctx.fillStyle = e.hitT>0 ? varColor('--gold') : varColor('--bad');
       circle(0,0,e.r,true);
-      ctx.fillStyle='#fff'; ctx.font='bold 13px system-ui'; ctx.textAlign='center';
+      ctx.fillStyle='#fff'; ctx.font='bold 12px system-ui'; ctx.textAlign='center';
       ctx.fillText(Math.max(0,Math.ceil(e.hp)),0,2);
       ctx.restore();
-    });
+    }
 
-    // coins sparkles
-    state.coins.forEach(c=>{
-      ctx.save(); ctx.translate(c.x,c.y);
-      ctx.fillStyle= '#ffd166';
-      circle(0,0,3,true);
-      ctx.restore();
-    });
-
-    // bullets
+    // bullets (slightly larger for easier hits)
     ctx.fillStyle='#9bdcff';
-    state.bullets.forEach(b=>{ circle(b.x,b.y,3,true); });
+    for(const b of state.bullets){ circle(b.x,b.y,4,true); }
 
-    // turrets + muzzle blink
-    state.turrets.forEach(t=>{
-      // barrel angle (toward aim)
-      const ang = Math.atan2(aimY - t.y, aimX - t.x);
-      // base
+    // turret line
+    for(const t of state.turrets){
       ctx.save(); ctx.translate(t.x,t.y);
-      ctx.fillStyle='#36d399'; circle(0,0,14,true);
-      // barrel
-      ctx.rotate(ang);
-      ctx.fillStyle='#2dd4bf'; ctx.fillRect(6,-3,18,6);
+      ctx.fillStyle=varColor('--good'); circle(0,0,14,true);
+      ctx.fillStyle='#2dd4bf'; ctx.fillRect(-3,-16,6,18); // barrel upward
       ctx.restore();
-    });
+    }
 
     // base line
     ctx.strokeStyle='#203b6a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(20,H-48); ctx.lineTo(W-20,H-48); ctx.stroke();
   }
 
-  function circle(x,y,r,fill){
-    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-    fill ? ctx.fill() : ctx.stroke();
-  }
+  // small drawing utils
+  function circle(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); fill?ctx.fill():ctx.stroke(); }
+  function varColor(name){ return getComputedStyle(document.documentElement).getPropertyValue(name) || '#fff'; }
 
   function gameOver(){
     state.running=false;
-    setUI();
-    setTimeout(()=>alert(`💀 Defeat! Wave ${state.wave}\nTry focusing upgrades earlier or letting a few enemies slip to grab x3 FIRE.`), 30);
+    setTimeout(()=>alert(`💀 Defeat on Wave ${state.wave}\nTip: Line up with upgrades early (x2 FIRE, +1 TURRET) to snowball.`),30);
   }
 
   // boot
