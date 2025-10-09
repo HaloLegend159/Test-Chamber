@@ -1,655 +1,391 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Totally-Not-A-Fake-Mobile-Ad</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bridge Defense: Fake Ad Edition</title>
 <style>
   :root{
-    --bg:#0b1220; --panel:#0d1628; --ink:#e8f0ff; --muted:#9fb3d6; --accent:#4ade80; --danger:#ff6b6b; --gold:#ffd166;
+    --bg:#0b1220; --rail:#1a2a45; --lane:#0e1a32; --ink:#e7f0ff; --muted:#a9bde4;
+    --good:#36d399; --warn:#ffb86b; --bad:#ff6b6b; --coin:#ffd166; --accent:#60a5fa;
   }
   html,body{height:100%}
-  body{
-    margin:0;background:radial-gradient(1200px 800px at 50% -200px,#0f2142 0%,#0b1220 40%,#070c15 100%);
-    color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif;overflow:hidden;
+  body{margin:0;background:radial-gradient(900px 600px at 50% -120px,#13264a,#0b1220);color:var(--ink);font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif;overflow:hidden}
+  .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+  header,footer{display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(#0e1b33,#0a1324);border-bottom:1px solid #172a4e}
+  footer{border-top:1px solid #172a4e;border-bottom:none;padding:8px}
+  header{padding:8px 6px;flex-wrap:wrap}
+  .pill{background:#0f213d;border:1px solid #1e3c72;border-radius:999px;padding:6px 10px}
+  .note{color:#a9bde4;opacity:.8}
+  #game{display:block;margin:0 auto;/* narrow lane feel: canvas scaled, logical size locked */ background:#081224}
+  .panel{
+    position:absolute;top:64px;left:50%;transform:translateX(-50%);
+    background:rgba(10,18,36,.55);border:1px solid #16305a;border-radius:12px;padding:6px 10px;backdrop-filter:blur(4px);font-weight:700
   }
-  .wrap{position:relative;height:100%;display:grid;grid-template-rows:auto 1fr auto}
-  header{
-    display:flex;gap:12px;align-items:center;justify-content:space-between;
-    padding:10px 12px;background:linear-gradient(#0f1c33,#0b1220);
-    border-bottom:1px solid #13223b
+  .pop{
+    position:absolute;pointer-events:none;left:50%;transform:translateX(-50%);
+    top:90px;background:#132a52;border:1px solid #2d5aa0;border-radius:12px;padding:6px 10px;display:none
   }
-  header .stats{display:flex;gap:10px;flex-wrap:wrap}
-  .pill{background:#10213c;border:1px solid #193055;padding:6px 10px;border-radius:999px}
+  .log{position:absolute;left:10px;bottom:88px;width:min(420px,88vw);max-height:36vh;overflow:auto;background:rgba(9,16,30,.55);border:1px solid #153058;border-radius:12px;padding:8px}
+  .log p{margin:.25em 0;color:#cfe0ff}
   .btn{
-    background:#122544;border:1px solid #244a8a;color:var(--ink);padding:8px 12px;border-radius:10px;
-    cursor:pointer;user-select:none;transition:transform .08s ease; font-weight:600
+    background:#11264a;border:1px solid #2b5598;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700
   }
-  .btn:hover{transform:translateY(-1px)}
-  .btn:active{transform:translateY(0)}
-  #game{display:block;margin:0 auto; background:linear-gradient(#1a2b41,#0b1220);}
-  .hud{
-    position:absolute;inset:auto 0 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;
-    padding:8px 8px 10px;pointer-events:none
-  }
-  .hud .banner{
-    pointer-events:auto;
-    display:flex;gap:8px;align-items:center;justify-content:center;
-    background:rgba(15,32,61,.7);border:1px solid #274a7a;padding:6px 10px;border-radius:12px;
-    text-transform:uppercase;letter-spacing:.06em;font-weight:800
-  }
-  .log{
-    position:absolute;left:10px;bottom:100px;width:min(420px,48vw);max-height:40vh;overflow:auto;
-    background:rgba(10,18,32,.6);border:1px solid #153058;border-radius:12px;padding:8px;backdrop-filter:blur(4px)
-  }
-  .log p{margin:.3em 0;color:#c9dcff}
-  .toast{
-    position:absolute;top:70px;left:50%;transform:translateX(-50%);
-    background:#13274a;border:1px solid #2c4b84;border-radius:12px;padding:8px 12px;font-weight:700;display:none
-  }
-  /* Upgrade modal */
-  .modal{
-    position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;padding:16px
-  }
-  .cardgrid{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:14px;max-width:980px;width:100%}
-  .card{
-    background:linear-gradient(180deg,#13274a 0%,#0e1e38 100%);border:1px solid #2b4d86;border-radius:16px;padding:14px;
-    box-shadow:0 8px 24px rgba(0,0,0,.35)
-  }
-  .card h3{margin:.2em 0 0;font-size:18px}
-  .card p{color:var(--muted);min-height:40px}
-  .pick{margin-top:10px}
-  .pick button{width:100%;padding:10px;border-radius:10px;border:1px solid #335a9a;background:#16305a;color:#e7f0ff;font-weight:700}
-  .badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid #335a9a;background:#10213c}
-  footer{
-    display:flex;gap:10px;align-items:center;justify-content:center;
-    padding:8px;background:linear-gradient(#0b1220,#0a111d);border-top:1px solid #13223b
-  }
-  .note{color:#aac2ff8c}
-  /* Mobile tweaks */
-  @media (max-width:900px){
-    .cardgrid{grid-template-columns:1fr;max-width:420px}
-    .log{width:86vw}
-  }
+  .btn:hover{filter:brightness(1.1)}
+  @media (max-height:640px){ header{padding:6px 4px} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="stats">
-      <div class="pill">❤️ <span id="hp">100</span></div>
-      <div class="pill">💥 DPS: <span id="dps">5</span></div>
-      <div class="pill">🎯 Range: <span id="range">110</span></div>
-      <div class="pill">🧑‍🤝‍🧑 Army: <span id="army">1</span></div>
-      <div class="pill">💰 Coins: <span id="coins">0</span></div>
-      <div class="pill">🏆 Room: <span id="room">1</span></div>
-    </div>
-    <div style="display:flex; gap:8px">
-      <button class="btn" id="newRunBtn">New Run</button>
-      <button class="btn" id="pauseBtn">Pause</button>
-      <button class="btn" id="helpBtn">Help</button>
-    </div>
+    <div class="pill">❤️ HP: <span id="hp">100</span></div>
+    <div class="pill">🔫 Turrets: <span id="tcount">1</span></div>
+    <div class="pill">⚡ Fire/s: <span id="fire">1.0</span></div>
+    <div class="pill">💥 Damage: <span id="dmg">6</span></div>
+    <div class="pill">🏆 Wave: <span id="wave">1</span></div>
+    <button class="btn" id="newRun">New Run</button>
   </header>
 
-  <canvas id="game" width="900" height="600" aria-label="battlefield"></canvas>
+  <canvas id="game" width="360" height="640" aria-label="narrow bridge battlefield"></canvas>
 
-  <div class="hud">
-    <div class="banner">DEFEAT ZOMBIES • PICK UPGRADES • MULTIPLY YOUR ARMY</div>
-  </div>
-
+  <div class="panel">Drag / tap to aim. Decide: shoot enemies or shoot upgrades.</div>
+  <div class="pop" id="pop">+1 TURRET</div>
   <div class="log" id="log"></div>
-  <div class="toast" id="toast">x2 ARMY!</div>
 
-  <div class="modal" id="upgradeModal" aria-modal="true" role="dialog">
-    <div class="cardgrid" id="cardgrid"></div>
-  </div>
-
-  <footer>
-    <span class="note">Move: drag / mouse • Auto-fire • Clear a room → choose 1 of 3 upgrades • Beware red “-2” gates 😈</span>
-  </footer>
+  <footer><span class="note">No menus. Destroy an upgrade target → it applies instantly (x2/x3 fire, +turrets, x2 dmg).</span></footer>
 </div>
 
 <script>
-(function(){
-  // ------ helpers
-  const clamp = (v, a, b)=>Math.max(a, Math.min(b, v));
-  const rnd = (a,b)=>Math.random()*(b-a)+a;
-  const irnd = (a,b)=>Math.floor(rnd(a,b+1));
-  const choice = (arr)=>arr[Math.floor(Math.random()*arr.length)];
+(() => {
+  // ====== helpers
+  const rnd=(a,b)=>Math.random()*(b-a)+a;
+  const irnd=(a,b)=>Math.floor(rnd(a,b+1));
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const choice = a => a[Math.floor(Math.random()*a.length)];
+  const dist2=(x1,y1,x2,y2)=>{const dx=x1-x2,dy=y1-y2;return dx*dx+dy*dy};
+
   const logEl = document.getElementById('log');
-  function log(msg){ const p=document.createElement('p'); p.textContent=msg; logEl.appendChild(p); logEl.scrollTop=logEl.scrollHeight; }
-
-  // ------ canvas & input
-  const cvs = document.getElementById('game');
-  const ctx = cvs.getContext('2d');
-  let W = cvs.width, H = cvs.height;
-  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  function resize(){
-    const maxW = Math.min(window.innerWidth, 900);
-    const maxH = Math.min(window.innerHeight-120, 700);
-    const scale = Math.min(maxW/900, maxH/600);
-    cvs.style.width = (900*scale)+'px';
-    cvs.style.height = (600*scale)+'px';
-    cvs.width = Math.floor(900*DPR);
-    cvs.height= Math.floor(600*DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    W=900; H=600;
-  }
-  resize(); addEventListener('resize', resize);
-
-  // input: pointer follows x position
-  let pointerX = W/2, dragging=false;
-  cvs.addEventListener('pointerdown', e=>{ dragging=true; pointerX = (e.offsetX / (cvs.clientWidth/W)); });
-  cvs.addEventListener('pointermove', e=>{ if(dragging) pointerX = (e.offsetX / (cvs.clientWidth/W)); });
-  addEventListener('pointerup', ()=>dragging=false);
-  addEventListener('pointercancel', ()=>dragging=false);
-  addEventListener('mousemove', e=>{ if(!dragging) pointerX = (e.offsetX / (cvs.clientWidth/W)); });
-
-  // ------ game state
-  const state = {
-    running:true,
-    time:0,
-    room:1,
-    coins:0,
-    hp:100,
-    player:{x:W/2,y:H-90, r:16, speed:8, reload:0.25, reloadT:0, dmg:5, range:110},
-    minions:[], // mini allies that orbit & shoot
-    bullets:[],
-    enemies:[],
-    pickups:[],
-    gates:[], // +/- / x2 / x3 multipliers
-    barrels:[],
-    effects:[],
-    allies:[], // e.g., a tank ally
-    spawnT:0,
-    waveDone:false,
-    chaosMeter:0
-  };
-
-  // UI bindings
   const ui = {
     hp: document.getElementById('hp'),
-    dps: document.getElementById('dps'),
-    range: document.getElementById('range'),
-    army: document.getElementById('army'),
-    coins: document.getElementById('coins'),
-    room: document.getElementById('room'),
-    pauseBtn: document.getElementById('pauseBtn'),
-    newBtn: document.getElementById('newRunBtn'),
-    helpBtn: document.getElementById('helpBtn'),
-    modal: document.getElementById('upgradeModal'),
-    grid: document.getElementById('cardgrid'),
-    toast: document.getElementById('toast')
+    tcount: document.getElementById('tcount'),
+    fire: document.getElementById('fire'),
+    dmg: document.getElementById('dmg'),
+    wave: document.getElementById('wave'),
+    newRun: document.getElementById('newRun'),
+    pop: document.getElementById('pop'),
   };
-
-  ui.pauseBtn.onclick=()=>{ state.running=!state.running; ui.pauseBtn.textContent=state.running?'Pause':'Resume'; if(state.running) loop(perfNow()); };
-  ui.newBtn.onclick=()=>newRun();
-  ui.helpBtn.onclick=()=>{
-    alert(`Goal: survive rooms. When a room clears, pick 1 of 3 upgrades.
-- Drag / mouse move to slide left/right
-- Auto-fire
-- Green gates multiply your army (x2/x3). Red gates remove units (−2).
-- Yellow barrels have HP numbers; destroy them for explosions & loot.
-- Random chaos can happen: tanks, orbital lasers, magnets…
-Clear Room 5 for the Final Boss. Good luck!`);
-  };
-
-  function updateUI(){
-    ui.hp.textContent = Math.max(0, Math.ceil(state.hp));
-    ui.dps.textContent = state.player.dmg.toFixed(0);
-    ui.range.textContent = Math.ceil(state.player.range);
-    ui.army.textContent = 1 + state.minions.length + state.allies.length;
-    ui.coins.textContent = state.coins;
-    ui.room.textContent = state.room;
+  function log(msg){ const p=document.createElement('p'); p.textContent=msg; logEl.appendChild(p); logEl.scrollTop=logEl.scrollHeight; }
+  function pop(msg,color='#132a52',border='#2d5aa0'){
+    ui.pop.textContent=msg; ui.pop.style.display='block';
+    ui.pop.style.background=color; ui.pop.style.borderColor=border;
+    setTimeout(()=>ui.pop.style.display='none', 900);
   }
 
-  // ------ entities
-  function spawnEnemy(yOff= -40){
-    const lane = rnd(80,W-80);
+  // ====== canvas and sizing (keep it visually narrow; scale CSS size for screen)
+  const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
+  let W=cvs.width, H=cvs.height;
+  function rescale(){
+    // Keep visual width narrow (~360px) but scale up for device
+    const maxScale = Math.min(window.innerWidth/360, (window.innerHeight-130)/640);
+    cvs.style.width = 360*maxScale+'px';
+    cvs.style.height = 640*maxScale+'px';
+  }
+  addEventListener('resize', rescale); rescale();
+
+  // ====== input: aim point
+  let aimX=W/2, aimY=60, pointerDown=false;
+  function pointerToLocal(e){
+    const rect=cvs.getBoundingClientRect();
+    const x=(e.clientX-rect.left)/rect.width*W;
+    const y=(e.clientY-rect.top)/rect.height*H;
+    return {x,y};
+  }
+  cvs.addEventListener('pointerdown', e=>{ pointerDown=true; const p=pointerToLocal(e); aimX=p.x; aimY=p.y; });
+  addEventListener('pointerup', ()=>pointerDown=false);
+  addEventListener('pointercancel', ()=>pointerDown=false);
+  cvs.addEventListener('pointermove', e=>{ if(!pointerDown) return; const p=pointerToLocal(e); aimX=p.x; aimY=p.y; });
+
+  // ====== game state
+  const state = {
+    running:true, time:0, wave:1, hp:100,
+    turrets:[], bullets:[], enemies:[], upgrades:[], coins:[],
+    firePerSec:1.0, dmg:6, spread:0, // spread = extra bullets per shot (0 = single)
+    nextEnemy:1.4, nextUpgrade:2.6, enemyScale:1, // spawn timers
+  };
+
+  function setUI(){
+    ui.hp.textContent = Math.max(0,Math.ceil(state.hp));
+    ui.tcount.textContent = state.turrets.length;
+    ui.fire.textContent = state.firePerSec.toFixed(1);
+    ui.dmg.textContent = state.dmg;
+    ui.wave.textContent = state.wave;
+  }
+
+  // ====== entities
+  function addTurrets(n){
+    for(let i=0;i<n;i++){ state.turrets.push({x:W/2,y:H-70,cool:0}); }
+    layoutTurrets();
+  }
+  function layoutTurrets(){
+    const n = state.turrets.length;
+    const margin=34;
+    if(n===1){ state.turrets[0].x=W/2; return; }
+    for(let i=0;i<n;i++){
+      const t = state.turrets[i];
+      const x = margin + i*( (W-2*margin)/(n-1) );
+      t.x = x; t.y = H-70;
+    }
+  }
+  function spawnEnemy(){
     const e = {
-      x: lane, y: yOff, r: 16, hp: 30 + state.room*6, speed: 0.6 + state.room*0.05, color: '#c0392b',
-      type: 'z',
+      x:rnd(60,W-60),
+      y:-40,
+      r:16,
+      hp: Math.round(22 + state.wave*6 + rnd(0,8)),
+      speed: 0.7 + state.wave*0.05 + rnd(0,0.15),
       hitT:0
     };
     state.enemies.push(e);
   }
-  function spawnRunner(yOff=-40){
-    const e = {x:rnd(70,W-70),y:yOff,r:13,hp:18+state.room*4,speed:1.3+state.room*0.07,color:'#ff7f50',type:'runner',hitT:0};
+  function spawnFastEnemy(){
+    const e = {
+      x:rnd(60,W-60),
+      y:-40,
+      r:13,
+      hp: Math.round(16 + state.wave*4),
+      speed: 1.35 + state.wave*0.06,
+      hitT:0
+    };
     state.enemies.push(e);
   }
-  function spawnMiniBoss(){
-    const e = {x:W/2,y:-80,r:28,hp: 400+state.room*120,speed:0.45,color:'#8e44ad',type:'boss',hitT:0};
-    state.enemies.push(e);
-    log(`⚠️ Mini-Boss entered! HP ${e.hp}`);
-  }
-  function spawnGate(){
-    const kinds = Math.random()<0.7 ? ['x2','x3'] : ['-2'];
-    const k = choice(kinds);
-    const gate = {x:rnd(90,W-90),y:-40,w:72,h:28,kind:k,speed:0.9};
-    state.gates.push(gate);
-  }
-  function spawnBarrel(){
-    const hp = irnd(60, 180) + state.room*10;
-    const b = {x:rnd(90,W-90),y:-40,r:20,hp, speed:0.7, color:'#d32f2f'};
-    state.barrels.push(b);
-  }
-  function spawnTankAlly(){
-    const t = {x: W/2, y:H-160, r:22, reload:1.2, reloadT:0, alive:true};
-    state.allies.push(t);
-    log('🛡️ A friendly tank rolled in to help!');
-  }
-  function spawnOrbitalLaser(){
-    // simple sweeping beam that damages everything
-    const beam = {t:0, dur:3, kind:'laser'};
-    state.effects.push(beam);
-    log('🔵 ORBITAL LASER ONLINE');
-  }
-  function spawnMagnet(){
-    const m = {t:0, dur:6, kind:'magnet'};
-    state.effects.push(m);
-    log('🧲 Coin Magnet activated');
-  }
-
-  // bullets
-  function shoot(from, dmg, vx=0, vy=-6){
-    state.bullets.push({x:from.x, y:from.y-from.r-2, vx, vy, dmg, life:2});
-  }
-
-  // ------ Upgrade system
-  const upgradePool = [
-    {name:'Bigger Bullets',desc:'+4 damage.',apply:()=>state.player.dmg+=4},
-    {name:'Sharpshooter',desc:'+40 range.',apply:()=>state.player.range+=40},
-    {name:'Rapid Fire',desc:'Fire rate +25%.',apply:()=>state.player.reload=Math.max(.08,state.player.reload*0.75)},
-    {name:'Twin Minions',desc:'Add 2 allies.',apply:()=>{addMinions(2)}},
-    {name:'Army Surgeon',desc:'Heal 30 HP.',apply:()=>state.hp=Math.min(100,state.hp+30)},
-    {name:'Gold Rush',desc:'+60 coins.',apply:()=>state.coins+=60},
-    {name:'Tank Drop',desc:'Call in a friendly tank.',apply:()=>spawnTankAlly()},
-    {name:'Orbital Laser',desc:'Beam wipes lanes briefly.',apply:()=>spawnOrbitalLaser()},
-    {name:'Money Magnet',desc:'Coins fly to you for 6s.',apply:()=>spawnMagnet()},
-    {name:'Clone Protocol',desc:'x2 current minions.',apply:()=>multiplyArmy(2)},
+  const UPTYPES = [
+    {key:'FIRE2', label:'x2 FIRE', color:'#36d399', apply:()=>{ state.firePerSec=Math.min(30, state.firePerSec*2); pop('x2 FIRE', '#0b3a2a','#36d399'); }},
+    {key:'FIRE3', label:'x3 FIRE', color:'#36d399', apply:()=>{ state.firePerSec=Math.min(30, state.firePerSec*3); pop('x3 FIRE', '#0b3a2a','#36d399'); }},
+    {key:'T1', label:'+1 TURRET', color:'#60a5fa', apply:()=>{ addTurrets(1); pop('+1 TURRET', '#0b2a4a','#60a5fa'); }},
+    {key:'T2', label:'+2 TURRETS', color:'#60a5fa', apply:()=>{ addTurrets(2); pop('+2 TURRETS', '#0b2a4a','#60a5fa'); }},
+    {key:'DMG2', label:'x2 DMG', color:'#ffd166', apply:()=>{ state.dmg=Math.min(999, state.dmg*2); pop('x2 DAMAGE', '#3b2a08','#ffd166'); }},
   ];
+  function spawnUpgrade(){
+    // 2/3 positive fire muls & turrets, 1/3 dmg
+    let up;
+    const r=Math.random();
+    if(r<0.38) up=UPTYPES[0]; else if(r<0.60) up=UPTYPES[1];
+    else if(r<0.78) up=UPTYPES[2]; else if(r<0.90) up=UPTYPES[3]; else up=UPTYPES[4];
 
-  function showUpgrades(){
-    ui.grid.innerHTML='';
-    const picks = [];
-    while(picks.length<3){
-      const u = choice(upgradePool);
-      if(!picks.includes(u)) picks.push(u);
-    }
-    picks.forEach(u=>{
-      const card = document.createElement('div');
-      card.className='card';
-      card.innerHTML = `<span class="badge">Upgrade</span><h3>${u.name}</h3><p>${u.desc}</p>
-        <div class="pick"><button>Pick</button></div>`;
-      card.querySelector('button').onclick=()=>{
-        u.apply();
-        hideModal();
-        log(`⬆️ Chose: ${u.name}`);
-        startRoom(state.room+1);
-      };
-      ui.grid.appendChild(card);
-    });
-    ui.modal.style.display='grid';
+    const hp = up.key.startsWith('T') ? irnd(50,100) : irnd(80,140);
+    const u = {
+      x:rnd(48,W-48), y:-30, r:18, hp, speed:0.5, up:up, hitT:0
+    };
+    state.upgrades.push(u);
   }
-  function hideModal(){ ui.modal.style.display='none'; }
-
-  // ------ army helpers
-  function addMinions(n){
-    for(let i=0;i<n;i++){
-      state.minions.push({angle:rnd(0,Math.PI*2),dist:rnd(26,50),reload:0.55,reloadT:0});
+  function coinBurst(x,y,count=irnd(1,3)){
+    for(let i=0;i<count;i++){
+      state.coins.push({x,y,vy:rnd(0.6,1.1),life:3});
     }
   }
-  function multiplyArmy(f){
-    const add = Math.min(40, Math.round((state.minions.length+1)*(f-1)));
-    addMinions(add);
-    flashToast(`x${f} ARMY!`);
-  }
-  function changeArmy(delta){
-    if(delta<0){
-      for(let i=0;i<Math.min(state.minions.length, Math.abs(delta)); i++) state.minions.pop();
-      flashToast(`${delta} MINIONS`, true);
-    }else addMinions(delta);
-  }
-  function flashToast(msg, danger=false){
-    ui.toast.textContent = msg;
-    ui.toast.style.display='block';
-    ui.toast.style.borderColor = danger ? '#9b1c1c' : '#2c4b84';
-    ui.toast.style.background = danger ? 'rgba(120,16,16,.85)' : '#13274a';
-    setTimeout(()=>ui.toast.style.display='none', 900);
+
+  // ====== bullets
+  function shootFrom(x,y){
+    const bspd=8.8;
+    // aim vector
+    const dx = aimX - x, dy = aimY - y;
+    const d = Math.hypot(dx,dy) || 1;
+    const vx = bspd * (dx/d), vy = bspd * (dy/d);
+    // center bullet
+    state.bullets.push({x,y,vx,vy,dmg:state.dmg,life:2});
+    // spread extras (±6° each)
+    for(let i=0;i<state.spread;i++){
+      const angle = (i%2?1:-1) * (Math.ceil((i+1)/2)) * 0.105; // ~6 deg
+      const cos=Math.cos(angle), sin=Math.sin(angle);
+      const svx = vx*cos - vy*sin, svy = vx*sin + vy*cos;
+      state.bullets.push({x,y,vx:svx,vy:svy,dmg:Math.max(1,Math.round(state.dmg*0.7)),life:2});
+    }
   }
 
-  // ------ coins/pickups
-  function coin(x,y,amt=5){ state.pickups.push({x,y,r:8,amt,vy:rnd(0.6,1.2)}); }
+  // ====== control
+  ui.newRun.onclick = () => startNewRun();
 
-  // ------ rooms
-  function startRoom(n){
-    state.room=n; state.enemies.length=0; state.bullets.length=0; state.pickups.length=0;
-    state.gates.length=0; state.barrels.length=0; state.effects.length=0;
-    state.spawnT=0; state.waveDone=false;
-    updateUI();
-    log(`——— Room ${state.room} ———`);
-  }
-
-  function newRun(){
-    Object.assign(state,{
-      running:true,time:0,room:1,coins:0,hp:100,
-      player:{x:W/2,y:H-90,r:16,speed:8, reload:0.25, reloadT:0, dmg:5, range:110},
-      minions:[], bullets:[], enemies:[], pickups:[], gates:[], barrels:[], effects:[], allies:[], chaosMeter:0
-    });
-    addMinions(0);
+  function startNewRun(){
+    state.running=true; state.time=0; state.wave=1; state.hp=100;
+    state.turrets.length=0; state.bullets.length=0; state.enemies.length=0; state.upgrades.length=0; state.coins.length=0;
+    state.firePerSec=1.0; state.dmg=6; state.spread=0;
+    state.nextEnemy=1.2; state.nextUpgrade=2.2; state.enemyScale=1;
+    addTurrets(1);
     logEl.innerHTML='';
-    log('🎮 New run started');
-    startRoom(1);
+    log('🎯 New run: 1 turret, slow fire. Shoot enemies OR shoot upgrade targets.');
+    setUI();
   }
 
-  // ------ collision
-  function hit(a,b){const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy < (a.r+b.r)*(a.r+b.r);}
-  function rectHitCircle(rect, c){
-    const closestX = clamp(c.x, rect.x-rect.w/2, rect.x+rect.w/2);
-    const closestY = clamp(c.y, rect.y-rect.h/2, rect.y+rect.h/2);
-    const dx = c.x - closestX, dy = c.y - closestY;
-    return (dx*dx + dy*dy) < c.r*c.r;
-  }
-
-  // ------ main loop
+  // ====== step/draw
   let last=0;
-  const perfNow = ()=> (performance || Date).now()/1000;
-  function loop(t){
-    if(!state.running){ return; }
-    const dt = Math.min(.033, t-last || 0.016);
-    last=t; state.time+=dt;
-    step(dt); draw();
-    requestAnimationFrame(()=>loop(perfNow()));
+  function loop(ts){
+    if(!last) last=ts;
+    const dt=Math.min(0.033,(ts-last)/1000); last=ts;
+    if(state.running) step(dt), draw();
+    requestAnimationFrame(loop);
   }
 
   function step(dt){
-    updateUI();
-
-    // player follow pointer
-    state.player.x += (clamp(pointerX, 60, W-60) - state.player.x) * 0.25;
-
-    // player shooting
-    state.player.reloadT -= dt;
-    if(state.player.reloadT<=0){
-      shoot(state.player, state.player.dmg);
-      state.player.reloadT = state.player.reload;
-    }
-
-    // minions orbit & shoot
-    state.minions.forEach(m=>{
-      m.angle += dt*2;
-      const desiredX = state.player.x + Math.cos(m.angle)*m.dist;
-      const desiredY = state.player.y + Math.sin(m.angle)*m.dist*0.4;
-      m.x = (m.x ?? desiredX); m.y = (m.y ?? desiredY);
-      m.x += (desiredX - m.x)*0.2; m.y += (desiredY - m.y)*0.2;
-      m.reloadT -= dt;
-      if(m.reloadT<=0){ shoot(m, state.player.dmg*0.6, 0, -6.5); m.reloadT = m.reload; }
-    });
-
-    // allies (tank)
-    state.allies.forEach(a=>{
-      a.reloadT -= dt; a.x += Math.sin(state.time*0.8)*0.6;
-      if(a.reloadT<=0){
-        // burst of 3
-        for(let i=0;i<3;i++) setTimeout(()=>shoot(a, state.player.dmg*1.2, 0, -7.2), i*50);
-        a.reloadT = a.reload;
-      }
-    });
+    state.time += dt;
+    setUI();
 
     // spawn pacing
-    state.spawnT -= dt;
-    if(state.spawnT<=0 && !state.waveDone){
-      const mix = Math.min(1, state.room/6);
-      const pack = irnd(2, 3+Math.floor(mix*3));
-      for(let i=0;i<pack;i++){
-        Math.random()<0.3+mix*0.3 ? spawnRunner(-40 - i*30) : spawnEnemy(-40 - i*26);
-      }
-      if(Math.random()<0.25) spawnGate();
-      if(Math.random()<0.22) spawnBarrel();
-      if(Math.random()<0.10+mix*0.1) spawnRunner(-140);
-      if(Math.random()<0.07+mix*0.08) spawnEnemy(-140);
-      if(Math.random()<0.05+mix*0.05) spawnMiniBoss();
-      state.spawnT = rnd(1.2, 2.1);
+    state.nextEnemy -= dt;
+    if(state.nextEnemy<=0){
+      if(Math.random()<0.35) spawnFastEnemy(); else spawnEnemy();
+      // quicker spawns as wave rises
+      const base=1.0 - Math.min(0.6, state.wave*0.04);
+      state.nextEnemy = base + rnd(0.0,0.5);
+    }
+    state.nextUpgrade -= dt;
+    if(state.nextUpgrade<=0){
+      // often spawn 2 at staggered spots to force choices
+      spawnUpgrade();
+      if(Math.random()<0.55) setTimeout(spawnUpgrade, irnd(300,800));
+      state.nextUpgrade = 4.0 + rnd(-0.5,1.2);
     }
 
-    // enemy movement
+    // turrets fire
+    const tReload = 1/Math.max(0.2, state.firePerSec);
+    state.turrets.forEach(t=>{
+      t.cool -= dt;
+      if(t.cool<=0){
+        shootFrom(t.x, t.y);
+        t.cool = tReload;
+      }
+    });
+
+    // bullets
+    state.bullets.forEach(b=>{
+      b.x += b.vx; b.y += b.vy; b.life -= dt;
+    });
+    state.bullets = state.bullets.filter(b=>b.life>0 && b.x>-20 && b.x<W+20 && b.y>-40 && b.y<H+20);
+
+    // enemies advance
     state.enemies.forEach(e=>{
-      e.y += e.speed;
-      e.hitT = Math.max(0, e.hitT-dt);
-      // if they reach you
-      if(e.y>H-110){
-        state.hp -= e.type==='boss' ? 25 : 12;
-        e.dead=true;
-        log('💢 You were hit!');
+      e.y += e.speed; e.hitT=Math.max(0,e.hitT-dt);
+      if(e.y>H-50){ // reached base
+        e.dead=true; state.hp -= 10; log('💢 Enemy slipped through! -10 HP');
         if(state.hp<=0){ gameOver(); }
       }
     });
 
-    // barrels
-    state.barrels.forEach(b=>{ b.y+=b.speed; });
+    // upgrades drift
+    state.upgrades.forEach(u=>{ u.y += u.speed; u.hitT=Math.max(0,u.hitT-dt); if(u.y>H-40) u.dead=true; });
 
-    // gates
-    state.gates.forEach(g=>{ g.y+=g.speed; });
-
-    // bullets
-    state.bullets.forEach(b=>{
-      b.x += b.vx; b.y += b.vy; b.life-=dt;
-      // magnet effect on coins (handled below)
-    });
-
-    // effects
-    state.effects = state.effects.filter(e=>{
-      e.t += dt;
-      if(e.kind==='laser'){
-        // sweep X position
-        const sweepX = (Math.sin(state.time*1.1)*0.5+0.5)*(W-160)+80;
-        // damage enemies near the sweep line
-        state.enemies.forEach(en=>{
-          if(Math.abs(en.x - sweepX) < 40) en.hp -= 190*dt;
-          if(en.hp<=0 && !en.dead){ en.dead=true; for(let i=0;i<irnd(1,3);i++) coin(en.x+rnd(-10,10), en.y); }
-        });
+    // bullets collide (enemies first, then upgrades, one hit per bullet)
+    for(const b of state.bullets){
+      // enemy hit?
+      let hitIdx = state.enemies.findIndex(e=>!e.dead && dist2(b.x,b.y,e.x,e.y) < (e.r+5)*(e.r+5));
+      if(hitIdx>=0){
+        const e=state.enemies[hitIdx]; e.hp -= b.dmg; e.hitT=0.08; b.life=0;
+        if(e.hp<=0){ e.dead=true; coinBurst(e.x,e.y); }
+        continue;
       }
-      if(e.kind==='magnet'){
-        state.pickups.forEach(p=>{
-          const dx = state.player.x - p.x, dy = state.player.y - p.y;
-          const d = Math.hypot(dx,dy)+1e-6;
-          const f = Math.min(380/(d*d), 3.5);
-          p.x += dx*f*dt; p.y += dy*f*dt;
-        });
-      }
-      return e.t < e.dur;
-    });
-
-    // bullets hit enemies and barrels
-    state.bullets.forEach(b=>{
-      state.enemies.forEach(e=>{
-        if(!e.dead && Math.hypot(b.x-e.x,b.y-e.y) < e.r+4){
-          e.hp -= b.dmg; e.hitT=0.1; b.life=0;
-          if(e.hp<=0){ e.dead=true; state.chaosMeter += 0.2; for(let i=0;i<irnd(1,4);i++) coin(e.x+rnd(-10,10), e.y); }
-        }
-      });
-      state.barrels.forEach(bar=>{
-        if(Math.hypot(b.x-bar.x,b.y-bar.y) < bar.r+6){
-          bar.hp -= b.dmg; b.life=0;
-          if(bar.hp<=0 && !bar.dead){
-            bar.dead=true;
-            // explosion
-            for(let i=0;i<8;i++) state.effects.push({kind:'boom',x:bar.x,y:bar.y,t:0,dur:.6,angle:rnd(0,Math.PI*2)});
-            // area dmg
-            state.enemies.forEach(e=>{
-              const d = Math.hypot(e.x-bar.x, e.y-bar.y);
-              if(d<80) e.hp -= 140*(1-d/80);
-              if(e.hp<=0 && !e.dead){ e.dead=true; coin(e.x,e.y, irnd(3,8)); }
-            });
-            log('💥 Barrel explosion!');
-          }
-        }
-      });
-    });
-
-    // gates collision
-    state.gates.forEach(g=>{
-      if(rectHitCircle({x:g.x,y:g.y,w:g.w,h:g.h}, state.player)){
-        if(g.kind==='x2'){ multiplyArmy(2); }
-        else if(g.kind==='x3'){ multiplyArmy(3); }
-        else if(g.kind==='-2'){ changeArmy(-2); }
-        g.dead=true;
-      }
-    });
-
-    // pickups (coins)
-    state.pickups.forEach(p=>{
-      p.y += p.vy;
-      if(hit(p, state.player)){
-        state.coins += p.amt;
-        p.dead=true;
-      }
-    });
-
-    // cleanup
-    state.enemies = state.enemies.filter(e=>!e.dead && e.y<H+40);
-    state.bullets = state.bullets.filter(b=>b.life>0 && b.y>-30);
-    state.gates = state.gates.filter(g=>!g.dead && g.y<H+40);
-    state.barrels = state.barrels.filter(b=>!b.dead && b.y<H+40);
-    state.pickups = state.pickups.filter(p=>!p.dead && p.y<H+50);
-
-    // win room?
-    if(!state.waveDone){
-      const targetTime = 18 + state.room*1.2;
-      if(state.time > targetTime || (state.enemies.length===0 && state.spawnT>0.8)){
-        state.waveDone=true;
-        // small clean-up & reward
-        state.coins += 30 + state.room*5;
-        log(`✅ Room ${state.room} cleared. +${30 + state.room*5} coins`);
-        setTimeout(()=>showUpgrades(), 400);
+      // upgrade hit?
+      hitIdx = state.upgrades.findIndex(u=>!u.dead && dist2(b.x,b.y,u.x,u.y) < (u.r+7)*(u.r+7));
+      if(hitIdx>=0){
+        const u=state.upgrades[hitIdx]; u.hp -= b.dmg; u.hitT=0.08; b.life=0;
+        if(u.hp<=0){ u.dead=true; u.up.apply(); setUI(); log('⬆️ Upgrade: '+u.up.label); }
       }
     }
 
-    // random chaos (scale with meter and room)
-    if(Math.random() < Math.min(0.002 + state.room*0.0009 + state.chaosMeter*0.0008, 0.02)){
-      const r = Math.random();
-      if(r<0.34) spawnTankAlly();
-      else if(r<0.68) spawnOrbitalLaser();
-      else spawnMagnet();
-      state.chaosMeter = 0;
+    // coin drift
+    state.coins.forEach(c=>{ c.y = (c.y||H-60); c.x = (c.x||W/2); c.y += c.vy; c.life-=dt; });
+    state.coins = state.coins.filter(c=>c.life>0);
+
+    // clean
+    state.enemies = state.enemies.filter(e=>!e.dead);
+    state.upgrades = state.upgrades.filter(u=>!u.dead);
+
+    // escalate difficulty by time
+    if(state.time> 22 + state.wave*6){
+      state.wave++; state.time=0;
+      log(`🏁 Wave ${state.wave}`);
+      // small reward: add tiny spread every few waves for spectacle
+      if(state.wave%4===0 && state.spread<3){ state.spread++; pop('+SPREAD','rgba(37,99,235,.25)','#3b82f6'); }
+      // raise baseline spawn pressure
+      state.enemyScale += 0.1;
     }
   }
 
   function draw(){
-    // lane + parallax
+    // Background bridge with rails to sell the narrow-lane vibe
     ctx.clearRect(0,0,W,H);
-    // subtle tiles
-    ctx.globalAlpha = 0.25;
-    for(let y=0;y<H;y+=40){
-      ctx.fillStyle = (Math.floor((y+Math.floor(state.time*120)) / 40)%2)?'#11223a':'#0e1b31';
-      ctx.fillRect(0,y,W,40);
+    // rails
+    ctx.fillStyle='#10203a'; ctx.fillRect(0,0,20,H); ctx.fillRect(W-20,0,20,H);
+    // lane
+    ctx.fillStyle='#0d1830'; ctx.fillRect(20,0,W-40,H);
+    // lane tiles
+    for(let y=0;y<H;y+=36){
+      ctx.fillStyle = (Math.floor((y + (performance.now()/60|0)) / 36) % 2) ? '#122243' : '#101d38';
+      ctx.fillRect(22,y,W-44,36);
     }
-    ctx.globalAlpha = 1;
 
-    // gates
-    state.gates.forEach(g=>{
-      ctx.save();
-      ctx.translate(g.x, g.y);
-      ctx.fillStyle = g.kind.startsWith('x') ? '#2ecc71' : '#e74c3c';
-      roundRect(ctx, -g.w/2, -g.h/2, g.w, g.h, 8, true);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 18px system-ui,Segoe UI';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(g.kind.toUpperCase(), 0, 1);
-      ctx.restore();
-    });
-
-    // barrels
-    state.barrels.forEach(b=>{
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.fillStyle=b.color;
-      circle(ctx,0,0,b.r,true);
-      ctx.fillStyle='#fff'; ctx.font='bold 16px system-ui'; ctx.textAlign='center';
-      ctx.fillText(Math.max(0,Math.ceil(b.hp)),0,2);
+    // upgrades
+    state.upgrades.forEach(u=>{
+      ctx.save(); ctx.translate(u.x,u.y);
+      ctx.fillStyle = u.hitT>0 ? '#fff' : u.up.color;
+      circle(0,0,u.r,true);
+      ctx.fillStyle='#fff'; ctx.font='bold 14px system-ui'; ctx.textAlign='center';
+      ctx.fillText(u.up.label,0,-20);
+      ctx.fillText(Math.max(0,Math.ceil(u.hp)),0,2);
       ctx.restore();
     });
 
     // enemies
     state.enemies.forEach(e=>{
       ctx.save(); ctx.translate(e.x,e.y);
-      ctx.fillStyle = e.hitT>0 ? '#ffd166' : e.color;
-      circle(ctx,0,0,e.r,true);
-      // HP
-      ctx.fillStyle='#fff'; ctx.font='bold 14px system-ui'; ctx.textAlign='center';
+      ctx.fillStyle = e.hitT>0 ? '#ffd166' : '#e74c3c';
+      circle(0,0,e.r,true);
+      ctx.fillStyle='#fff'; ctx.font='bold 13px system-ui'; ctx.textAlign='center';
       ctx.fillText(Math.max(0,Math.ceil(e.hp)),0,2);
       ctx.restore();
     });
 
-    // effects
-    state.effects.forEach(ef=>{
-      if(ef.kind==='laser'){
-        const sweepX = (Math.sin(state.time*1.1)*0.5+0.5)*(W-160)+80;
-        ctx.save(); ctx.globalAlpha=0.25;
-        ctx.fillStyle='#60a5fa';
-        ctx.fillRect(sweepX-18,0,36,H);
-        ctx.restore();
-      }
-      if(ef.kind==='boom'){
-        ef.t += 0; // handled in step; here just draw
-        const k = ef.t/ef.dur;
-        ctx.save(); ctx.translate(ef.x,ef.y);
-        ctx.globalAlpha = 1-k;
-        ctx.fillStyle = k<.4 ? '#ffd166' : '#ff6b6b';
-        circle(ctx, Math.cos(ef.angle)*k*60, Math.sin(ef.angle)*k*60, 14*(1-k)+4,true);
-        ctx.restore();
-      }
+    // coins sparkles
+    state.coins.forEach(c=>{
+      ctx.save(); ctx.translate(c.x,c.y);
+      ctx.fillStyle= '#ffd166';
+      circle(0,0,3,true);
+      ctx.restore();
     });
 
     // bullets
     ctx.fillStyle='#9bdcff';
-    state.bullets.forEach(b=>{ circle(ctx,b.x,b.y,3,true); });
+    state.bullets.forEach(b=>{ circle(b.x,b.y,3,true); });
 
-    // allies
-    state.allies.forEach(a=>{
-      ctx.save(); ctx.translate(a.x,a.y);
-      ctx.fillStyle='#7dd3fc';
-      circle(ctx,0,0,a.r,true);
-      ctx.fillStyle='#083344'; circle(ctx,0,0,6,true);
+    // turrets + muzzle blink
+    state.turrets.forEach(t=>{
+      // barrel angle (toward aim)
+      const ang = Math.atan2(aimY - t.y, aimX - t.x);
+      // base
+      ctx.save(); ctx.translate(t.x,t.y);
+      ctx.fillStyle='#36d399'; circle(0,0,14,true);
+      // barrel
+      ctx.rotate(ang);
+      ctx.fillStyle='#2dd4bf'; ctx.fillRect(6,-3,18,6);
       ctx.restore();
     });
 
-    // player
-    ctx.save();
-    const p = state.player;
-    ctx.translate(p.x,p.y);
-    ctx.fillStyle='#4ade80';
-    circle(ctx,0,0,p.r,true);
-    ctx.fillStyle='#063b1a'; circle(ctx,0,0,6,true);
-    // range ring
-    ctx.globalAlpha=0.08; ctx.strokeStyle='#4ade80'; circle(ctx,0,0,p.range,false); ctx.globalAlpha=1;
-    ctx.restore();
+    // base line
+    ctx.strokeStyle='#203b6a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(20,H-48); ctx.lineTo(W-20,H-48); ctx.stroke();
   }
 
-  function circle(ctx,x,y,r,fill){
+  function circle(x,y,r,fill){
     ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-    fill ? ctx.fill() : ctx.stroke();
-  }
-  function roundRect(ctx,x,y,w,h,r,fill){
-    const rr = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr,y);
-    ctx.arcTo(x+w,y,x+w,y+h,rr);
-    ctx.arcTo(x+w,y+h,x,y+h,rr);
-    ctx.arcTo(x,y+h,x,y,rr);
-    ctx.arcTo(x,y,x+w,y,rr);
     fill ? ctx.fill() : ctx.stroke();
   }
 
   function gameOver(){
     state.running=false;
-    alert(`💀 Defeated on Room ${state.room}\nCoins: ${state.coins}\nTry a different upgrade path!`);
+    setUI();
+    setTimeout(()=>alert(`💀 Defeat! Wave ${state.wave}\nTry focusing upgrades earlier or letting a few enemies slip to grab x3 FIRE.`), 30);
   }
 
-  // bootstrap
-  newRun();
-  function startGame(){ last = perfNow(); loop(last); }
-  startGame();
+  // boot
+  startNewRun();
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>
