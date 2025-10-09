@@ -18,6 +18,9 @@
   .turn{min-width:220px;text-align:center;font-weight:600;border:1px solid var(--border);background:#0e1a33;padding:6px 10px;border-radius:10px}
   .turn .who{color:#9be7ff} .turn .next{color:#a7ffcb} .turn .enemy{color:#ff9b9b}
   canvas{width:100%;height:auto;display:block;image-rendering:crisp-edges;image-rendering:pixelated}
+  .turnQueue{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--border);background:#0e1a33}
+  .chip.you{color:#a7ffcb}.chip.enemy{color:#ff9b9b}.chip.dim{opacity:.6}
   .modes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;border:1px solid var(--border);background:#111b34;color:#e6edf7;padding:10px 12px;border-radius:12px;cursor:pointer;user-select:none;transition:.15s transform,.15s background,.15s border-color}
   .btn:hover{transform:translateY(-1px);background:#0f1a33}.btn.on{outline:2px solid #2e8b57}.btn.tiny{padding:6px 10px;font-size:12px}
@@ -71,7 +74,10 @@
           <span class="tag" id="enemyMiniName">Enemy</span>
           <div class="bar"><i id="ebarStage" style="width:100%"></i></div>
         </div>
-        <div id="turnTracker" class="turn"><span class="who">Your Turn</span> • Next: <span class="next">Enemy</span></div>
+        <div>
+          <div id="turnTracker" class="turn"><span class="who">Your Turn</span> • Next: <span class="next">Enemy</span></div>
+          <div id="turnQueue" class="turnQueue" aria-label="Upcoming turn order"></div>
+        </div>
       </div>
       <canvas id="stage" width="960" height="540"></canvas>
     </div>
@@ -148,7 +154,7 @@
   const cycleEl=$('#cycle'),roomEl=$('#room'),bossesEl=$('#bosses');
   const stanceTxt=$('#stanceTxt'),energyTxt=$('#energyTxt'),comboTxt=$('#comboTxt');
   const tonicTxt=$('#tonicTxt'),bombTxt=$('#bombTxt'),smokeTxt=$('#smokeTxt');
-  const logBox=$('#log'); const turnTracker=$('#turnTracker');
+  const logBox=$('#log'); const turnTracker=$('#turnTracker'); const turnQueue=$('#turnQueue');
   const modeBtns=[$('#modeEasy'),$('#modeNormal'),$('#modeHard')];
 
   const DIFF={
@@ -258,12 +264,19 @@
     pbarStage.style.width=`${Math.round(100*p.hp/p.maxHp)}%`;
     if(state.enemy){ ebarStage.style.width=`${Math.round(100*state.enemy.hp/state.enemy.maxHp)}%`; enemyMiniName.textContent = state.enemy.name + (state.enemy.intent? ` • ${INTENT_ICON[state.enemy.intent.kind]}`:'');}
     updateTurnTracker();
+    renderTurnQueue();
     renderAbilities();
   }
   function updateTurnTracker(){
     const who = state.turn==='player' ? '<span class="who">Your Turn</span>' : '<span class="enemy">Enemy Turn</span>';
     const next = state.turn==='player' ? '<span class="enemy">Enemy</span>' : '<span class="who">You</span>';
     turnTracker.innerHTML = `${who} • Next: ${next}`;
+  }
+  function buildTurnQueueItems(n=8){ const out=[]; let cur=state.turn; for(let i=0;i<n;i++){ out.push(cur); cur = (cur==='player') ? 'enemy' : 'player'; } return out; }
+  function renderTurnQueue(){ if(!turnQueue) return; turnQueue.innerHTML=''; const items=buildTurnQueueItems(8); const enemyNextIndex = (state.turn==='player')?1:0; items.forEach((w,i)=>{
+      const isEnemy=w==='enemy'; let label=isEnemy?'Enemy':'You'; if(isEnemy && i===enemyNextIndex && state.enemy?.intent){ label += ' '+INTENT_ICON[state.enemy.intent.kind]; }
+      const chip=el('span',{class:`chip ${isEnemy?'enemy':'you'} ${i===0?'':'dim'}`,text:label}); turnQueue.appendChild(chip);
+    });
   }
 
   function calcPlayerDamage(mult=1, trueDmg=false){
@@ -424,8 +437,13 @@
     const skillsWrap=el('div',{class:'choice'});
     (state.player.skills).forEach(sk=>{
       const cd=state.player.cooldowns[sk.id]||0;
-      const b=el('button',{class:'btn',text: cd?`${sk.name} (CD:${cd})`:`${sk.name} [${sk.cost}]`});
-      b.title=`${sk.tip} • Cost: ${sk.cost} Energy`; b.disabled=!!cd || p.energy<sk.cost || state.lock;
+      const need = Math.max(0, sk.cost - p.energy);
+      let label;
+      if(cd){ label = `${sk.name} (CD:${cd})`; }
+      else if(need>0){ label = `${sk.name} [${sk.cost}] — Need ${need}`; }
+      else { label = `${sk.name} [${sk.cost}]`; }
+      const b=el('button',{class:'btn',text:label});
+      b.title=`${sk.tip} • Cost: ${sk.cost} Energy${cd?` • Cooldown remaining: ${cd}`:''}`; b.disabled=!!cd || p.energy<sk.cost || state.lock;
       b.onclick=()=>useSkill(sk); skillsWrap.appendChild(b);
     });
 
@@ -664,6 +682,8 @@
     drawPedestal(PPOS.x, PPOS.y+8, 150, 28, state.backdrop==='boss'); drawPedestal(EPOS.x, EPOS.y-2, 160, 26, state.backdrop==='boss');
     if(state.backdrop==='boss'){ ctx.strokeStyle='rgba(120,200,255,.18)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h-72,220+6*Math.sin(state.t*.008),0,Math.PI*2); ctx.stroke(); }
     drawActor('player',overrides.player||{}); if(state.enemy) drawActor('enemy',overrides.enemy||{});
+    // Floating bars
+    drawFloatingBars();
     drawStatusIcons(PPOS, state.player.statuses); if(state.enemy) drawStatusIcons(EPOS, state.enemy.statuses, true);
     ctx.restore();
   }
@@ -684,32 +704,50 @@
   function roundedRect(x,y,w,h,r,fill){ outline(fill); ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else {ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);} ctx.fill(); ctx.stroke(); }
 
   function drawActor(who,opt={}){
-    const idle=Math.sin(state.t*0.015*3)*4; const alpha=opt.alpha!=null?opt.alpha:1; const pos=(who==='player'?PPOS:EPOS);
-    const offX=opt.offsetX||0, offY=(opt.offsetY||0)+idle; ctx.save(); ctx.globalAlpha=alpha; ctx.translate(pos.x+offX, pos.y-70+offY);
-    if(who==='player'){ drawHeroByClass(state.player.cls||'knight'); } else { if(state.enemy?.final) drawFinalBoss(); else if(state.enemy?.boss) drawBossByForm(state.enemy.form); else { const t=state.enemy?.type; if(t==='swarmer') drawSwarmer(); else if(t==='brute') drawBrute(); else drawArcanist(); } }
+    // slower, smoother idle with micro sway & breathe
+    const t=state.t*0.0035; const idleY = Math.sin(t)*3; const sway = Math.sin(t*0.6)*0.04; const breathe = 1+0.02*Math.sin(t*0.9);
+    const alpha=opt.alpha!=null?opt.alpha:1; const pos=(who==='player'?PPOS:EPOS);
+    const offX=opt.offsetX||0, offY=(opt.offsetY||0)+idleY; ctx.save(); ctx.globalAlpha=alpha; ctx.translate(pos.x+offX, pos.y-70+offY); ctx.rotate(sway); ctx.scale(breathe,breathe);
+    if(who==='player'){ drawHeroByClass(state.player.cls||'knight'); } else { if(state.enemy?.final) drawFinalBoss(); else if(state.enemy?.boss) drawBossByForm(state.enemy.form); else { const t2=state.enemy?.type; if(t2==='swarmer') drawSwarmer(); else if(t2==='brute') drawBrute(); else drawArcanist(); } }
     if(opt.hit!=null){ const intensity=(1-opt.hit); ctx.save(); ctx.globalCompositeOperation='screen'; const g=ctx.createRadialGradient(0,-20,0,0,-20,95);
       g.addColorStop(0,`rgba(255,255,255,${0.45*intensity})`); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(0,-10,70,90,0,0,Math.PI*2); ctx.fill(); ctx.restore(); }
     if(opt.defend){ ctx.strokeStyle='rgba(120,220,255,.85)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,20,46,0,Math.PI*2); ctx.stroke(); }
     ctx.restore();
   }
 
+  // --- Floating HP & Poise bars over actors ---
+  function drawFloatingBars(){
+    // player
+    drawMiniBar(PPOS.x-80, PPOS.y-132, 160, 10, state.player.hp/state.player.maxHp, '#34d399');
+    // enemy
+    if(state.enemy){
+      drawMiniBar(EPOS.x-80, EPOS.y-132, 160, 10, state.enemy.hp/state.enemy.maxHp, '#60a5fa');
+      // poise bar under enemy HP
+      drawMiniBar(EPOS.x-80, EPOS.y-118, 160, 6, state.enemy.poise/100, '#fde047');
+    }
+  }
+  function drawMiniBar(x,y,w,h,ratio,color){
+    ratio = Math.max(0, Math.min(1, ratio||0));
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,18,40,.9)';
+    roundRectPath(x,y,w,h,6); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle = color; roundRectPath(x+1,y+1,(w-2)*ratio,(h-2),5); ctx.fill();
+    ctx.restore();
+  }
+  function roundRectPath(x,y,w,h,r){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else {ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);} }
+
   // --- HERO RENDERS ---
   function drawHeroByClass(cls){ if(cls==='archer') drawHeroArcher(); else if(cls==='mage') drawHeroMage(); else drawHeroKnight(); }
   function drawHeroKnight(){ roundedRect(-36,-14,72,36,12,'#1a2a4d'); roundedRect(-24,-8,48,58,12,'#2b3f78'); circle(-24,0,10,'#445a9c');
     roundedRect(-10,-16,20,10,6,'#6b7280'); circle(0,-28,14,'#e9efff'); roundedRect(-20,-44,40,10,6,'#1b2a46');
-    // shield
     ctx.save(); ctx.translate(-40,6); roundedRect(-18,-20,24,40,8,'#8aa6ff'); ctx.fillStyle='#bcd1ff'; ctx.fillRect(-6,-12,12,24); ctx.restore();
-    // sword
     ctx.save(); ctx.translate(38,6); roundedRect(-2,-32,6,46,3,'#cfd6e6'); roundedRect(-8,12,18,6,3,'#9ad7ff'); ctx.restore(); }
   function drawHeroArcher(){ roundedRect(-26,-10,52,30,10,'#18324f'); roundedRect(-22,-8,44,54,12,'#245a6b'); circle(-10,-6,8,'#a7ffcb');
-    // bow
     ctx.save(); ctx.strokeStyle='#d7b98a'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(40,0,22,-Math.PI/2,Math.PI/2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(40,-22); ctx.lineTo(40,22); ctx.stroke(); ctx.restore();
-    // quiver
     ctx.save(); ctx.translate(-38,-2); roundedRect(-8,-18,16,36,6,'#5a371b'); ctx.restore(); circle(6,-26,10,'#e9efff'); }
   function drawHeroMage(){ roundedRect(-22,-6,44,48,14,'#3a2a6b'); roundedRect(-28,-12,56,22,10,'#2a1e54'); circle(0,-30,12,'#e9efff');
-    // staff
     ctx.save(); ctx.translate(36,2); roundedRect(-3,-40,6,70,3,'#7e6ab7'); circle(0,-42,10,'#9fb6ff'); ctx.restore();
-    // orb glow
     ctx.save(); ctx.globalAlpha=.2; circle(36,-40,16,'#9fb6ff'); ctx.restore(); }
 
   // --- ENEMY RENDERS ---
@@ -767,7 +805,7 @@
   function buildManual(){
     const heroLines = Object.values(HEROES).map(function(h){
       const skillLines = h.skills.map(function(sk){
-        return '<i>'+sk.name+'</i> — '+sk.tip;
+        return '<i>'+sk.name+'</i> — '+sk.tip+' (Cost '+sk.cost+'E, CD '+sk.cd+')';
       }).join('; ');
       return '<b>'+h.name+'</b>: '+skillLines;
     }).join('<br/>');
@@ -776,33 +814,17 @@
       '<h4>Goal</h4>',
       'Defeat rooms of enemies to reach bosses. After each win, pick a buff; after bosses, gain a new ability. Beat the Final Boss to win.',
       '<h4>Turn Flow</h4>',
-      'Player and enemy alternate. The <code>Turn</code> box shows whose turn it is and who is next. Some effects grant extra turns or cause staggers.',
-      '<h4>Stats</h4>',
-      '<ul>',
-      '<li><b>HP</b> — health. If it hits 0, you lose.</li>',
-      '<li><b>ATK</b> — damage scaling.</li>',
-      '<li><b>DEF</b> — reduces incoming damage.</li>',
-      '<li><b>CRIT</b> — chance for 1.75× damage.</li>',
-      '<li><b>SPD</b> — flavor only in this version.</li>',
-      '<li><b>Energy</b> — spend on skills; regens each turn.</li>',
-      '<li><b>Combo</b> — builds with attacks; spend 100 on Finisher.</li>',
-      '<li><b>Poise</b> — enemy stability. Drop to 0 to <b>Stagger</b> and cancel actions.</li>',
-      '<li><b>Shield</b> — temporary HP that absorbs damage.</li>',
-      '</ul>',
-      '<h4>Status Effects</h4>',
-      '<ul>',
-      '<li><b>Burn</b> — damage over time.</li>',
-      '<li><b>Poison</b> — steady damage over time.</li>',
-      '<li><b>Shock</b> — target takes extra damage.</li>',
-      '<li><b>Expose</b> — target takes extra damage.</li>',
-      '<li><b>Chill</b> — reduces enemy poise regen each turn.</li>',
-      '<li><b>Smoke</b> — your next hit taken is halved.</li>',
-      '<li><b>Weaken</b> — your ATK reduced temporarily.</li>',
-      '</ul>',
-      '<h4>Stances</h4>',
-      'Balanced • Aggressive (+ATK,-DEF) • Defensive (+DEF,-ATK) • Arcane (+crit, occasional +Energy on hits).',
-      '<h4>Items</h4>',
-      'Tonic (heal), Bomb (true damage & poise break), Smoke (halve next hit).',
+      'Turns are alternating by default. The <code>Turn</code> box shows the current turn, and the <b>Turn Queue</b> shows ~8 upcoming turns. This can change if you <b>Stagger</b> the enemy (they lose a turn) or a skill grants an extra turn.',
+      '<h4>What does <code>CD:1</code> mean?</h4>',
+      'Cooldown remaining in <b>your</b> future turns. <code>CD:1</code> = you must wait one of <i>your</i> turns before the skill is usable again.',
+      '<h4>What does Energy do?</h4>',
+      'Skills cost Energy (E). You start with 3E and regain ~1E per turn (varies by difficulty). If a button shows “Need N”, you don’t have enough Energy yet.',
+      '<h4>Health bars</h4>',
+      'HP bars now appear above both characters. Bosses also show a Poise bar (yellow) under their HP.',
+      '<h4>Poise & Stagger</h4>',
+      'Reduce the enemy <b>Poise</b> (yellow). When it hits 0, they are <b>Staggered</b> and lose their action. Poise is reduced by heavy hits and specific skills: Knight <i>Shield Bash</i>, Archer <i>Volley/Snare</i>, Bomb item, and your <i>Finisher</i>.',
+      '<h4>Finishers</h4>',
+      'Attack to build <b>Combo</b>. At 100%, press <b>Finisher</b> for a big true-damage strike and a major Poise break (spends all Combo).',
       '<h4>Heroes & Starting Skills</h4>',
       heroLines
     ].join('');
@@ -816,7 +838,7 @@
     try{ const btns=makeButtons([{label:'t',onClick:()=>{}}]); results.push(['makeButtons-returns-node', !!btns && btns.nodeType===1]); }catch(e){ results.push(['makeButtons-returns-node', false]); }
     try{ const node=makeButtons([{label:'A',onClick:()=>{}},{label:'B',onClick:()=>{}},{label:'C',onClick:()=>{}}]); results.push(['buttons-len-3', node.children.length===3]); }catch(e){ results.push(['buttons-len-3', false]); }
     try{ state.player.cls='archer'; drawStage(); results.push(['render-hero', true]); }catch(e){ results.push(['render-hero', false]); }
-    try{ const picks=[{name:'X'},{name:'Y'},{name:'Z'}]; const node2=makeButtons(picks.map(b=>({label:b.name,onClick:()=>{}}))); results.push(['map-buttons-ok', node2.children.length===3]); }catch(e){ results.push(['map-buttons-ok', false]); }
+    try{ const seq=buildTurnQueueItems(8); results.push(['turnqueue-8', seq.length===8 && seq[0]==='player' && seq[1]==='enemy']); }catch(e){ results.push(['turnqueue-8', false]); }
     console.log('[Gauntlet self-tests]', Object.fromEntries(results));
   }
 
