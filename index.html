@@ -3,309 +3,279 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lofi‑Cyberpunk Flappy</title>
+<title>Roof Scope Reader</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
-    --bg1:#0a0f1a; --bg2:#0b0018; --ink:#e6f0ff; --muted:#9fb0c8; --panel:#0e1726; --line:#172033;
-    --pri:#ff2ea6; --sec:#00f0ff; --acc:#aaff00; --warn:#ffb000;
+    --bg:#0b1020; --panel:#0f172a; --ink:#e6eefc; --muted:#8ea0c9; --accent:#60a5fa; --ok:#34d399; --bad:#f43f5e; --card:#111a33; --border:#1f2a44;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:radial-gradient(1200px 60% at 50% 110%, var(--bg2), var(--bg1));color:var(--ink);
-       font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Inter",sans-serif; overflow:hidden}
-  .hud{position:fixed;inset:0;pointer-events:none}
-  .topbar{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;justify-content:space-between;
-          padding:10px 14px;background:linear-gradient(180deg,#0008,#0000);backdrop-filter:blur(6px)}
-  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#0b1220cc;pointer-events:auto}
-  .score{font-weight:700;letter-spacing:1px}
-  .btn{pointer-events:auto;appearance:none;border:1px solid var(--line);background:#0b1220; color:var(--ink);
-       padding:8px 12px;border-radius:10px;cursor:pointer;transition:transform .06s ease; font-weight:600}
-  .btn:hover{transform:translateY(-1px)}
-  .btn:active{transform:translateY(0)}
-  .panel{position:absolute;right:10px;top:58px;width:min(440px,calc(100vw - 20px));max-height:calc(100vh - 78px);overflow:auto;pointer-events:auto;background:#0b1220e6;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 40px #000a;backdrop-filter:blur(4px)}
-  .row{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin:10px 0}
-  .row label{color:var(--muted)}
-  select,input[type="range"],input[type="checkbox"],input[type="number"]{width:100%}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:900px){.grid{grid-template-columns:1fr}}
-  .sub{font-size:12px;color:var(--muted);margin-top:-2px}
-  .pill{display:inline-flex;gap:6px;border:1px dashed var(--line);padding:6px 9px;border-radius:999px;color:var(--muted)}
-  .footer{position:absolute;left:10px;bottom:10px;display:flex;gap:8px;align-items:center;pointer-events:auto}
-  .key{border:1px solid var(--line);padding:4px 8px;border-radius:8px;background:#0b1220cc}
-  canvas{display:block;position:fixed;inset:0}
-  /* CRT scanlines & vignette */
-  .scanlines::after{content:"";position:fixed;inset:0;pointer-events:none;background:
-      repeating-linear-gradient(to bottom, #0000 0px, #0000 2px, #0002 3px, #0000 4px)}
-  .vignette::before{content:"";position:fixed;inset:-2%;pointer-events:none;border-radius:2px;
-      box-shadow:inset 0 0 180px 40px #000a}
-  .pixelate{image-rendering:pixelated}
+  *{ box-sizing:border-box }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif}
+  .wrap{ max-width:1100px; margin:24px auto; padding:0 14px 80px }
+  h1{ font-size:28px; margin:0 0 10px }
+  .sub{ color:var(--muted); margin-top:0 }
+  .grid{ display:grid; gap:14px; grid-template-columns: 1fr }
+  @media(min-width:980px){ .grid{ grid-template-columns: 1.1fr .9fr } }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px }
+  .card h2{ margin:0 0 8px; font-size:18px }
+  textarea{ width:100%; min-height:200px; background:#0a1226; color:var(--ink); border:1px solid var(--border);
+            border-radius:12px; padding:10px; resize:vertical }
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:8px 0 6px }
+  button{ cursor:pointer; border:1px solid var(--border); background:#162242; color:var(--ink);
+          border-radius:10px; padding:10px 14px; font-weight:600 }
+  button.primary{ background:var(--accent); color:#061326; border-color:#3b82f6 }
+  .hint{ color:var(--muted); font-size:12px }
+  table{ width:100%; border-collapse:collapse; overflow:auto; border-radius:12px }
+  th, td{ padding:10px 8px; border-bottom:1px solid var(--border); vertical-align:top }
+  th{ text-align:left; color:#cfe0ff; background:#0e1834; position:sticky; top:0 }
+  .kpi{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+  @media(min-width:720px){ .kpi{ grid-template-columns:repeat(4,minmax(0,1fr)) } }
+  .pill{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px }
+  .pill .lbl{ color:var(--muted); font-size:12px }
+  .pill .val{ font-weight:700; font-size:18px }
+  .tag{ display:inline-block; background:#132148; border:1px solid var(--border); color:#cfe0ff;
+        padding:2px 8px; border-radius:999px; font-size:12px; margin-right:6px }
+  .warn{ color:#ffd166 }
+  .okay{ color:var(--ok) }
+  .right{ text-align:right }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+  .file{ padding:8px 10px; background:#0a1226; border:1px dashed var(--border); border-radius:12px }
+  .small{ font-size:12px; color:var(--muted) }
 </style>
-</head>
-<body>
-<canvas id="game"></canvas>
-<button id="overlayStart" class="btn" style="position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);padding:14px 24px;font-size:16px;z-index:5;pointer-events:auto">Play</button>
-<div class="hud scanlines vignette" id="hud">
-  <div class="topbar">
-    <div class="badge"><span style="width:10px;height:10px;border-radius:50%;background:var(--pri);box-shadow:0 0 12px var(--pri)"></span>
-      <span style="opacity:.8">Lofi‑Cyber Flappy</span></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <div class="badge"><span class="score">Score: <span id="score">0</span></span></div>
-      <div class="badge">Best: <span id="best">0</span></div>
-      <button class="btn" id="btnStart">Start</button>
-      <button class="btn" id="btnPause">Pause</button>
-      <button class="btn" id="btnReset">Reset</button>
-    </div>
-  </div>
-  <div class="panel" id="panel">
-    <h3 style="margin:4px 0 6px;color:var(--pri);text-shadow:0 0 12px var(--pri)">Customization</h3>
-    <div class="grid">
-      <div>
-        <div class="row"><label>Theme</label>
-          <select id="theme">
-            <option value="magenta">Neon Magenta</option>
-            <option value="cyan">Electric Cyan</option>
-            <option value="lime">Toxic Lime</option>
-            <option value="amber">Amber Pulse</option>
-          </select>
-        </div>
-        <div class="row"><label>Difficulty</label>
-          <select id="diff">
-            <option value="0">Easy</option>
-            <option value="1" selected>Normal</option>
-            <option value="2">Hard</option>
-          </select>
-        </div>
-        <div class="row"><label>Gravity</label>
-          <input id="gravity" type="range" min="0.1" max="1.0" step="0.02" value="0.36" />
-        </div>
-        <div class="row"><label>Flap Power</label>
-          <input id="flap" type="range" min="3" max="10" step="0.1" value="6.2" />
-        </div>
-        <div class="row"><label>World Speed</label>
-          <input id="speed" type="range" min="1.5" max="6" step="0.1" value="3.2" />
-        </div>
-        <div class="row"><label>Gap Size</label>
-          <input id="gap" type="range" min="100" max="240" step="2" value="150" />
-        </div>
-        <div class="row"><label>Pipe Width</label>
-          <input id="pipeW" type="range" min="40" max="120" step="2" value="70" />
-        </div>
-      </div>
-      <div>
-        <div class="row"><label>Scanlines</label><input id="scan" type="checkbox" checked></div>
-        <div class="row"><label>Vignette</label><input id="vig" type="checkbox" checked></div>
-        <div class="row"><label>Pixelate</label><input id="pix" type="checkbox"></div>
-        <div class="row"><label>Particles</label><input id="particles" type="checkbox" checked></div>
-        <div class="row"><label>Trail</label><input id="trail" type="checkbox" checked></div>
-        <div class="row"><label>Bird Skin</label>
-          <select id="skin">
-            <option value="triangle">Triangle</option>
-            <option value="disk">Disk</option>
-            <option value="cube">Cube</option>
-            <option value="ring">Ring</option>
-          </select>
-        </div>
-        <div class="row"><label>Auto‑Balance</label><input id="autobal" type="checkbox" checked></div>
-        <div class="row"><label>Mute SFX</label><input id="mute" type="checkbox"></div>
-        <div class="row"><label>Background Speed</label>
-          <input id="bgSpeed" type="range" min="0" max="1.5" step="0.05" value="0.4" />
-        </div>
-      </div>
-    </div>
-    <div class="sub">Changes apply immediately. Your best score & settings are saved locally.</div>
-  </div>
-  <div class="footer">
-    <span class="pill">Controls: <span class="key">SPACE</span> / <span class="key">↑</span> / <span class="key">Click</span> / <span class="key">Tap</span></span>
-  </div>
-</div>
+<!-- PDF.js for optional client-side PDF text extraction (works on GitHub Pages) -->
+<script src="https://unpkg.com/pdfjs-dist@4.7.76/build/pdf.min.js"></script>
 <script>
-(function(){
-  'use strict';
-  // ---------- Helpers ----------
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const rand = (a,b)=>a+Math.random()*(b-a);
-  const E = sel => document.querySelector(sel);
+  // Minimal helpers
+  const $ = sel => document.querySelector(sel);
 
-  const THEMES = {
-    magenta:{pri:'#ff2ea6',sec:'#00f0ff',bg1:'#0a0f1a',bg2:'#0b0018'},
-    cyan:{pri:'#00e5ff',sec:'#9dff00',bg1:'#06141f',bg2:'#001018'},
-    lime:{pri:'#aaff00',sec:'#ff00e0',bg1:'#0b1110',bg2:'#001400'},
-    amber:{pri:'#ffb000',sec:'#00ffd5',bg1:'#0f0a00',bg2:'#1a0f00'}
-  };
+  // Default parser targeting the common scope wording (like your screenshot)
+  function parseScopeText(text){
+    const clean = text.replace(/\r/g,'').replace(/[^\S\r\n]+/g,' ').trim();
 
-  const defaults = {
-    theme:'magenta', diff:1, gravity:0.36, flap:6.2, speed:3.2, gap:150, pipeW:70,
-    scan:true, vig:true, pix:false, particles:true, trail:true, skin:'triangle', autobal:true, mute:false,
-    bgSpeed:0.5
-  };
+    // Helpers to find quantities by keyword (returns Number or null)
+    const findQty = (label, unitPattern) => {
+      const re = new RegExp(label + "\\s+([\\d.,]+)\\s*" + unitPattern, "i");
+      const m = clean.match(re);
+      return m ? Number(m[1].replace(/,/g,'')) : null;
+    };
 
-  // ---------- State & persistence ----------
-  function loadSettings(){
-    try{ const raw=localStorage.getItem('lofi-flappy-settings'); return raw? {...defaults,...JSON.parse(raw)}: {...defaults}; }catch{ return {...defaults}; }
-  }
-  function save(){ try{ localStorage.setItem('lofi-flappy-settings', JSON.stringify(S)); }catch{} }
-  function loadBest(){ const v=parseInt(localStorage.getItem('lofi-flappy-best')||'0',10); return Number.isFinite(v)?v:0; }
+    // Specific items (robust to minor text changes)
+    const data = {
+      remove_sq: findQty("(Remove|Tear[- ]?off)[^\\n]*?Laminated[^\\n]*?shingle[^\\n]*?", "(SQ)"),
+      felt_sq:   findQty("(Roofing\\s*felt|15\\s*lb\\.?\\s*felt|15\\s*lb)", "(SQ)"),
+      shingles_sq: findQty("Laminated[^\\n]*?shingle[^\\n]*?w/?out\\s*felt", "(SQ)"),
+      iws_sf:    findQty("(Ice\\s*&\\s*water\\s*barrier|Ice[^\\n]*water[^\\n]*barrier)", "(SF)"),
+      ridge_lf:  findQty("(Continuous\\s*ridge\\s*vent|Ridge\\s*vent)", "(LF)"),
+      cap_lf:    findQty("(Hip\\s*/?\\s*Ridge\\s*cap|Ridge\\s*cap)", "(LF)"),
+      drip_lf:   findQty("(Drip\\s*edge|gutter\\s*apron|Drip\\s*edge/gutter\\s*apron)", "(LF)"),
+      valley_lf: findQty("(Valley\\s*metal|Valley)", "(LF)"),
+      starter_lf:findQty("(Asphalt\\s*starter[^\\n]*course|starter\\s*course)", "(LF)"),
+      rain_cap:  findQty("(Rain\\s*cap)", "(EA)"),
+      pipe_jack: findQty("(Flash(ing)?\\s*-?\\s*pipe\\s*jack|Pipe\\s*jack)", "(EA)"),
+      prime_paint: findQty("(Prime\\s*&\\s*paint\\s*roof\\s*jack)", "(EA)"),
+      steep_remove_sq: findQty("Remove[^\\n]*steep\\s*roof", "(SQ)"),
+      steep_add_sq:    findQty("Additional\\s*charge[^\\n]*steep\\s*roof", "(SQ)"),
+      high_remove_sq:  findQty("Remove[^\\n]*high\\s*roof", "(SQ)"),
+      high_add_sq:     findQty("Additional\\s*charge[^\\n]*high\\s*roof", "(SQ)")
+    };
 
-  const S = loadSettings();
-  let BEST = loadBest();
+    // Measurements
+    const area_sq = data.felt_sq ?? data.shingles_sq ?? null;
+    const eaves_lf = data.starter_lf ?? null;           // starter is typically along eaves
+    const valleys_lf = data.valley_lf ?? null;
+    const ridges_lf = data.ridge_lf ?? data.cap_lf ?? null;
+    const drip_total_lf = data.drip_lf ?? null;
+    const rakes_lf = (drip_total_lf!=null && eaves_lf!=null) ? Math.max(0, +(drip_total_lf - eaves_lf).toFixed(2)) : null;
 
-  // ---------- DOM ----------
-  const hud = E('#hud');
-  const canvas = E('#game');
-  const ctx = canvas.getContext('2d');
-
-  // ---------- Background controller (declare BEFORE any calls that use it) ----------
-  const BG = { step:160, speeds:[1.2,2.4,4.2], layers:[[],[],[]] };
-
-  // ---------- Apply theme & bind UI ----------
-  function applyTheme(){
-    const t = THEMES[S.theme]||THEMES.magenta;
-    document.documentElement.style.setProperty('--pri',t.pri);
-    document.documentElement.style.setProperty('--sec',t.sec);
-    document.body.style.background = `radial-gradient(1200px 60% at 50% 110%, ${t.bg2}, ${t.bg1})`;
-  }
-  applyTheme();
-
-  // ---------- Audio ----------
-  let ac, masterGain;
-  const ensureAC = ()=>{ if(!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); masterGain = ac.createGain(); masterGain.gain.value=0.12; masterGain.connect(ac.destination);} };
-  const beep=(f=440,t=0.08,type='sine')=>{ if(S.mute) return; ensureAC(); const o=ac.createOscillator(); const g=ac.createGain(); o.type=type; o.frequency.value=f; o.connect(g); g.connect(masterGain); const n=ac.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.exponentialRampToValueAtTime(1,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+t); o.start(n); o.stop(n+t+0.01); };
-
-  // ---------- Game objects ----------
-  const G = { running:false, time:0, score:0, pipeTimer:0 };
-  const world = { speed:S.speed, gravity:S.gravity, gap:S.gap, pipeW:S.pipeW };
-  let bird = { x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
-  let pipes=[]; let sparks=[]; let trail=[];
-
-  // ---------- Background generation ----------
-  function buildCity(){
-    const w=canvas.width; const base=[90,130,170];
-    for(let li=0; li<3; li++){
-      const arr=[]; for(let x=-BG.step; x<w+BG.step; x+=BG.step){ const bw=54+li*14+Math.floor(rand(-6,6)); const bh=base[li]+Math.floor(rand(-24,32)); arr.push({x,w:bw,h:bh}); }
-      BG.layers[li]=arr;
-    }
-  }
-
-  function fit(){ canvas.width=innerWidth; canvas.height=innerHeight; buildCity(); }
-  addEventListener('resize', fit, {passive:true});
-  fit();
-
-  // ---------- Bind UI values AFTER canvas/BG are ready ----------
-  E('#theme').value=S.theme; E('#diff').value=String(S.diff);
-  E('#gravity').value=S.gravity; E('#flap').value=S.flap; E('#speed').value=S.speed; E('#gap').value=S.gap; E('#pipeW').value=S.pipeW;
-  E('#scan').checked=S.scan; E('#vig').checked=S.vig; E('#pix').checked=S.pix; E('#particles').checked=S.particles; E('#trail').checked=S.trail;
-  E('#skin').value=S.skin; E('#autobal').checked=S.autobal; E('#mute').checked=S.mute; E('#bgSpeed').value=S.bgSpeed;
-  E('#best').textContent=BEST;
-
-  // ---------- Gameplay helpers ----------
-  function reset(){ bird={ x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true }; pipes.length=0; sparks.length=0; trail.length=0; G.score=0; G.pipeTimer=0; world.speed=S.speed; world.gravity=S.gravity; world.gap=S.gap; world.pipeW=S.pipeW; E('#score').textContent=0; }
-
-  function spawnPipe(){ const h=canvas.height; const cy=rand(80+world.gap/2, h-80-world.gap/2); const x=canvas.width+world.pipeW; pipes.push({x,w:world.pipeW,top:cy-world.gap/2,bot:cy+world.gap/2,passed:false}); }
-
-  function addSpark(x,y,clr){ if(!S.particles) return; for(let i=0;i<4;i++){ sparks.push({x,y, vx:rand(-1,1), vy:rand(-1.6,-0.2), life:rand(0.25,0.6), t:0, c:clr}); } }
-
-  // ---------- Input ----------
-  function start(){ try{ ensureAC(); ac&&ac.resume&&ac.resume(); }catch{} G.running=true; }
-  function flap(){ if(!G.running){ start(); return; } if(!bird.alive){ reset(); start(); return; } bird.vy=-S.flap; addSpark(bird.x-8,bird.y,'pri'); beep(660,0.06,'triangle'); }
-  addEventListener('keydown',e=>{ if(['Space','ArrowUp','KeyW'].includes(e.code)){ e.preventDefault(); flap(); } if(e.code==='KeyP'){ if(G.running) G.running=false; else start(); } });
-  addEventListener('pointerdown', flap);
-
-  E('#btnStart').onclick=()=>{ if(!G.running) start(); else flap(); };
-  E('#btnPause').onclick=()=>{ G.running=false; };
-  E('#btnReset').onclick=()=>{ reset(); drawFrame(0); };
-  E('#overlayStart').onclick=()=>{ start(); E('#overlayStart').style.display='none'; };
-
-  // ---------- Settings ----------
-  const bind=(sel,fn)=>E(sel).addEventListener('input',fn);
-  bind('#theme',e=>{ S.theme=e.target.value; applyTheme(); save(); });
-  bind('#diff',e=>{ S.diff=+e.target.value; if(S.diff===0){S.gravity=0.32;S.flap=7;S.speed=2.8;S.gap=180;S.pipeW=80;} if(S.diff===1){S.gravity=0.36;S.flap=6.2;S.speed=3.2;S.gap=150;S.pipeW=70;} if(S.diff===2){S.gravity=0.42;S.flap=6;S.speed=3.8;S.gap=130;S.pipeW=64;} world.gravity=S.gravity;world.speed=S.speed;world.gap=S.gap;world.pipeW=S.pipeW; E('#gravity').value=S.gravity;E('#flap').value=S.flap;E('#speed').value=S.speed;E('#gap').value=S.gap;E('#pipeW').value=S.pipeW; save(); });
-  bind('#gravity',e=>{ S.gravity=+e.target.value; world.gravity=S.gravity; save(); });
-  bind('#flap',e=>{ S.flap=+e.target.value; save(); });
-  bind('#speed',e=>{ S.speed=+e.target.value; world.speed=S.speed; save(); });
-  bind('#gap',e=>{ S.gap=+e.target.value; world.gap=S.gap; save(); });
-  bind('#pipeW',e=>{ S.pipeW=+e.target.value; world.pipeW=S.pipeW; save(); });
-  bind('#scan',e=>{ S.scan=e.target.checked; hud.classList.toggle('scanlines',S.scan); save(); });
-  bind('#vig',e=>{ S.vig=e.target.checked; hud.classList.toggle('vignette',S.vig); save(); });
-  bind('#pix',e=>{ S.pix=e.target.checked; canvas.classList.toggle('pixelate',S.pix); save(); });
-  bind('#particles',e=>{ S.particles=e.target.checked; save(); });
-  bind('#trail',e=>{ S.trail=e.target.checked; if(!S.trail) trail.length=0; save(); });
-  bind('#skin',e=>{ S.skin=e.target.value; save(); });
-  bind('#autobal',e=>{ S.autobal=e.target.checked; save(); });
-  bind('#mute',e=>{ S.mute=e.target.checked; save(); });
-  bind('#bgSpeed',e=>{ S.bgSpeed=+e.target.value; save(); });
-
-  // ---------- Draw helpers ----------
-  function neonRect(x,y,w,h,clr){ ctx.save(); ctx.fillStyle=clr; ctx.globalAlpha=0.85; ctx.fillRect(x,y,w,h); ctx.shadowColor=clr; ctx.shadowBlur=10; ctx.strokeStyle=clr; ctx.lineWidth=1.5; ctx.strokeRect(x+0.5,y+0.5,w-1,h-1); ctx.shadowBlur=0; ctx.restore(); }
-  function neonCircle(x,y,r,clr){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=clr; ctx.shadowColor=clr; ctx.shadowBlur=18; ctx.fill(); ctx.shadowBlur=0; }
-
-  function drawCity(t){
-    const w=canvas.width,h=canvas.height; const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim(); const sec=getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
-    ctx.fillStyle='#070a10'; ctx.fillRect(0,0,w,h);
-    const g=ctx.createLinearGradient(0,h*0.52,0,h); g.addColorStop(0,'rgba(10,20,30,0)'); g.addColorStop(1,'rgba(10,20,30,.85)'); ctx.fillStyle=g; ctx.fillRect(0,h*0.52,w,h*0.48);
-    for(let i=0;i<3;i++){ const y=h*0.67+i*10; ctx.globalAlpha=0.05; ctx.fillStyle=sec; ctx.fillRect(0,y,w,1); ctx.globalAlpha=1; }
-    const colors=['#0b1a2d','#0f223d','#152a52'];
-    for(let li=0; li<3; li++){
-      const arr=BG.layers[li]; ctx.fillStyle=colors[li];
-      for(let i=0;i<arr.length;i++){
-        const b=arr[i]; ctx.fillRect(b.x, h-b.h, b.w, b.h);
-        for(let wx=b.x+8; wx<b.x+b.w-8; wx+=12){ if(((wx*7 + (t*30|0)) % 11)===0){ ctx.globalAlpha=0.28; ctx.fillStyle=(wx%2)? pri:sec; ctx.fillRect(wx, h-b.h+8 + ((wx>>2)%8), 6, 10); ctx.fillStyle=colors[li]; ctx.globalAlpha=1; }}
+    // Optional cross-check using IWS equation note seen on many scopes:
+    // (Eaves x 6) + (Valleys x 3) ≈ IWS square feet
+    let iws_check = null;
+    if (data.iws_sf!=null){
+      // If we have either eaves or valleys we can infer the other under the common 6/3 rule
+      if (eaves_lf!=null && valleys_lf==null) {
+        valleys_lf = Math.max(0, Math.round(((data.iws_sf - eaves_lf*6)/3)*100)/100);
+      } else if (eaves_lf==null && valleys_lf!=null){
+        eaves_lf = Math.max(0, Math.round(((data.iws_sf - valleys_lf*3)/6)*100)/100);
+      }
+      if (eaves_lf!=null && valleys_lf!=null){
+        iws_check = (eaves_lf*6 + valleys_lf*3);
       }
     }
-    ctx.fillStyle=pri; ctx.globalAlpha=0.22; ctx.fillRect(0,h-2,w,2); ctx.globalAlpha=1;
+
+    return {
+      raw:data, area_sq, eaves_lf, valleys_lf, ridges_lf, drip_total_lf, rakes_lf,
+      notes:{
+        iws_sf: data.iws_sf, iws_check
+      }
+    };
   }
 
-  function drawPipes(){ const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim(); const sec=getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
-    for(const p of pipes){ neonRect(p.x,0,p.w,p.top,sec); neonRect(p.x,p.bot,p.w,canvas.height-p.bot,sec); ctx.fillStyle=pri; ctx.globalAlpha=0.25; ctx.fillRect(p.x-4,p.top-6,p.w+8,4); ctx.fillRect(p.x-4,p.bot+2,p.w+8,4); ctx.globalAlpha=1; }
+  async function readPdfAsText(file){
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let out = [];
+    for (let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      out.push(content.items.map(i => i.str).join(" "));
+    }
+    return out.join("\n");
   }
 
-  function drawBird(){
-    const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim(); const sec=getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
-    if(S.trail){ trail.push({x:bird.x,y:bird.y}); if(trail.length>50) trail.shift(); for(let i=0;i<trail.length;i++){ const p=trail[i]; const a=1-i/trail.length; ctx.globalAlpha=a*0.22; neonCircle(p.x,p.y,3,sec); } ctx.globalAlpha=1; }
-    ctx.save(); ctx.translate(bird.x,bird.y); ctx.rotate(clamp(bird.vy,-8,8)*0.035);
-    if(S.skin==='triangle'){ ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-10,-8); ctx.lineTo(-10,8); ctx.closePath(); ctx.fillStyle=pri; ctx.shadowColor=pri; ctx.shadowBlur=14; ctx.fill(); ctx.shadowBlur=0; }
-    else if(S.skin==='disk'){ neonCircle(0,0,12,pri); }
-    else if(S.skin==='cube'){ neonRect(-10,-10,20,20,pri); }
-    else if(S.skin==='ring'){ ctx.strokeStyle=pri; ctx.lineWidth=5; ctx.shadowColor=pri; ctx.shadowBlur=14; ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0; }
-    ctx.restore();
+  function renderResults(model){
+    const fmt = v => (v==null || Number.isNaN(v)) ? '—' : String(v);
+    const sqft = v => (v==null? '—' : (Number(v)*100).toFixed(0).replace(/(\d{2})$/,".$1")); // not used
+    const el = $("#results");
+    const estTags = [];
+    if (model.area_sq!=null) estTags.push(`<span class="tag">Area: <b>${model.area_sq.toFixed(2)} SQ</b></span>`);
+    if (model.eaves_lf!=null) estTags.push(`<span class="tag">Eaves: <b>${model.eaves_lf} LF</b></span>`);
+    if (model.rakes_lf!=null) estTags.push(`<span class="tag">Rakes: <b>${model.rakes_lf} LF</b></span>`);
+    if (model.ridges_lf!=null) estTags.push(`<span class="tag">Ridges: <b>${model.ridges_lf} LF</b></span>`);
+    if (model.valleys_lf!=null) estTags.push(`<span class="tag">Valleys: <b>${model.valleys_lf} LF</b></span>`);
+    if (model.drip_total_lf!=null) estTags.push(`<span class="tag">Drip Edge: <b>${model.drip_total_lf} LF</b></span>`);
+
+    const iwsNote = (model.notes.iws_sf!=null)
+      ? `<div class="small">Ice & Water Barrier: <b>${model.notes.iws_sf} SF</b>${
+          (model.notes.iws_check!=null)
+            ? ` <span class="hint">(~ Eaves×6 + Valleys×3 = ${model.notes.iws_check} SF)</span>` : ''
+        }</div>`
+      : '';
+
+    el.innerHTML = `
+      <div class="card">
+        <h2>Measurement Summary</h2>
+        <div class="row" style="margin-bottom:8px">${estTags.join(' ')}</div>
+        ${iwsNote}
+        <div class="kpi" style="margin-top:10px">
+          <div class="pill"><div class="lbl">Roof Area</div><div class="val">${model.area_sq!=null? model.area_sq.toFixed(2)+' SQ':'—'}</div></div>
+          <div class="pill"><div class="lbl">Eaves</div><div class="val">${fmt(model.eaves_lf)} LF</div></div>
+          <div class="pill"><div class="lbl">Rakes (derived)</div><div class="val">${fmt(model.rakes_lf)} LF</div></div>
+          <div class="pill"><div class="lbl">Ridges</div><div class="val">${fmt(model.ridges_lf)} LF</div></div>
+          <div class="pill"><div class="lbl">Valleys</div><div class="val">${fmt(model.valleys_lf)} LF</div></div>
+          <div class="pill"><div class="lbl">Drip Edge Total</div><div class="val">${fmt(model.drip_total_lf)} LF</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Simplified Line Items (auto-detected)</h2>
+        <table>
+          <thead><tr>
+            <th>Item</th><th class="right">Qty</th><th>Unit</th><th>Notes</th>
+          </tr></thead>
+          <tbody>
+            ${row("Remove laminated shingles", model.raw.remove_sq, "SQ", "Tear-off of existing roof")}
+            ${row("Roofing felt (15 lb)", model.raw.felt_sq, "SQ", "Underlayment")}
+            ${row("Ice & water barrier", model.raw.iws_sf, "SF", "Eaves/valleys waterproofing")}
+            ${row("Install laminated shingles", model.raw.shingles_sq, "SQ", "Main roof covering")}
+            ${row("Continuous ridge vent", model.raw.ridge_lf, "LF", "Ventilation")}
+            ${row("Hip/Ridge cap", model.raw.cap_lf, "LF", "Ridge capping")}
+            ${row("Drip edge / gutter apron", model.raw.drip_lf, "LF", "Edges (Eaves + Rakes)")}
+            ${row("Valley metal (W-profile)", model.raw.valley_lf, "LF", "Painted valley metal")}
+            ${row("Asphalt starter course", model.raw.starter_lf, "LF", "Along eaves")}
+            ${row("Rain caps", model.raw.rain_cap, "EA", "Vent pipe covers")}
+            ${row("Pipe jack flashing (R&R)", model.raw.pipe_jack, "EA", "Vent flashing")}
+            ${row("Prime & paint roof jack", model.raw.prime_paint, "EA", "Finish/seal")}
+            ${row("Steep roof charge - remove", model.raw.steep_remove_sq, "SQ", "7/12–9/12 removal")}
+            ${row("Steep roof charge - install", model.raw.steep_add_sq, "SQ", "7/12–9/12 install")}
+            ${row("High roof charge - remove", model.raw.high_remove_sq, "SQ", "2+ stories")}
+            ${row("High roof charge - install", model.raw.high_add_sq, "SQ", "2+ stories")}
+          </tbody>
+        </table>
+        <div class="hint" style="margin-top:8px">If something is missing or shows “—”, check your text for slightly different wording and paste again.</div>
+      </div>
+    `;
   }
 
-  function drawSparks(dt){ const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim(); for(let i=sparks.length-1;i>=0;i--){ const s=sparks[i]; s.t+=dt; s.x+=s.vx*60*dt; s.y+=s.vy*60*dt; s.vy+=world.gravity*0.4*dt*60; const a=1-s.t/s.life; if(a<=0){sparks.splice(i,1); continue;} ctx.globalAlpha=a*0.8; neonCircle(s.x,s.y,2, s.c==='pri'?pri:'#00f0ff'); ctx.globalAlpha=1; } }
-
-  // ---------- Loop ----------
-  reset(); let last=0; function loop(ts){ const t=ts/1000; const dt=Math.min(0.033, last? t-last:0.016); last=t; if(G.running) update(dt); drawFrame(dt,t); requestAnimationFrame(loop);} requestAnimationFrame(loop);
-
-  function update(dt){
-    G.time+=dt; G.pipeTimer+=dt; const spawnEvery=clamp(1.4-(S.diff*0.08),1.1,1.6); if(G.pipeTimer>spawnEvery){ G.pipeTimer=0; spawnPipe(); }
-    for(let i=pipes.length-1;i>=0;i--){ const p=pipes[i]; p.x-=world.speed*60*dt; if(p.x+p.w<0) pipes.splice(i,1); }
-    bird.vy = clamp(bird.vy + world.gravity*60*dt, -12, 12); bird.y += bird.vy;
-    // Trail drift left to simulate world scrolling
-    if(S.trail){ for(let i=0;i<trail.length;i++){ trail[i].x -= world.speed*60*dt; } while(trail.length>80) trail.shift(); }
-    for(let li=0; li<3; li++){ const arr=BG.layers[li]; const vx=(BG.speeds[li]* (0.8 + S.bgSpeed)) * dt; for(let i=0;i<arr.length;i++){ arr[i].x -= vx; if(arr[i].x < -BG.step) arr[i].x += BG.step * arr.length; } }
-    const bx=bird.x, by=bird.y, r=bird.r; for(const p of pipes){ if(!p.passed && p.x+p.w<bx-r){ p.passed=true; G.score++; E('#score').textContent=G.score; addSpark(bx,by,'pri'); beep(880,0.05,'square'); if(G.score>BEST){ BEST=G.score; localStorage.setItem('lofi-flappy-best',BEST); E('#best').textContent=BEST; } } if(bx+r>p.x && bx-r<p.x+p.w && (by-r<p.top || by+r>p.bot)) die(); }
-    if(by-r<0 || by+r>canvas.height) die();
-    if(S.autobal){ const target=6+S.diff*5; const rate=G.time>0? (G.score/(G.time/60)):0; const adj=clamp((rate-target)/target,-0.4,0.4); world.speed=clamp(S.speed*(1+adj*0.18),1.8,5.2); world.gap=clamp(S.gap*(1-adj*0.16),120,240); world.pipeW=clamp(S.pipeW*(1-adj*0.12),52,96); }
+  function row(name, qty, unit, note){
+    const q = (qty==null || Number.isNaN(qty)) ? '—' : Number(qty).toFixed(unit==='SQ'?2:2).replace(/\.00$/,'');
+    return `<tr>
+      <td>${name}</td>
+      <td class="right mono">${q}</td>
+      <td>${unit||''}</td>
+      <td class="small">${note||''}</td>
+    </tr>`;
   }
 
-  function die(){ if(!bird.alive) return; bird.alive=false; G.running=false; addSpark(bird.x,bird.y,'pri'); addSpark(bird.x+6,bird.y-4,'pri'); beep(160,0.18,'sawtooth'); }
-
-  function drawFrame(dt,t){
-    drawCity(t||0); drawPipes(); drawBird(); drawSparks(dt||0.016);
-    if(!G.running){ const obtn=E('#overlayStart'); if(obtn) obtn.style.display='block'; const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim(); ctx.textAlign='center'; ctx.font='700 42px Inter, Segoe UI, system-ui, sans-serif'; ctx.fillStyle=pri; ctx.shadowColor=pri; ctx.shadowBlur=18; ctx.fillText('Tap / Space to FLAP', canvas.width/2, canvas.height*0.33); ctx.shadowBlur=0; ctx.font='400 16px Inter, Segoe UI, system-ui, sans-serif'; ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fillText('Avoid neon vents. Pass through gaps to score. Customize on the right.', canvas.width/2, canvas.height*0.33+28); } else { const obtn=E('#overlayStart'); if(obtn) obtn.style.display='none'; }
+  function runParse(){
+    const t = $("#scopeText").value.trim();
+    if (!t){ $("#results").innerHTML = `<div class="card warn">Paste your scope text or upload a PDF first.</div>`; return; }
+    const model = parseScopeText(t);
+    renderResults(model);
   }
 
-  addEventListener('visibilitychange',()=>{ if(document.hidden) G.running=false; });
+  window.addEventListener('DOMContentLoaded', ()=>{
+    $("#parseBtn").addEventListener('click', runParse);
+    $("#demoBtn").addEventListener('click', ()=>{
+      // Small demo snippet (you can delete this)
+      $("#scopeText").value =
+`Roof
 
-  // ---------- Self‑Tests (console) ----------
-  (function runTests(){ let pass=0, fail=0; const test=(name,fn)=>{ try{ fn(); console.log('%cPASS','color:#6f6',name); pass++; }catch(e){ console.error('FAIL',name,e); fail++; } };
-    test('clamp()',()=>{ if(clamp(5,0,4)!==4) throw 'upper'; if(clamp(-1,0,4)!==0) throw 'lower'; if(clamp(2,0,4)!==2) throw 'mid'; });
-    test('spawnPipe gap bounds',()=>{ const old=pipes.length; spawnPipe(); const p=pipes[pipes.length-1]; const gap=p.bot-p.top; if(Math.abs(gap-world.gap)>0.001) throw 'gap mismatch'; if(p.top<0||p.bot>canvas.height) throw 'oob'; pipes.length=old; });
-    test('BG builds per layer',()=>{ buildCity(); if(!(BG.layers[0].length>0 && BG.layers[1].length>0 && BG.layers[2].length>0)) throw 'bg empty'; });
-    test('BG drift monotonic',()=>{ const x0=BG.layers[0][0].x; for(let k=0;k<10;k++){ for(let li=0;li<3;li++){ const arr=BG.layers[li]; for(let i=0;i<arr.length;i++){ arr[i].x -= BG.speeds[li]*0.016; } } } const x1=BG.layers[0][0].x; if(!(x1<x0)) throw 'bg not moving left'; });
-    test('trail drifts left with world',()=>{ reset(); S.trail=true; trail.length=0; world.speed=3; const startX=bird.x; trail.push({x:startX,y:bird.y}); update(0.1); if(!(trail[0].x < startX)) throw 'trail not moving left'; });
-    console.log(`Self‑tests: ${pass} passed, ${fail} failed`); })();
-
-})();
+1. Remove Laminated - comp. shingle rfg. - w/ felt 32.93 SQ
+2. Roofing felt - 15 lb. 36.33 SQ
+3. Ice & water barrier 888.00 SF (Eaves x 6) + (Valleys x 3)
+4. Laminated - comp. shingle rfg. - w/out felt 36.33 SQ
+5. R&R Continuous ridge vent - shingle-over style 84.01 LF
+6. R&R Hip / Ridge cap - Standard profile - composition shingles 84.01 LF
+7. R&R Drip edge/gutter apron 248.35 LF
+11. R&R Valley metal - (W) profile - painted 76.00 LF
+16. Asphalt starter - universal starter course 110.00 LF`;
+      runParse();
+    });
+    $("#fileInput").addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0];
+      if (!f) return;
+      $("#fileStatus").textContent = `Reading: ${f.name}...`;
+      try{
+        let text = '';
+        if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')){
+          text = await readPdfAsText(f);
+        } else {
+          text = await f.text();
+        }
+        $("#scopeText").value = text;
+        $("#fileStatus").textContent = `Loaded: ${f.name}`;
+        runParse();
+      }catch(err){
+        $("#fileStatus").textContent = `Could not read file (${err?.message||err})`;
+      }
+    });
+  });
 </script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Roof Scope Reader</h1>
+    <p class="sub">Paste your scope text or upload a PDF. The page extracts the key line items and computes measurements (Eaves, Rakes, Valleys, Ridges, Squares).</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1) Input</h2>
+        <div class="controls">
+          <label class="file">
+            <input id="fileInput" type="file" accept=".pdf,.txt" style="display:none">
+            <span>📄 Upload PDF / TXT</span>
+          </label>
+          <button id="parseBtn" class="primary">Parse Scope</button>
+          <button id="demoBtn">Fill Demo</button>
+          <span id="fileStatus" class="hint"></span>
+        </div>
+        <textarea id="scopeText" placeholder="Paste the scope text here (you can copy from your PDF)."></textarea>
+        <div class="hint">Tip: If your PDF text copies with odd spacing, it’s fine—this parser is built to handle that.</div>
+      </div>
+
+      <div id="results">
+        <div class="card">
+          <h2>Results</h2>
+          <div class="hint">Nothing parsed yet. Paste your scope or upload a PDF, then click <b>Parse Scope</b>.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="small" style="margin-top:14px">
+      Derived rakes = (Drip Edge LF) − (Eaves LF). Eaves LF is read from the Starter Course when available. Ice & Water Barrier cross-checks the eaves/valleys with the common rule: (Eaves × 6) + (Valleys × 3).
+    </p>
+  </div>
 </body>
 </html>
