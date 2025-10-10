@@ -7,274 +7,228 @@
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
-    --bg:#0b1020; --panel:#0f172a; --ink:#e6eefc; --muted:#8ea0c9; --accent:#60a5fa; --ok:#34d399; --bad:#f43f5e; --card:#111a33; --border:#1f2a44;
+    --bg:#0b1020; --panel:#0f172a; --ink:#e6eefc; --muted:#8ea0c9;
+    --accent:#60a5fa; --ok:#34d399; --border:#1f2a44; --card:#111a33;
   }
-  *{ box-sizing:border-box }
-  body{ margin:0; background:var(--bg); color:var(--ink);
-        font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif}
-  .wrap{ max-width:1100px; margin:24px auto; padding:0 14px 80px }
-  h1{ font-size:28px; margin:0 0 10px }
-  .sub{ color:var(--muted); margin-top:0 }
-  .grid{ display:grid; gap:14px; grid-template-columns: 1fr }
-  @media(min-width:980px){ .grid{ grid-template-columns: 1.1fr .9fr } }
-  .card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px }
-  .card h2{ margin:0 0 8px; font-size:18px }
-  textarea{ width:100%; min-height:200px; background:#0a1226; color:var(--ink); border:1px solid var(--border);
-            border-radius:12px; padding:10px; resize:vertical }
-  .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:8px 0 6px }
-  button{ cursor:pointer; border:1px solid var(--border); background:#162242; color:var(--ink);
-          border-radius:10px; padding:10px 14px; font-weight:600 }
-  button.primary{ background:var(--accent); color:#061326; border-color:#3b82f6 }
-  .hint{ color:var(--muted); font-size:12px }
-  table{ width:100%; border-collapse:collapse; overflow:auto; border-radius:12px }
-  th, td{ padding:10px 8px; border-bottom:1px solid var(--border); vertical-align:top }
-  th{ text-align:left; color:#cfe0ff; background:#0e1834; position:sticky; top:0 }
-  .kpi{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
-  @media(min-width:720px){ .kpi{ grid-template-columns:repeat(4,minmax(0,1fr)) } }
-  .pill{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px }
-  .pill .lbl{ color:var(--muted); font-size:12px }
-  .pill .val{ font-weight:700; font-size:18px }
-  .tag{ display:inline-block; background:#132148; border:1px solid var(--border); color:#cfe0ff;
-        padding:2px 8px; border-radius:999px; font-size:12px; margin-right:6px }
-  .warn{ color:#ffd166 }
-  .okay{ color:var(--ok) }
-  .right{ text-align:right }
-  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-  .file{ padding:8px 10px; background:#0a1226; border:1px dashed var(--border); border-radius:12px }
-  .small{ font-size:12px; color:var(--muted) }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 14px 80px}
+  h1{font-size:28px;margin:0 0 10px}
+  .sub{color:var(--muted);margin-top:0}
+  .grid{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:980px){.grid{grid-template-columns:1.1fr .9fr}}
+  .card{background:var(--panel);border:1px solid var(--border);
+        border-radius:16px;padding:14px}
+  .card h2{margin:0 0 8px;font-size:18px}
+  textarea{width:100%;min-height:200px;background:#0a1226;color:var(--ink);
+           border:1px solid var(--border);border-radius:12px;padding:10px;resize:vertical}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0 6px}
+  button{cursor:pointer;border:1px solid var(--border);background:#162242;color:var(--ink);
+          border-radius:10px;padding:10px 14px;font-weight:600}
+  button.primary{background:var(--accent);color:#061326;border-color:#3b82f6}
+  .hint{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;overflow:auto;border-radius:12px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{text-align:left;color:#cfe0ff;background:#0e1834;position:sticky;top:0}
+  .kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  @media(min-width:720px){.kpi{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .pill{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
+  .pill .lbl{color:var(--muted);font-size:12px}
+  .pill .val{font-weight:700;font-size:18px}
+  .tag{display:inline-block;background:#132148;border:1px solid var(--border);color:#cfe0ff;
+       padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px}
+  .small{font-size:12px;color:var(--muted)}
+  .right{text-align:right}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+  .file{padding:8px 10px;background:#0a1226;border:1px dashed var(--border);border-radius:12px}
 </style>
-<!-- PDF.js for optional client-side PDF text extraction (works on GitHub Pages) -->
 <script src="https://unpkg.com/pdfjs-dist@4.7.76/build/pdf.min.js"></script>
 <script>
-  // Minimal helpers
-  const $ = sel => document.querySelector(sel);
+const $ = s => document.querySelector(s);
 
-  // Default parser targeting the common scope wording (like your screenshot)
-  function parseScopeText(text){
-    const clean = text.replace(/\r/g,'').replace(/[^\S\r\n]+/g,' ').trim();
+async function readPdfAsText(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let out = [];
+  for (let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    out.push(content.items.map(i => i.str).join(" "));
+  }
+  return out.join("\n");
+}
 
-    // Helpers to find quantities by keyword (returns Number or null)
-    const findQty = (label, unitPattern) => {
-      const re = new RegExp(label + "\\s+([\\d.,]+)\\s*" + unitPattern, "i");
-      const m = clean.match(re);
-      return m ? Number(m[1].replace(/,/g,'')) : null;
-    };
+// 🧩 FIXED parser that merges broken lines
+function parseScopeText(raw){
+  // Merge multi-line items into single lines
+  let text = raw
+    .replace(/\r/g, "")
+    .replace(/[^\S\r\n]+/g, " ")
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(l => l.length)
+    .join(" ")                     // flatten into one line
+    .replace(/(\d+)\s+(SQ|LF|SF|EA)/g, "$1 $2"); // fix separated units
 
-    // Specific items (robust to minor text changes)
-    const data = {
-      remove_sq: findQty("(Remove|Tear[- ]?off)[^\\n]*?Laminated[^\\n]*?shingle[^\\n]*?", "(SQ)"),
-      felt_sq:   findQty("(Roofing\\s*felt|15\\s*lb\\.?\\s*felt|15\\s*lb)", "(SQ)"),
-      shingles_sq: findQty("Laminated[^\\n]*?shingle[^\\n]*?w/?out\\s*felt", "(SQ)"),
-      iws_sf:    findQty("(Ice\\s*&\\s*water\\s*barrier|Ice[^\\n]*water[^\\n]*barrier)", "(SF)"),
-      ridge_lf:  findQty("(Continuous\\s*ridge\\s*vent|Ridge\\s*vent)", "(LF)"),
-      cap_lf:    findQty("(Hip\\s*/?\\s*Ridge\\s*cap|Ridge\\s*cap)", "(LF)"),
-      drip_lf:   findQty("(Drip\\s*edge|gutter\\s*apron|Drip\\s*edge/gutter\\s*apron)", "(LF)"),
-      valley_lf: findQty("(Valley\\s*metal|Valley)", "(LF)"),
-      starter_lf:findQty("(Asphalt\\s*starter[^\\n]*course|starter\\s*course)", "(LF)"),
-      rain_cap:  findQty("(Rain\\s*cap)", "(EA)"),
-      pipe_jack: findQty("(Flash(ing)?\\s*-?\\s*pipe\\s*jack|Pipe\\s*jack)", "(EA)"),
-      prime_paint: findQty("(Prime\\s*&\\s*paint\\s*roof\\s*jack)", "(EA)"),
-      steep_remove_sq: findQty("Remove[^\\n]*steep\\s*roof", "(SQ)"),
-      steep_add_sq:    findQty("Additional\\s*charge[^\\n]*steep\\s*roof", "(SQ)"),
-      high_remove_sq:  findQty("Remove[^\\n]*high\\s*roof", "(SQ)"),
-      high_add_sq:     findQty("Additional\\s*charge[^\\n]*high\\s*roof", "(SQ)")
-    };
+  // helper
+  const findQty = (label, unit) => {
+    const re = new RegExp(label + "\\s+([\\d.,]+)\\s*" + unit, "i");
+    const m = text.match(re);
+    return m ? Number(m[1].replace(/,/g, "")) : null;
+  };
 
-    // Measurements
-    const area_sq = data.felt_sq ?? data.shingles_sq ?? null;
-    const eaves_lf = data.starter_lf ?? null;           // starter is typically along eaves
-    const valleys_lf = data.valley_lf ?? null;
-    const ridges_lf = data.ridge_lf ?? data.cap_lf ?? null;
-    const drip_total_lf = data.drip_lf ?? null;
-    const rakes_lf = (drip_total_lf!=null && eaves_lf!=null) ? Math.max(0, +(drip_total_lf - eaves_lf).toFixed(2)) : null;
+  const data = {
+    remove_sq: findQty("Remove[^\\n]*?Laminated[^\\n]*?shingle", "SQ"),
+    felt_sq: findQty("Roofing\\s*felt", "SQ"),
+    shingles_sq: findQty("Laminated[^\\n]*?w/?out\\s*felt", "SQ"),
+    iws_sf: findQty("Ice\\s*&\\s*water\\s*barrier", "SF"),
+    ridge_lf: findQty("ridge\\s*vent", "LF"),
+    cap_lf: findQty("Ridge\\s*cap", "LF"),
+    drip_lf: findQty("Drip\\s*edge|gutter\\s*apron", "LF"),
+    valley_lf: findQty("Valley\\s*metal", "LF"),
+    starter_lf: findQty("starter\\s*course", "LF"),
+    rain_cap: findQty("Rain\\s*cap", "EA"),
+    pipe_jack: findQty("pipe\\s*jack", "EA"),
+    prime_paint: findQty("Prime\\s*&\\s*paint\\s*roof\\s*jack", "EA"),
+    steep_remove_sq: findQty("Remove[^\\n]*steep\\s*roof", "SQ"),
+    steep_add_sq: findQty("Additional\\s*charge[^\\n]*steep\\s*roof", "SQ"),
+    high_remove_sq: findQty("Remove[^\\n]*high\\s*roof", "SQ"),
+    high_add_sq: findQty("Additional\\s*charge[^\\n]*high\\s*roof", "SQ")
+  };
 
-    // Optional cross-check using IWS equation note seen on many scopes:
-    // (Eaves x 6) + (Valleys x 3) ≈ IWS square feet
-    let iws_check = null;
-    if (data.iws_sf!=null){
-      // If we have either eaves or valleys we can infer the other under the common 6/3 rule
-      if (eaves_lf!=null && valleys_lf==null) {
-        valleys_lf = Math.max(0, Math.round(((data.iws_sf - eaves_lf*6)/3)*100)/100);
-      } else if (eaves_lf==null && valleys_lf!=null){
-        eaves_lf = Math.max(0, Math.round(((data.iws_sf - valleys_lf*3)/6)*100)/100);
-      }
-      if (eaves_lf!=null && valleys_lf!=null){
-        iws_check = (eaves_lf*6 + valleys_lf*3);
-      }
+  // derive measurements
+  const area_sq = data.felt_sq ?? data.shingles_sq;
+  const eaves_lf = data.starter_lf ?? null;
+  const valleys_lf = data.valley_lf ?? null;
+  const ridges_lf = data.ridge_lf ?? data.cap_lf ?? null;
+  const drip_total_lf = data.drip_lf ?? null;
+  const rakes_lf = (drip_total_lf && eaves_lf) ? +(drip_total_lf - eaves_lf).toFixed(2) : null;
+
+  return { raw:data, area_sq, eaves_lf, valleys_lf, ridges_lf, drip_total_lf, rakes_lf };
+}
+
+function row(name, qty, unit, note){
+  const q = (qty==null||Number.isNaN(qty))?'—':Number(qty).toFixed(unit==='SQ'?2:2).replace(/\.00$/,'');
+  return `<tr><td>${name}</td><td class="right mono">${q}</td><td>${unit||''}</td><td class="small">${note||''}</td></tr>`;
+}
+
+function renderResults(model){
+  const fmt = v => (v==null||Number.isNaN(v))?'—':String(v);
+  const el = $("#results");
+  el.innerHTML = `
+  <div class="card">
+    <h2>Measurement Summary</h2>
+    <div class="kpi">
+      <div class="pill"><div class="lbl">Roof Area</div><div class="val">${fmt(model.area_sq)} SQ</div></div>
+      <div class="pill"><div class="lbl">Eaves</div><div class="val">${fmt(model.eaves_lf)} LF</div></div>
+      <div class="pill"><div class="lbl">Rakes</div><div class="val">${fmt(model.rakes_lf)} LF</div></div>
+      <div class="pill"><div class="lbl">Ridges</div><div class="val">${fmt(model.ridges_lf)} LF</div></div>
+      <div class="pill"><div class="lbl">Valleys</div><div class="val">${fmt(model.valleys_lf)} LF</div></div>
+      <div class="pill"><div class="lbl">Drip Edge Total</div><div class="val">${fmt(model.drip_total_lf)} LF</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Simplified Line Items</h2>
+    <table>
+      <thead><tr><th>Item</th><th class="right">Qty</th><th>Unit</th><th>Notes</th></tr></thead>
+      <tbody>
+        ${row("Remove laminated shingles", model.raw.remove_sq, "SQ","Tear-off")}
+        ${row("Roofing felt (15 lb)", model.raw.felt_sq, "SQ","Underlayment")}
+        ${row("Ice & water barrier", model.raw.iws_sf, "SF","Eaves + Valleys")}
+        ${row("Install laminated shingles", model.raw.shingles_sq, "SQ","Main roof")}
+        ${row("Ridge vent", model.raw.ridge_lf, "LF","Ventilation")}
+        ${row("Ridge cap", model.raw.cap_lf, "LF","Capping")}
+        ${row("Drip edge / gutter apron", model.raw.drip_lf, "LF","Edges")}
+        ${row("Valley metal", model.raw.valley_lf, "LF","Painted W-profile")}
+        ${row("Asphalt starter", model.raw.starter_lf, "LF","Along eaves")}
+        ${row("Rain cap", model.raw.rain_cap, "EA","Vent pipe cover")}
+        ${row("Pipe jack flashing", model.raw.pipe_jack, "EA","Vent flashing")}
+        ${row("Prime & paint roof jack", model.raw.prime_paint, "EA","Finish")}
+        ${row("Steep roof (remove)", model.raw.steep_remove_sq, "SQ","7/12–9/12")}
+        ${row("Steep roof (install)", model.raw.steep_add_sq, "SQ","7/12–9/12")}
+        ${row("High roof (remove)", model.raw.high_remove_sq, "SQ","2+ stories")}
+        ${row("High roof (install)", model.raw.high_add_sq, "SQ","2+ stories")}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+async function handleFile(e){
+  const f = e.target.files?.[0];
+  if(!f) return;
+  $("#fileStatus").textContent = `Reading ${f.name}...`;
+  try{
+    let text = '';
+    if(f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf')){
+      text = await readPdfAsText(f);
+    }else{
+      text = await f.text();
     }
-
-    return {
-      raw:data, area_sq, eaves_lf, valleys_lf, ridges_lf, drip_total_lf, rakes_lf,
-      notes:{
-        iws_sf: data.iws_sf, iws_check
-      }
-    };
+    $("#scopeText").value = text;
+    $("#fileStatus").textContent = `Loaded ${f.name}`;
+    runParse();
+  }catch(err){
+    $("#fileStatus").textContent = `Error reading file: ${err.message}`;
   }
+}
 
-  async function readPdfAsText(file){
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    let out = [];
-    for (let p=1; p<=pdf.numPages; p++){
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      out.push(content.items.map(i => i.str).join(" "));
-    }
-    return out.join("\n");
-  }
+function runParse(){
+  const raw = $("#scopeText").value.trim();
+  if(!raw){ $("#results").innerHTML='<div class="card"><h2>No Input</h2><p>Paste your scope text or upload a PDF first.</p></div>'; return;}
+  const model = parseScopeText(raw);
+  renderResults(model);
+}
 
-  function renderResults(model){
-    const fmt = v => (v==null || Number.isNaN(v)) ? '—' : String(v);
-    const sqft = v => (v==null? '—' : (Number(v)*100).toFixed(0).replace(/(\d{2})$/,".$1")); // not used
-    const el = $("#results");
-    const estTags = [];
-    if (model.area_sq!=null) estTags.push(`<span class="tag">Area: <b>${model.area_sq.toFixed(2)} SQ</b></span>`);
-    if (model.eaves_lf!=null) estTags.push(`<span class="tag">Eaves: <b>${model.eaves_lf} LF</b></span>`);
-    if (model.rakes_lf!=null) estTags.push(`<span class="tag">Rakes: <b>${model.rakes_lf} LF</b></span>`);
-    if (model.ridges_lf!=null) estTags.push(`<span class="tag">Ridges: <b>${model.ridges_lf} LF</b></span>`);
-    if (model.valleys_lf!=null) estTags.push(`<span class="tag">Valleys: <b>${model.valleys_lf} LF</b></span>`);
-    if (model.drip_total_lf!=null) estTags.push(`<span class="tag">Drip Edge: <b>${model.drip_total_lf} LF</b></span>`);
-
-    const iwsNote = (model.notes.iws_sf!=null)
-      ? `<div class="small">Ice & Water Barrier: <b>${model.notes.iws_sf} SF</b>${
-          (model.notes.iws_check!=null)
-            ? ` <span class="hint">(~ Eaves×6 + Valleys×3 = ${model.notes.iws_check} SF)</span>` : ''
-        }</div>`
-      : '';
-
-    el.innerHTML = `
-      <div class="card">
-        <h2>Measurement Summary</h2>
-        <div class="row" style="margin-bottom:8px">${estTags.join(' ')}</div>
-        ${iwsNote}
-        <div class="kpi" style="margin-top:10px">
-          <div class="pill"><div class="lbl">Roof Area</div><div class="val">${model.area_sq!=null? model.area_sq.toFixed(2)+' SQ':'—'}</div></div>
-          <div class="pill"><div class="lbl">Eaves</div><div class="val">${fmt(model.eaves_lf)} LF</div></div>
-          <div class="pill"><div class="lbl">Rakes (derived)</div><div class="val">${fmt(model.rakes_lf)} LF</div></div>
-          <div class="pill"><div class="lbl">Ridges</div><div class="val">${fmt(model.ridges_lf)} LF</div></div>
-          <div class="pill"><div class="lbl">Valleys</div><div class="val">${fmt(model.valleys_lf)} LF</div></div>
-          <div class="pill"><div class="lbl">Drip Edge Total</div><div class="val">${fmt(model.drip_total_lf)} LF</div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Simplified Line Items (auto-detected)</h2>
-        <table>
-          <thead><tr>
-            <th>Item</th><th class="right">Qty</th><th>Unit</th><th>Notes</th>
-          </tr></thead>
-          <tbody>
-            ${row("Remove laminated shingles", model.raw.remove_sq, "SQ", "Tear-off of existing roof")}
-            ${row("Roofing felt (15 lb)", model.raw.felt_sq, "SQ", "Underlayment")}
-            ${row("Ice & water barrier", model.raw.iws_sf, "SF", "Eaves/valleys waterproofing")}
-            ${row("Install laminated shingles", model.raw.shingles_sq, "SQ", "Main roof covering")}
-            ${row("Continuous ridge vent", model.raw.ridge_lf, "LF", "Ventilation")}
-            ${row("Hip/Ridge cap", model.raw.cap_lf, "LF", "Ridge capping")}
-            ${row("Drip edge / gutter apron", model.raw.drip_lf, "LF", "Edges (Eaves + Rakes)")}
-            ${row("Valley metal (W-profile)", model.raw.valley_lf, "LF", "Painted valley metal")}
-            ${row("Asphalt starter course", model.raw.starter_lf, "LF", "Along eaves")}
-            ${row("Rain caps", model.raw.rain_cap, "EA", "Vent pipe covers")}
-            ${row("Pipe jack flashing (R&R)", model.raw.pipe_jack, "EA", "Vent flashing")}
-            ${row("Prime & paint roof jack", model.raw.prime_paint, "EA", "Finish/seal")}
-            ${row("Steep roof charge - remove", model.raw.steep_remove_sq, "SQ", "7/12–9/12 removal")}
-            ${row("Steep roof charge - install", model.raw.steep_add_sq, "SQ", "7/12–9/12 install")}
-            ${row("High roof charge - remove", model.raw.high_remove_sq, "SQ", "2+ stories")}
-            ${row("High roof charge - install", model.raw.high_add_sq, "SQ", "2+ stories")}
-          </tbody>
-        </table>
-        <div class="hint" style="margin-top:8px">If something is missing or shows “—”, check your text for slightly different wording and paste again.</div>
-      </div>
-    `;
-  }
-
-  function row(name, qty, unit, note){
-    const q = (qty==null || Number.isNaN(qty)) ? '—' : Number(qty).toFixed(unit==='SQ'?2:2).replace(/\.00$/,'');
-    return `<tr>
-      <td>${name}</td>
-      <td class="right mono">${q}</td>
-      <td>${unit||''}</td>
-      <td class="small">${note||''}</td>
-    </tr>`;
-  }
-
-  function runParse(){
-    const t = $("#scopeText").value.trim();
-    if (!t){ $("#results").innerHTML = `<div class="card warn">Paste your scope text or upload a PDF first.</div>`; return; }
-    const model = parseScopeText(t);
-    renderResults(model);
-  }
-
-  window.addEventListener('DOMContentLoaded', ()=>{
-    $("#parseBtn").addEventListener('click', runParse);
-    $("#demoBtn").addEventListener('click', ()=>{
-      // Small demo snippet (you can delete this)
-      $("#scopeText").value =
-`Roof
-
-1. Remove Laminated - comp. shingle rfg. - w/ felt 32.93 SQ
+window.addEventListener('DOMContentLoaded',()=>{
+  $("#parseBtn").addEventListener('click',runParse);
+  $("#fileInput").addEventListener('change',handleFile);
+  $("#demoBtn").addEventListener('click',()=>{
+    $("#scopeText").value=`1. Remove Laminated - comp. 32.93 SQ
+shingle rfg. - w/ felt
 2. Roofing felt - 15 lb. 36.33 SQ
-3. Ice & water barrier 888.00 SF (Eaves x 6) + (Valleys x 3)
-4. Laminated - comp. shingle rfg. - w/out felt 36.33 SQ
-5. R&R Continuous ridge vent - shingle-over style 84.01 LF
-6. R&R Hip / Ridge cap - Standard profile - composition shingles 84.01 LF
+3. Ice & water barrier 888.00 SF
+(Eaves x 6) + (Valleys x 3)
+(110 × 6) + (76 × 3) = 888
+4. Laminated - comp. shingle rfg. - 36.33 SQ
+w/out felt
+5. R&R Continuous ridge vent - 84.01 LF
+6. R&R Hip / Ridge cap - Standard 84.01 LF
 7. R&R Drip edge/gutter apron 248.35 LF
-11. R&R Valley metal - (W) profile - painted 76.00 LF
-16. Asphalt starter - universal starter course 110.00 LF`;
-      runParse();
-    });
-    $("#fileInput").addEventListener('change', async (e)=>{
-      const f = e.target.files?.[0];
-      if (!f) return;
-      $("#fileStatus").textContent = `Reading: ${f.name}...`;
-      try{
-        let text = '';
-        if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')){
-          text = await readPdfAsText(f);
-        } else {
-          text = await f.text();
-        }
-        $("#scopeText").value = text;
-        $("#fileStatus").textContent = `Loaded: ${f.name}`;
-        runParse();
-      }catch(err){
-        $("#fileStatus").textContent = `Could not read file (${err?.message||err})`;
-      }
-    });
+11. R&R Valley metal - (W) profile - 76.00 LF
+16. Asphalt starter - universal 110.00 LF`;
+    runParse();
   });
+});
 </script>
 </head>
 <body>
   <div class="wrap">
     <h1>Roof Scope Reader</h1>
-    <p class="sub">Paste your scope text or upload a PDF. The page extracts the key line items and computes measurements (Eaves, Rakes, Valleys, Ridges, Squares).</p>
-
+    <p class="sub">Paste or upload your roof scope PDF/text below. The app auto-detects measurements and simplifies line items.</p>
     <div class="grid">
       <div class="card">
         <h2>1) Input</h2>
         <div class="controls">
           <label class="file">
             <input id="fileInput" type="file" accept=".pdf,.txt" style="display:none">
-            <span>📄 Upload PDF / TXT</span>
+            📄 Upload PDF / TXT
           </label>
           <button id="parseBtn" class="primary">Parse Scope</button>
-          <button id="demoBtn">Fill Demo</button>
+          <button id="demoBtn">Demo Data</button>
           <span id="fileStatus" class="hint"></span>
         </div>
-        <textarea id="scopeText" placeholder="Paste the scope text here (you can copy from your PDF)."></textarea>
-        <div class="hint">Tip: If your PDF text copies with odd spacing, it’s fine—this parser is built to handle that.</div>
+        <textarea id="scopeText" placeholder="Paste your scope text here..."></textarea>
       </div>
-
       <div id="results">
         <div class="card">
           <h2>Results</h2>
-          <div class="hint">Nothing parsed yet. Paste your scope or upload a PDF, then click <b>Parse Scope</b>.</div>
+          <div class="hint">Nothing parsed yet.</div>
         </div>
       </div>
     </div>
-
     <p class="small" style="margin-top:14px">
-      Derived rakes = (Drip Edge LF) − (Eaves LF). Eaves LF is read from the Starter Course when available. Ice & Water Barrier cross-checks the eaves/valleys with the common rule: (Eaves × 6) + (Valleys × 3).
+      Rakes = Drip Edge − Eaves. Eaves come from Starter Course length. Ice & Water Barrier validates (Eaves × 6) + (Valleys × 3).
     </p>
   </div>
 </body>
