@@ -3,648 +3,430 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ghost Hunt (Phasmo-like) – HTML5</title>
+<title>Ghost Hunt (Fixes: Journal + Flashlight)</title>
 <meta name="color-scheme" content="dark light" />
 <style>
-  :root{
-    --bg:#0b0f14; --panel:#0e1624; --ink:#e6f0ff; --muted:#9db0d7; --accent:#6ee7ff; --warn:#ffb86b; --danger:#ff6b6b; --ok:#86efac;
-    --border:#1a2537; --radius:14px; --gap:12px;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:radial-gradient(1200px 600px at 60% -10%, #122034 0%, #0b0f14 60%);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif;}
+  :root{--bg:#0b0f14;--panel:#0e1624;--ink:#e6f0ff;--muted:#9db0d7;--border:#1a2537}
+  *{box-sizing:border-box}html,body{height:100%}
+  body{margin:0;background:radial-gradient(1200px 600px at 60% -10%, #122034 0%, #0b0f14 60%);color:var(--ink);
+       font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
   .wrap{display:grid;grid-template-columns:1fr 320px;gap:16px;max-width:1300px;margin:12px auto;padding:0 12px 40px}
-  #gameArea{position:relative;background:#06090f;border:1px solid var(--border);border-radius:16px;overflow:hidden;min-height:70vh}
+  #gameArea{position:relative;background:#06090f;border:1px solid var(--border);border-radius:14px;overflow:hidden;min-height:70vh}
   canvas{display:block;width:100%;height:100%}
-  .ui{position:sticky;top:12px;height:fit-content;background:linear-gradient(180deg,#0e1624,#0c1320);border:1px solid var(--border);border-radius:16px;padding:14px}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .btn{appearance:none;border:1px solid var(--border);background:#121a2a;color:var(--ink);padding:10px 12px;border-radius:12px;cursor:pointer}
+  aside{position:sticky;top:12px;align-self:start;background:linear-gradient(180deg,#0e1624,#0c1320);
+        border:1px solid var(--border);border-radius:14px;padding:14px}
+  .btn{border:1px solid var(--border);background:#121a2a;color:var(--ink);padding:10px 12px;border-radius:12px;cursor:pointer;width:100%}
   .btn:hover{background:#16233a}
-  .btn.primary{border-color:#1f3b5d;background:#153056}
-  .btn.wide{width:100%}
-  .tag{font:600 12px/1.2 ui-monospace,Menlo,Consolas;background:#0a1322;border:1px solid #1b2a45;border-radius:999px;padding:6px 10px;color:var(--muted)}
-  .panel{border:1px solid var(--border);border-radius:12px;padding:10px;background:#0c1423;margin-top:10px}
-  .meter{height:10px;background:#0a1220;border:1px solid #21314e;border-radius:999px;overflow:hidden}
-  .meter>i{display:block;height:100%;background:linear-gradient(90deg,#0ef,#7fffd4);width:0%}
-  .readout{font:600 28px/1.1 ui-monospace,Menlo,Consolas;margin:4px 0}
-  .tiny{font-size:12px;color:var(--muted)}
-  .list{display:grid;gap:6px;margin:8px 0}
-  hr{border:none;border-top:1px solid var(--border);margin:12px 0}
-
-  /* Modals */
-  .modal{position:fixed;inset:0;background:rgba(2,6,14,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:30}
-  .modal.show{display:flex}
-  .sheet{width:min(900px,95vw);max-height:90vh;overflow:auto;background:#0c1423;border:1px solid var(--border);border-radius:16px;padding:16px 18px}
-  .sheet h2{margin:.2rem 0 0.6rem 0;font-size:20px}
-  .evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .evi{border:1px solid var(--border);border-radius:12px;padding:10px;background:#0a1322}
-  .evi label{display:flex;align-items:center;gap:10px;cursor:pointer}
-  .ghosts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
-  .ghost{border:1px dashed #21314e;border-radius:12px;padding:10px}
-  .ghost.ok{border-color:#244d2e;background:#0b1b12}
-  .ghost.maybe{border-color:#2b3f5a;background:#0a1523}
-  .ghost.bad{opacity:.35}
-
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#0a1322;border:1px solid var(--border);border-radius:999px;padding:8px 14px;color:var(--muted);z-index:40}
-  .statusBar{position:absolute;left:10px;top:10px;display:flex;gap:8px;z-index:5}
-  .chip{background:#0a1322;border:1px solid #1b2a45;border-radius:999px;padding:6px 10px;color:#a7b9dc}
-  .danger{color:var(--danger)}
+  .chip{display:inline-block;background:#0a1322;border:1px solid #1b2a45;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0;color:#a7b9dc}
   .hint{position:absolute;right:10px;top:10px;color:#93accf;background:#0a1322;border:1px solid #203252;border-radius:999px;padding:6px 10px;z-index:5}
-  .flicker{animation:flicker .13s infinite alternate}
-  @keyframes flicker{from{opacity:.4;filter:brightness(.6)} to{opacity:1}}
-  .logo{font-weight:800;letter-spacing:.5px}
+  .modal{position:fixed;inset:0;background:rgba(2,6,14,.6);display:none;place-items:center;padding:20px;z-index:30}
+  .modal.show{display:grid}
+  .sheet{width:min(900px,95vw);max-height:90vh;overflow:auto;background:#0c1423;border:1px solid var(--border);border-radius:14px;padding:16px}
+  .evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .evi{border:1px solid var(--border);border-radius:12px;padding:8px;background:#0a1322}
+  .ghosts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+  .ghost{border:1px dashed #21314e;border-radius:12px;padding:10px}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#0a1322;border:1px solid var(--border);border-radius:999px;padding:8px 14px;color:#9db0d7;z-index:40;display:none}
   .kbd{padding:2px 6px;border:1px solid #2b3f5a;border-radius:6px;background:#0b1424;font:600 12px ui-monospace,Menlo,Consolas}
-  .success{color:var(--ok)}
-  .fail{color:var(--danger)}
+  @media (max-width: 980px){ .wrap{grid-template-columns:1fr} aside{position:static} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="gameArea">
-    <canvas id="game" width="1024" height="640"></canvas>
-    <div class="statusBar">
-      <span class="chip"><span id="sanityVal">Sanity 100%</span></span>
+    <canvas id="game"></canvas>
+    <div class="hint">WASD move • Mouse aims • <span class="kbd">J</span> Journal • <span class="kbd">F</span> Flashlight • <span class="kbd">V</span> Spirit Box</div>
+  </div>
+  <aside>
+    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT</h3>
+    <button class="btn" id="newRun">Start New Contract</button>
+    <div style="margin-top:8px">
+      <span class="chip" id="sanityVal">Sanity 100%</span>
       <span class="chip">EMF <b id="emfVal">1</b></span>
       <span class="chip">Temp <b id="tempVal">21.0°C</b></span>
       <span class="chip">Box <b id="boxVal">Idle</b></span>
     </div>
-    <div class="hint">WASD move • Mouse aims flashlight • <span class="kbd">J</span> Journal • <span class="kbd">F</span> Flashlight • <span class="kbd">V</span> Spirit Box • <span class="kbd">E</span> Interact</div>
-  </div>
-
-  <aside class="ui">
-    <div class="row" style="justify-content:space-between">
-      <div class="logo">GHOST HUNT</div>
-      <span class="tag">v1.0</span>
+    <div style="margin-top:10px;color:#9db0d7;font-size:12px">
+      Explore, gather 3 evidences, pick the ghost in the Journal, then exit via the van (green square).
     </div>
-    <p class="tiny">Investigate, find 3 pieces of evidence, pick the ghost in the Journal, then escape to the van to complete the contract. Don’t die during a hunt.</p>
-
-    <button class="btn primary wide" id="newRun">Start New Contract</button>
-    <div class="panel">
-      <div class="row" style="justify-content:space-between"><strong>Flashlight</strong><span id="flashStat" class="tiny">ON</span></div>
-      <div class="meter" aria-label="battery"><i id="batFill"></i></div>
-      <div class="tiny">Press <span class="kbd">F</span> to toggle.</div>
-    </div>
-
-    <div class="panel">
-      <strong>EMF Reader</strong>
-      <div class="readout"><span id="emfBig">1</span></div>
-      <div class="tiny">Levels spike near ghost or during events. 5 = evidence.</div>
-    </div>
-
-    <div class="panel">
-      <strong>Thermometer</strong>
-      <div class="readout"><span id="tempBig">21.0</span> °C</div>
-      <div class="tiny">Temps drop in ghost room. ≤ 0°C = Freezing.</div>
-    </div>
-
-    <div class="panel">
-      <strong>Spirit Box</strong>
-      <div class="list">
-        <button class="btn" id="boxToggle">Hold (V)</button>
-        <div id="boxMsg" class="tiny">Ask a question near the ghost...</div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <strong>Journal</strong>
-      <div class="list">
-        <button class="btn" id="openJournal">Open Journal (J)</button>
-        <button class="btn" id="howTo">How to Play</button>
-      </div>
-    </div>
+    <button class="btn" id="openJournal" style="margin-top:10px">Open Journal (J)</button>
+    <button class="btn" id="howTo" style="margin-top:8px">How to Play</button>
+    <div style="margin-top:10px;color:#9db0d7;font-size:12px">Flashlight: <b id="flashStat">ON</b> • Battery <span id="batPct">100%</span></div>
   </aside>
 </div>
 
-<!-- JOURNAL MODAL -->
+<!-- JOURNAL -->
 <div class="modal" id="journal">
   <div class="sheet">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <h2>Journal</h2>
-      <button class="btn" id="closeJournal">Close</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2 style="margin:0">Journal</h2>
+      <button class="btn" id="closeJournal" style="width:auto">Close</button>
     </div>
-    <p class="tiny">Check evidence you’ve found. The list of possible ghosts updates automatically. When you’re sure, select a ghost and <b>leave via the van</b>.</p>
+    <p style="color:#9db0d7;font-size:12px;margin:.4rem 0 0.6rem 0">
+      Tick evidence you’ve found; candidates update live. You can freely untick anything—even if the tools “observed” it.
+    </p>
     <div class="evidence-grid">
       <div class="evi"><label><input type="checkbox" data-evi="EMF5"> EMF Level 5</label></div>
       <div class="evi"><label><input type="checkbox" data-evi="Freezing"> Freezing Temperatures (≤ 0°C)</label></div>
-      <div class="evi"><label><input type="checkbox" data-evi="SpiritBox"> Spirit Box (voice response)</label></div>
-      <div class="evi"><label><input type="checkbox" data-evi="Orbs"> Ghost Orbs (floating lights)</label></div>
+      <div class="evi"><label><input type="checkbox" data-evi="SpiritBox"> Spirit Box (voice)</label></div>
+      <div class="evi"><label><input type="checkbox" data-evi="Orbs"> Ghost Orbs</label></div>
     </div>
-    <hr />
-    <div class="ghosts" id="ghostList"></div>
+    <div id="ghostList" class="ghosts"></div>
   </div>
 </div>
 
 <!-- HOW TO -->
 <div class="modal" id="help">
   <div class="sheet">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <h2>How to Play</h2>
-      <button class="btn" id="closeHelp">Close</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2 style="margin:0">How to Play</h2>
+      <button class="btn" id="closeHelp" style="width:auto">Close</button>
     </div>
     <ol>
-      <li>Move with <span class="kbd">WASD</span>. Aim your flashlight with the mouse. Toggle with <span class="kbd">F</span>.</li>
-      <li>Use <b>EMF</b>, <b>Thermometer</b>, <b>Spirit Box</b> (hold <span class="kbd">V</span>) to gather evidence.</li>
-      <li>Open the <b>Journal</b> (<span class="kbd">J</span>) and tick evidence you’ve found. It will narrow down ghost types.</li>
-      <li>When confident, head to the <b>van (green exit)</b> to submit automatically. If correct, you win; if wrong… oof.</li>
-      <li>Your <b>Sanity</b> drains in darkness and during ghost events. Low sanity triggers <b>hunts</b> (lights flicker, ghost chases). Hide or break line-of-sight!</li>
+      <li>Move with <span class="kbd">WASD</span>. Aim flashlight with the mouse. Toggle with <span class="kbd">F</span>.</li>
+      <li>Use EMF, Thermometer, and Spirit Box (<span class="kbd">V</span>) to find 3 evidences.</li>
+      <li>Open <span class="kbd">J</span> to tick evidence and select a ghost. Exit via the green van to submit.</li>
+      <li>Sanity drains in darkness; at low sanity the ghost hunts. Don’t get caught!</li>
     </ol>
-    <p class="tiny">Tip: Ghost room has colder temps and a higher chance of EMF spikes and Spirit Box responses. Orbs appear only if that’s one of the evidences.</p>
   </div>
 </div>
 
-<div class="toast" id="toast" style="display:none"></div>
+<div class="toast" id="toast"></div>
 
 <script>
 (()=>{
-  // ---------- GAME DATA ----------
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  let W = canvas.width, H = canvas.height;
+// ===== Canvas setup =====
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const gameArea = document.getElementById('gameArea');
+let DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); // cap for perf
+function sizeCanvas(){
+  const rect = gameArea.getBoundingClientRect();
+  const w = Math.max(640, Math.floor(rect.width));
+  const h = Math.max(420, Math.floor(rect.height));
+  DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.width  = Math.floor(w * DPR);
+  canvas.height = Math.floor(h * DPR);
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+sizeCanvas();
+window.addEventListener('resize', sizeCanvas);
 
-  const state = {
-    running:false, time:0, dt:0, last:0,
-    keys:new Set(), mouse:{x:W/2,y:H/2},
-    flashlight:true, battery:1, holdingBox:false,
-    sanity:100, emf:1, temp:21, box:"Idle",
-    evidences:{EMF5:false, Freezing:false, SpiritBox:false, Orbs:false},
-    found:{EMF5:false, Freezing:false, SpiritBox:false, Orbs:false},
-    map:null, player:null, ghost:null, vanZone:null, orbParticles:[],
-    inHunt:false, huntTimer:0, gameOver:false, won:false, selectedGhost:null
-  };
+// ===== Helpers =====
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>Math.random()*(b-a)+a;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-  const EVIDENCES = ["EMF5","Freezing","SpiritBox","Orbs"];
+// ===== State =====
+const state = {
+  running:false,time:0,dt:0,last:0,
+  keys:new Set(),mouse:{x:200,y:200},
+  flashlight:true,battery:1,holdingBox:false,
+  sanity:100, emf:1, temp:21, box:"Idle",
+  evidences:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false}, // manual journal
+  found:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false}, // auto-observed hints (no auto-check!)
+  map:null, player:null, ghost:null, ghostRoom:null, vanZone:null,
+  orbs:[], inHunt:false, huntTimer:0, gameOver:false, won:false, selectedGhost:null
+};
 
-  const GHOST_TYPES = [
-    {name:"Phantom", ev:["EMF5","SpiritBox","Orbs"], notes:"Vanishing act during events; hates photos."},
-    {name:"Wraith", ev:["EMF5","SpiritBox","Freezing"], notes:"Floats quietly; aggressive when provoked."},
-    {name:"Yurei", ev:["Freezing","Orbs","EMF5"], notes:"Drains sanity fast in the dark."},
-    {name:"Mare", ev:["SpiritBox","Orbs","Freezing"], notes:"Stronger in darkness; talks a lot."},
-    {name:"Shade", ev:["EMF5","Orbs","Freezing"], notes:"Shy; hunts at low sanity."},
-    {name:"Oni", ev:["EMF5","SpiritBox","Orbs"], notes:"Loud and active around the player."},
+const EVI = ["EMF5","Freezing","SpiritBox","Orbs"];
+const GHOSTS = [
+  {name:"Phantom", ev:["EMF5","SpiritBox","Orbs"], notes:"Shy; vanishes during events."},
+  {name:"Wraith",  ev:["EMF5","SpiritBox","Freezing"], notes:"Floats; aggressive if provoked."},
+  {name:"Yurei",   ev:["Freezing","Orbs","EMF5"], notes:"Hard sanity drain in dark."},
+  {name:"Mare",    ev:["SpiritBox","Orbs","Freezing"], notes:"Stronger in darkness."},
+  {name:"Shade",   ev:["EMF5","Orbs","Freezing"], notes:"Hunts more at low sanity."},
+  {name:"Oni",     ev:["EMF5","SpiritBox","Orbs"], notes:"Very active near player."},
+];
+
+// ===== Map =====
+function buildMap(){
+  const rooms = [
+    {x:60,y:60,w:280,h:200,name:"Entrance"},
+    {x:380,y:60,w:280,h:180,name:"Living"},
+    {x:700,y:60,w:260,h:200,name:"Garage"},
+    {x:60,y:300,w:280,h:220,name:"Hall"},
+    {x:380,y:270,w:260,h:250,name:"Bedroom"},
+    {x:680,y:300,w:280,h:240,name:"Kitchen"},
   ];
+  const doors = [
+    {x:340,y:150,w:20,h:40},{x:660,y:140,w:20,h:40},
+    {x:380,y:260,w:40,h:20},{x:170,y:260,w:60,h:20},
+    {x:340,y:420,w:20,h:40},{x:680,y:260,w:40,h:20},
+  ];
+  const van = {x:20,y:20,w:40,h:40};
+  return {rooms,doors,van};
+}
+const inside=(p,r)=>p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h;
 
-  // Build quick lookup for journal filtering
-  function ghostsMatching(evi){
-    const checked = EVIDENCES.filter(k=>evi[k]);
-    if(!checked.length) return GHOST_TYPES;
-    return GHOST_TYPES.map(g=>{
-      const hasAll = checked.every(k=>g.ev.includes(k));
-      const conflicts = EVIDENCES.some(k=>evi["not_"+k] && g.ev.includes(k));
-      return {...g, match: hasAll && !conflicts};
-    });
-  }
+// ===== Entities =====
+const newPlayer=()=>({x:90,y:90,r:10,spd:160,angle:0,alive:true});
+function newGhost(){
+  const g = GHOSTS[Math.floor(Math.random()*GHOSTS.length)];
+  return {type:g.name, evidences:new Set(g.ev), x:750,y:140,speed:95,roam:0,target:null};
+}
 
-  // Map layout: simple rooms
-  function buildMap(){
-    // Layout grid of rectangles for walls; 0 = floor, 1 = wall
-    const rooms = [
-      {x:60,y:60,w:280,h:200,name:"Entrance"},
-      {x:380,y:60,w:280,h:180,name:"Living"},
-      {x:700,y:60,w:260,h:200,name:"Garage"},
-      {x:60,y:300,w:280,h:220,name:"Hall"},
-      {x:380,y:270,w:260,h:250,name:"Bedroom"},
-      {x:680,y:300,w:280,h:240,name:"Kitchen"},
-    ];
-    const doors = [
-      {from:"Entrance",to:"Living",x:340,y:150,w:20,h:40},
-      {from:"Living",to:"Garage",x:660,y:140,w:20,h:40},
-      {from:"Living",to:"Bedroom",x:380,y:260,w:40,h:20},
-      {from:"Entrance",to:"Hall",x:170,y:260,w:60,h:20},
-      {from:"Hall",to:"Kitchen",x:340,y:420,w:20,h:40},
-      {from:"Kitchen",to:"Garage",x:680,y:260,w:40,h:20}
-    ];
-    const van = {x:20,y:20,w:40,h:40};
-    return {rooms,doors,van};
-  }
+// ===== UI =====
+const sanityVal=document.getElementById('sanityVal');
+const emfVal=document.getElementById('emfVal');
+const tempVal=document.getElementById('tempVal');
+const boxVal=document.getElementById('boxVal');
+const flashStat=document.getElementById('flashStat');
+const batPct=document.getElementById('batPct');
+const toastEl=document.getElementById('toast');
 
-  function rand(a,b){return Math.random()*(b-a)+a}
-  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-  function dist(a,b){const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy)}
-  function lineOfSight(a,b,rooms){
-    // Simple LOS: we treat room rectangles as walls along their borders.
-    // We'll just allow LOS everywhere for simplicity except through outer walls (map edges).
-    // Add some basic obstruction by using doorways: if midpoint crosses between rooms not connected by a door, reduce chance.
-    return true;
-  }
+function toast(msg,ms=1600){
+  toastEl.textContent=msg; toastEl.style.display='block';
+  clearTimeout(toastEl._t); toastEl._t=setTimeout(()=>toastEl.style.display='none',ms);
+}
 
-  // ---------- ENTITIES ----------
-  function newPlayer(){
-    return {x:90,y:90,r:10,spd:150, angle:0, alive:true};
-  }
-
-  function pickGhost(){
-    const g = GHOST_TYPES[Math.floor(Math.random()*GHOST_TYPES.length)];
-    const evSet = new Set(g.ev);
-    return { type:g.name, evidences:evSet, x:750, y:140, room:"Garage", visible:false, cooldown:0, roamTimer:0, targetRoom:null, speed:90 };
-  }
-
-  function pickGhostRoom(map){
-    // choose a random room as ghost room
-    const room = map.rooms[Math.floor(Math.random()*map.rooms.length)];
-    return room;
-  }
-
-  function insideRect(p, r){return p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h}
-
-  // ---------- SETUP ----------
-  function reset(){
-    state.map = buildMap();
-    state.player = newPlayer();
-    state.ghost = pickGhost();
-    state.flashlight = true; state.battery = 1;
-    state.holdingBox = false;
-    state.sanity = 100; state.emf = 1; state.temp = 21; state.box="Idle";
-    state.evidences = {EMF5:false, Freezing:false, SpiritBox:false, Orbs:false};
-    state.found = {EMF5:false, Freezing:false, SpiritBox:false, Orbs:false};
-    state.inHunt=false; state.huntTimer=0; state.gameOver=false; state.won=false; state.selectedGhost=null;
-    state.vanZone = state.map.van;
-    state.orbParticles = [];
-    state.ghostRoom = pickGhostRoom(state.map);
-    // Scatter orbs only if ghost has that evidence
-    if(state.ghost.evidences.has("Orbs")){
-      for(let i=0;i<25;i++){
-        state.orbParticles.push({
-          x: rand(state.ghostRoom.x+20, state.ghostRoom.x+state.ghostRoom.w-20),
-          y: rand(state.ghostRoom.y+20, state.ghostRoom.y+state.ghostRoom.h-20),
-          r: rand(1.2,2.5), a: rand(0,Math.PI*2), s: rand(0.6,1.2)
-        });
-      }
-    }
-    toast(`New Contract: ghost is lurking somewhere…`, 2400);
-    state.running = true;
-    state.last = performance.now();
-    loop(performance.now());
-    updateJournalList();
-  }
-
-  // ---------- INPUT ----------
-  window.addEventListener('keydown', e=>{
-    if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
-    state.keys.add(e.key.toLowerCase());
-    if(e.key.toLowerCase()==='j'){toggleModal('journal', true); updateJournalList();}
-    if(e.key.toLowerCase()==='f'){state.flashlight=!state.flashlight; flashStat.textContent = state.flashlight?'ON':'OFF';}
-    if(e.key.toLowerCase()==='v'){state.holdingBox=true;}
-    if(e.key.toLowerCase()==='e'){ /* interact reserved */ }
-  });
-  window.addEventListener('keyup', e=>{
-    state.keys.delete(e.key.toLowerCase());
-    if(e.key.toLowerCase()==='v'){state.holdingBox=false; state.box="Idle";}
-  });
-  canvas.addEventListener('mousemove', e=>{
-    const rect = canvas.getBoundingClientRect();
-    const sx = W/rect.width, sy = H/rect.height;
-    state.mouse.x = (e.clientX-rect.left)*sx;
-    state.mouse.y = (e.clientY-rect.top)*sy;
-  });
-
-  // ---------- UI HOOKS ----------
-  const sanityVal = document.getElementById('sanityVal');
-  const emfVal = document.getElementById('emfVal');
-  const tempVal = document.getElementById('tempVal');
-  const boxVal = document.getElementById('boxVal');
-  const emfBig = document.getElementById('emfBig');
-  const tempBig = document.getElementById('tempBig');
-  const batFill = document.getElementById('batFill');
-  const flashStat = document.getElementById('flashStat');
-  const newRunBtn = document.getElementById('newRun');
-  const boxToggle = document.getElementById('boxToggle');
-  const boxMsg = document.getElementById('boxMsg');
-  newRunBtn.onclick = reset;
-  boxToggle.onmousedown = ()=>state.holdingBox=true;
-  boxToggle.onmouseup = ()=>{state.holdingBox=false; state.box="Idle";}
-
-  function toggleModal(id, show){
-    const m = document.getElementById(id);
-    if(show===undefined) m.classList.toggle('show');
-    else m.classList.toggle('show', show);
-  }
-  document.getElementById('openJournal').onclick=()=>{toggleModal('journal', true); updateJournalList();}
-  document.getElementById('closeJournal').onclick=()=>toggleModal('journal', false);
-  document.getElementById('howTo').onclick=()=>toggleModal('help', true);
-  document.getElementById('closeHelp').onclick=()=>toggleModal('help', false);
-
-  // Journal evidence checkboxes
-  document.querySelectorAll('[data-evi]').forEach(cb=>{
-    cb.addEventListener('change', ()=>{
-      state.evidences[cb.dataset.evi]=cb.checked;
-      updateJournalList();
-    });
-  });
-
-  function updateJournalList(){
-    const list = document.getElementById('ghostList');
-    list.innerHTML='';
-    const candidates = ghostsMatching(state.evidences);
-    const checked = EVIDENCES.filter(k=>state.evidences[k]);
-    candidates.forEach(g=>{
-      const isMatch = !checked.length || checked.every(k=>g.ev.includes(k));
-      const div = document.createElement('div');
-      div.className = 'ghost ' + (isMatch?'ok':'bad');
-      div.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div>
-            <strong>${g.name}</strong>
-            <div class="tiny">${g.ev.join(' • ')}</div>
-            <div class="tiny" style="opacity:.8">${g.notes||''}</div>
+// ===== Journal =====
+function updateJournalList(){
+  const list=document.getElementById('ghostList'); list.innerHTML='';
+  const checked=EVI.filter(k=>state.evidences[k]);
+  const pool=GHOSTS.filter(g=>checked.every(k=>g.ev.includes(k)));
+  (pool.length?pool:GHOSTS).forEach(g=>{
+    const observedBadges = g.ev.map(x=> state.found[x] ? ` <span style="color:#86efac">[observed]</span>` : '' );
+    const el=document.createElement('div'); el.className='ghost';
+    el.innerHTML=`
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <div>
+          <strong>${g.name}</strong>
+          <div style="color:#9db0d7;font-size:12px">
+            ${g.ev.map((e,i)=>`${e}${observedBadges[i]}`).join(' • ')}
           </div>
-          <button class="btn" data-choose="${g.name}">Select</button>
+          <div style="color:#88a0c7;font-size:12px">${g.notes||''}</div>
         </div>
-      `;
-      list.appendChild(div);
-    });
-    list.querySelectorAll('[data-choose]').forEach(btn=>{
-      btn.onclick = ()=>{
-        state.selectedGhost = btn.dataset.choose;
-        toast(`Selected: ${state.selectedGhost}. Exit via van to submit.`, 2000);
-      }
-    });
-  }
+        <button class="btn" data-choose="${g.name}" style="width:auto">Select</button>
+      </div>`;
+    list.appendChild(el);
+  });
+  list.querySelectorAll('[data-choose]').forEach(b=>{
+    b.onclick=()=>{state.selectedGhost=b.dataset.choose; toast(`Selected: ${state.selectedGhost}. Exit via van to submit.`,2000);}
+  });
+}
 
-  function toast(msg, ms=1600){
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.style.display='block';
-    clearTimeout(el._t);
-    el._t = setTimeout(()=>el.style.display='none', ms);
-  }
+function toggleModal(id,show){const m=document.getElementById(id); m.classList.toggle('show', show===undefined ? !m.classList.contains('show') : show);}
+document.getElementById('openJournal').onclick=()=>{toggleModal('journal',true);updateJournalList();}
+document.getElementById('closeJournal').onclick=()=>toggleModal('journal',false);
+document.getElementById('howTo').onclick=()=>toggleModal('help',true);
+document.getElementById('closeHelp').onclick=()=>toggleModal('help',false);
 
-  // ---------- GAME LOOP ----------
-  function loop(now){
-    if(!state.running) return;
-    state.dt = Math.min(0.033, (now - state.last)/1000);
-    state.last = now; state.time += state.dt;
+// Evidence checkboxes (manual only)
+document.querySelectorAll('[data-evi]').forEach(cb=>{
+  cb.addEventListener('change',()=>{state.evidences[cb.dataset.evi]=cb.checked; updateJournalList();});
+});
 
-    update(state.dt);
-    draw();
+// ===== Input =====
+window.addEventListener('keydown',e=>{
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+  const k=e.key.toLowerCase();
+  state.keys.add(k);
+  if(k==='j') {toggleModal('journal',true); updateJournalList();}
+  if(k==='f') {state.flashlight=!state.flashlight; flashStat.textContent=state.flashlight?'ON':'OFF';}
+  if(k==='v') state.holdingBox=true;
+});
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase(); state.keys.delete(k); if(k==='v'){state.holdingBox=false; state.box='Idle';}});
+canvas.addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  const sx=canvas.width/r.width, sy=canvas.height/r.height; // includes DPR
+  state.mouse.x=(e.clientX-r.left)*sx/DPR; // convert to CSS px
+  state.mouse.y=(e.clientY-r.top)*sy/DPR;
+});
 
-    requestAnimationFrame(loop);
-  }
-
-  // ---------- UPDATE ----------
-  function update(dt){
-    if(state.gameOver || state.won) return;
-
-    // Movement
-    const p = state.player;
-    let dx=0, dy=0;
-    if(state.keys.has('w')) dy-=1;
-    if(state.keys.has('s')) dy+=1;
-    if(state.keys.has('a')) dx-=1;
-    if(state.keys.has('d')) dx+=1;
-    const len = Math.hypot(dx,dy)||1;
-    dx/=len; dy/=len;
-    p.x += dx * p.spd * dt;
-    p.y += dy * p.spd * dt;
-
-    // Clamp to map bounds
-    p.x = clamp(p.x, 10, W-10);
-    p.y = clamp(p.y, 10, H-10);
-
-    // Aim
-    p.angle = Math.atan2(state.mouse.y - p.y, state.mouse.x - p.x);
-
-    // Battery drain & sanity
-    if(state.flashlight) state.battery = Math.max(0, state.battery - dt*0.015);
-    batFill.style.width = (state.battery*100).toFixed(1)+'%';
-    const lightFactor = state.flashlight && state.battery>0 ? 0.25 : 1.0;
-    state.sanity = clamp(state.sanity - dt*(0.7*lightFactor + (state.inHunt?1.5:0)), 0, 100);
-
-    // Ghost roam & behavior
-    const g = state.ghost;
-    g.cooldown = Math.max(0, g.cooldown - dt);
-    g.roamTimer -= dt;
-    if(g.roamTimer<=0){
-      // choose new target point near ghost room center
-      const room = state.ghostRoom;
-      g.targetRoom = {x: rand(room.x+30, room.x+room.w-30), y: rand(room.y+30, room.y+room.h-30)};
-      g.roamTimer = rand(1.5, 3.5);
-    }
-    // Move towards target
-    if(g.targetRoom){
-      const ddx = g.targetRoom.x - g.x;
-      const ddy = g.targetRoom.y - g.y;
-      const dl = Math.hypot(ddx,ddy);
-      if(dl>2){
-        g.x += (ddx/dl) * g.speed * dt * (state.inHunt?1.8:1);
-        g.y += (ddy/dl) * g.speed * dt * (state.inHunt?1.8:1);
-      }
-    }
-
-    // Evidence simulation
-    // Temperature: baseline 21C, ghost room drops to -2..4 C
-    let temp = 21 + (Math.random()*0.2-0.1);
-    if(insideRect(p, state.ghostRoom)) temp = rand(-2,4);
-    state.temp = temp;
-    document.getElementById('tempVal').textContent = temp.toFixed(1)+'°C';
-    tempBig.textContent = temp.toFixed(1);
-    if(temp<=0 && state.ghost.evidences.has("Freezing")) state.found.Freezing = true;
-
-    // Orbs: only visible if in ghost room and that evidence exists
-    // EMF: scale with distance to ghost
-    const dpg = dist(p,g);
-    let emf = 1;
-    if(dpg<220) emf = 2;
-    if(dpg<160) emf = 3;
-    if(dpg<120) emf = 4;
-    if(dpg<80) emf = 5;
-    // Increase EMF during events/hunt
-    if(state.inHunt) emf = 5;
-    state.emf = emf;
-    emfVal.textContent = emf.toFixed(0);
-    emfBig.textContent = emf.toFixed(0);
-    if(emf>=5 && state.ghost.evidences.has("EMF5")) state.found.EMF5 = true;
-
-    // Spirit Box: only when held and near ghost and that evidence exists; random chance
-    if(state.holdingBox){
-      if(dpg<110 && state.ghost.evidences.has("SpiritBox") && Math.random()<0.015){
-        state.box = "…whisper… RUN";
-        boxMsg.textContent = "Response: “Run…”";
-        state.found.SpiritBox = true;
-      }else{
-        state.box = "Scanning…";
-        boxMsg.textContent = "Scanning… (stay near the ghost)";
-      }
-    }else{
-      state.box = "Idle";
-      boxMsg.textContent = "Ask a question near the ghost...";
-    }
-    boxVal.textContent = state.box;
-
-    // Hunts begin when sanity < 40 or random event if below 60
-    if(!state.inHunt){
-      if(state.sanity<40 || (state.sanity<60 && Math.random()<0.001)){
-        state.inHunt = true; state.huntTimer = rand(8,14);
-        toast("The ghost is hunting! Hide or run!", 1500);
-      }
-    }else{
-      state.huntTimer -= dt;
-      if(state.huntTimer<=0) state.inHunt=false;
-    }
-
-    // During hunt, ghost chases line-of-sight target (player)
-    if(state.inHunt){
-      const dx = p.x - g.x, dy = p.y - g.y, L = Math.hypot(dx,dy)||1;
-      g.x += (dx/L) * (g.speed*1.6) * dt;
-      g.y += (dy/L) * (g.speed*1.6) * dt;
-      // flashlight flicker
-      if(Math.random()<0.2) canvas.classList.add('flicker'); else canvas.classList.remove('flicker');
-      // caught?
-      if(dist(p,g) < 18){
-        state.gameOver = true; state.running = true;
-        toast("You were caught… (Game Over)", 2500);
-      }
-    }else{
-      canvas.classList.remove('flicker');
-    }
-
-    // Exit / submit
-    if(insideRect(p, state.vanZone) && state.selectedGhost){
-      // auto submit
-      const correct = state.selectedGhost === state.ghost.type;
-      state.won = correct; state.gameOver = !correct;
-      if(correct) toast(`Correct! It was a ${state.ghost.type}. Contract complete.`, 3000);
-      else toast(`Wrong! It was a ${state.ghost.type}.`, 3000);
-    }
-
-    sanityVal.textContent = `Sanity ${Math.round(state.sanity)}%`;
-    // Auto-check "found" -> mirror into journal UI (non-destructive, only tick if not already)
-    for(const k of EVIDENCES){
-      if(state.found[k]){
-        const cb = document.querySelector(`[data-evi="${k}"]`);
-        if(cb && !cb.checked){ cb.checked = true; state.evidences[k]=true; updateJournalList(); }
-      }
+// ===== Game setup & loop =====
+function reset(){
+  state.map=buildMap();
+  state.player=newPlayer();
+  state.ghost=newGhost();
+  state.ghostRoom=state.map.rooms[Math.floor(Math.random()*state.map.rooms.length)];
+  state.vanZone=state.map.van;
+  state.orbs=[];
+  if(state.ghost.evidences.has("Orbs")){
+    for(let i=0;i<24;i++){
+      state.orbs.push({x:rand(state.ghostRoom.x+20,state.ghostRoom.x+state.ghostRoom.w-20),
+                       y:rand(state.ghostRoom.y+20,state.ghostRoom.y+state.ghostRoom.h-20),
+                       r:rand(1.2,2.2),a:rand(0,Math.PI*2),s:rand(0.6,1.2)});
     }
   }
+  state.flashlight=true; state.battery=1; state.sanity=100; state.emf=1; state.temp=21; state.box='Idle';
+  state.evidences={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false}; // reset manual
+  state.found={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false};     // reset observed
+  state.inHunt=false; state.huntTimer=0; state.gameOver=false; state.won=false; state.selectedGhost=null;
+  state.time=0; state.last=performance.now(); state.running=true;
+  toast('New Contract started.');
+  updateJournalList();
+}
+document.getElementById('newRun').onclick=reset;
+reset();
 
-  // ---------- DRAW ----------
-  function draw(){
-    // Background
-    ctx.fillStyle = '#06090f';
-    ctx.fillRect(0,0,W,H);
+function loop(now){
+  if(!state.running){requestAnimationFrame(loop);return;}
+  state.dt=Math.min(0.033,(now-state.last)/1000); state.last=now; state.time+=state.dt;
+  update(state.dt); draw(); requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
 
-    // Rooms
-    for(const r of state.map.rooms){
-      ctx.fillStyle = '#0a101b';
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.strokeStyle = '#1a263b';
-      ctx.strokeRect(r.x, r.y, r.w, r.h);
-    }
-    // Doors
-    for(const d of state.map.doors){
-      ctx.fillStyle = '#152239';
-      ctx.fillRect(d.x, d.y, d.w, d.h);
-    }
+// ===== Update =====
+function update(dt){
+  if(state.gameOver||state.won) return;
+  // movement
+  const p=state.player; let dx=0,dy=0;
+  if(state.keys.has('w'))dy-=1; if(state.keys.has('s'))dy+=1;
+  if(state.keys.has('a'))dx-=1; if(state.keys.has('d'))dx+=1;
+  const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
+  p.x=clamp(p.x+dx*p.spd*dt,10, canvas.width/DPR-10);
+  p.y=clamp(p.y+dy*p.spd*dt,10, canvas.height/DPR-10);
+  // smooth aim (dampen tiny jitter)
+  const targetAngle=Math.atan2(state.mouse.y-p.y,state.mouse.x-p.x);
+  p.angle += (targetAngle - p.angle) * 0.25;
 
-    // Van / Exit
-    const van = state.vanZone;
-    ctx.fillStyle = '#0f2b17';
-    ctx.fillRect(van.x, van.y, van.w, van.h);
-    ctx.strokeStyle = '#2e6a40';
-    ctx.strokeRect(van.x, van.y, van.w, van.h);
+  // battery + sanity
+  if(state.flashlight) state.battery=Math.max(0,state.battery-dt*0.015);
+  batPct.textContent=Math.round(state.battery*100)+'%';
+  const darkFactor=(state.flashlight&&state.battery>0)?0.25:1.0;
+  state.sanity=clamp(state.sanity - dt*(0.7*darkFactor + (state.inHunt?1.5:0)), 0, 100);
+  sanityVal.textContent=`Sanity ${Math.round(state.sanity)}%`;
 
-    // Orbs (if evidence)
-    if(state.ghost.evidences.has("Orbs")){
-      for(const o of state.orbParticles){
-        o.a += 0.02*o.s;
-        o.x += Math.cos(o.a)*0.2;
-        o.y += Math.sin(o.a)*0.2;
-        if(!insideRect(o, state.ghostRoom)){
-          // nudge back
-          o.x = clamp(o.x, state.ghostRoom.x+10, state.ghostRoom.x+state.ghostRoom.w-10);
-          o.y = clamp(o.y, state.ghostRoom.y+10, state.ghostRoom.y+state.ghostRoom.h-10);
-        }
-        // Only draw if within ghost room and near center (subtle)
-        if(insideRect(o, state.ghostRoom)){
-          ctx.globalAlpha = 0.6;
-          ctx.fillStyle = '#9ff';
-          ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
-          ctx.globalAlpha = 1;
-        }
-      }
-    }
+  // ghost roam
+  const g=state.ghost;
+  g.roam-=dt;
+  if(g.roam<=0){
+    const r=state.ghostRoom;
+    g.target={x:rand(r.x+30,r.x+r.w-30),y:rand(r.y+30,r.y+r.h-30)};
+    g.roam=rand(1.4,3.2);
+  }
+  if(g.target){
+    const mx=g.target.x-g.x, my=g.target.y-g.y, d=Math.hypot(mx,my)||1;
+    if(d>2){ g.x+=mx/d*g.speed*dt*(state.inHunt?1.8:1); g.y+=my/d*g.speed*dt*(state.inHunt?1.8:1); }
+  }
 
-    // Ghost (faint unless in hunt or close)
-    const g = state.ghost;
-    const dpg = dist(state.player, g);
-    let gv = state.inHunt ? 0.9 : (dpg<120 ? 0.6 : 0.15);
-    ctx.globalAlpha = gv;
-    ctx.fillStyle = '#b3c7ff';
-    ctx.beginPath(); ctx.arc(g.x, g.y, 10, 0, Math.PI*2); ctx.fill();
-    ctx.globalAlpha = 1;
+  // environment readings
+  let temp=21+(Math.random()*0.2-0.1);
+  if(inside(p,state.ghostRoom)) temp=rand(-2,4);
+  state.temp=temp; tempVal.textContent=temp.toFixed(1)+'°C';
 
-    // Player
-    const p = state.player;
-    ctx.fillStyle = '#8fd1ff';
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+  const dpg=dist(p,g);
+  let emf=1; if(dpg<220)emf=2; if(dpg<160)emf=3; if(dpg<120)emf=4; if(dpg<80)emf=5;
+  if(state.inHunt) emf=5;
+  state.emf=emf; emfVal.textContent=emf.toFixed(0);
 
-    // Flashlight cone (lighting mask)
-    if(state.flashlight && state.battery>0){
-      const grd = ctx.createRadialGradient(p.x,p.y,10, p.x,p.y, 220);
-      grd.addColorStop(0,'rgba(200,230,255,0.0)');
-      grd.addColorStop(0.3,'rgba(200,230,255,0.04)');
-      grd.addColorStop(1,'rgba(0,0,0,0.96)');
-      // Draw darkness then cut cone
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.94)';
-      ctx.fillRect(0,0,W,H);
-      ctx.globalCompositeOperation = 'destination-out';
-      // Cone
-      ctx.translate(p.x,p.y);
-      ctx.rotate(p.angle);
-      ctx.beginPath();
-      ctx.moveTo(0,0);
-      ctx.arc(0,0,260, -0.35, 0.35);
-      ctx.closePath();
-      ctx.fill();
-      ctx.globalCompositeOperation = 'destination-over';
-      ctx.fillStyle = grd;
-      ctx.fillRect(-p.x,-p.y,W,H);
-      ctx.restore();
-    }else{
-      // Near darkness, tiny ambient
-      ctx.fillStyle = 'rgba(0,0,0,0.86)';
-      ctx.fillRect(0,0,W,H);
-      // tiny glow around player
-      ctx.save();
-      const g2 = ctx.createRadialGradient(p.x,p.y,2, p.x,p.y, 40);
-      g2.addColorStop(0,'rgba(120,140,200,0.25)');
-      g2.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle = g2; ctx.fillRect(0,0,W,H);
-      ctx.restore();
-    }
+  // spirit box
+  if(state.holdingBox){
+    if(dpg<110 && state.ghost.evidences.has("SpiritBox") && Math.random()<0.015){
+      state.box="…whisper… RUN"; state.found.SpiritBox=true;
+    }else state.box="Scanning…";
+  }else state.box="Idle";
+  boxVal.textContent=state.box;
 
-    // Labels
-    ctx.fillStyle = '#5c84c7';
-    ctx.font = '12px ui-monospace,Menlo,Consolas';
-    ctx.fillText('Van Exit', state.vanZone.x, state.vanZone.y-6);
-    ctx.fillText(state.ghostRoom.name+' (colder)', state.ghostRoom.x+6, state.ghostRoom.y+12);
+  // mark observed (no auto-checking!)
+  if(temp<=0 && state.ghost.evidences.has("Freezing")) state.found.Freezing=true;
+  if(emf>=5 && state.ghost.evidences.has("EMF5")) state.found.EMF5=true;
 
-    // Game over / win banners
-    if(state.gameOver || state.won){
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = state.won?'#86efac':'#ff6b6b';
-      ctx.font = 'bold 42px Inter,system-ui';
-      ctx.textAlign='center';
-      ctx.fillText(state.won?'CONTRACT COMPLETE':'YOU DIED', W/2, H/2 - 6);
-      ctx.fillStyle = '#a7b9dc';
-      ctx.font = '16px Inter,system-ui';
-      ctx.fillText('Press "Start New Contract" to play again', W/2, H/2 + 24);
-      ctx.restore();
+  // hunts
+  if(!state.inHunt && (state.sanity<40 || (state.sanity<60 && Math.random()<0.001))){
+    state.inHunt=true; state.huntTimer=rand(8,14); toast('The ghost is hunting! Hide!',1500);
+  }
+  if(state.inHunt){
+    state.huntTimer-=dt;
+    const mx=p.x-g.x, my=p.y-g.y, d=Math.hypot(mx,my)||1;
+    g.x+=mx/d*(g.speed*1.6)*dt; g.y+=my/d*(g.speed*1.6)*dt;
+    if(d<18){ state.gameOver=true; toast('You were caught…',2200); }
+    if(state.huntTimer<=0) state.inHunt=false;
+  }
+
+  // submit at van
+  if(inside(p,state.map.van) && state.selectedGhost){
+    const correct=state.selectedGhost===state.ghost.type;
+    state.won=correct; state.gameOver=!correct;
+    toast(correct?`Correct! It was a ${state.ghost.type}.`:`Wrong! It was a ${state.ghost.type}.`,2800);
+  }
+}
+
+// ===== Draw =====
+function draw(){
+  const w = canvas.width/DPR, h = canvas.height/DPR;
+
+  // clear
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#06090f'; ctx.fillRect(0,0,w,h);
+
+  // rooms
+  for(const r of state.map.rooms){ ctx.fillStyle='#0a101b'; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeStyle='#1a263b'; ctx.strokeRect(r.x,r.y,r.w,r.h); }
+  for(const d of state.map.doors){ ctx.fillStyle='#152239'; ctx.fillRect(d.x,d.y,d.w,d.h); }
+
+  // van
+  const van=state.map.van; ctx.fillStyle='#0f2b17'; ctx.fillRect(van.x,van.y,van.w,van.h); ctx.strokeStyle='#2e6a40'; ctx.strokeRect(van.x,van.y,van.w,van.h);
+
+  // orbs
+  if(state.ghost.evidences.has("Orbs")){
+    for(const o of state.orbs){
+      o.a+=0.02*o.s; o.x+=Math.cos(o.a)*0.2; o.y+=Math.sin(o.a)*0.2;
+      if(!inside(o,state.ghostRoom)){ o.x=clamp(o.x,state.ghostRoom.x+10,state.ghostRoom.x+state.ghostRoom.w-10);
+                                      o.y=clamp(o.y,state.ghostRoom.y+10,state.ghostRoom.y+state.ghostRoom.h-10);}
+      ctx.globalAlpha=0.55; ctx.fillStyle='#9ff'; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
     }
   }
 
-  // ---------- RESIZE ----------
-  function resize(){
-    // Keep internal resolution stable for physics; canvas will scale with CSS
-    // but we still track pointer correctly using getBoundingClientRect.
-    // No changes needed here, placeholder for future.
+  // ghost
+  const g=state.ghost, p=state.player; const dpg=dist(p,g);
+  ctx.globalAlpha= state.inHunt ? 0.9 : (dpg<120 ? 0.6 : 0.15);
+  ctx.fillStyle='#b3c7ff'; ctx.beginPath(); ctx.arc(g.x,g.y,10,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+
+  // player
+  ctx.fillStyle='#8fd1ff'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
+
+  // --- Stable flashlight mask ---
+  // 1) Lay down darkness once
+  const darknessAlpha = state.flashlight && state.battery>0 ? 0.90 : 0.96;
+  ctx.save();
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle=`rgba(0,0,0,${darknessAlpha})`;
+  ctx.fillRect(0,0,w,h);
+
+  // 2) Cut a soft cone (destination-out) to reveal the scene
+  const coneRadius = 260;
+  const coneHalfAngle = 0.34; // ~39 degrees
+  ctx.globalCompositeOperation='destination-out';
+  ctx.translate(p.x,p.y);
+  ctx.rotate(p.angle);
+  // Soft edge via radial gradient strip
+  const grad = ctx.createRadialGradient(0,0,120, 0,0,coneRadius);
+  grad.addColorStop(0,'rgba(0,0,0,1)');
+  grad.addColorStop(0.3,'rgba(0,0,0,0.7)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.arc(0,0,coneRadius,-coneHalfAngle,coneHalfAngle);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // 3) Small ambient glow around player (helps readability)
+  const glow = ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,42);
+  glow.addColorStop(0,'rgba(120,140,200,0.28)');
+  glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,w,h);
+  // --- end flashlight ---
+
+  // labels
+  ctx.fillStyle='#5c84c7'; ctx.font='12px ui-monospace,Menlo,Consolas';
+  ctx.fillText('Van Exit', state.map.van.x, state.map.van.y-6);
+  ctx.fillText(state.ghostRoom.name+' (colder)', state.ghostRoom.x+6, state.ghostRoom.y+12);
+
+  // End banners
+  if(state.gameOver||state.won){
+    ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle=state.won?'#86efac':'#ff6b6b'; ctx.font='bold 42px Inter,system-ui'; ctx.textAlign='center';
+    ctx.fillText(state.won?'CONTRACT COMPLETE':'YOU DIED', w/2, h/2 - 6);
+    ctx.fillStyle='#a7b9dc'; ctx.font='16px Inter,system-ui';
+    ctx.fillText('Click "Start New Contract" to play again', w/2, h/2 + 24);
   }
-  window.addEventListener('resize', resize);
-
-  // ---------- START ----------
-  reset();
-
+}
 })();
 </script>
 </body>
