@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ghost Hunt v1.4 – Solid Walls, Clear Tools, Smooth Temps</title>
+<title>Ghost Hunt v1.5 – Lights, Doors, Hiding</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{--bg:#0b0f14;--panel:#0e1624;--ink:#e6f0ff;--muted:#9db0d7;--border:#1a2537}
   *{box-sizing:border-box}html,body{height:100%}
   body{margin:0;background:radial-gradient(1200px 600px at 60% -10%, #122034 0%, #0b0f14 60%);color:var(--ink);
        font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
-  .wrap{display:grid;grid-template-columns:1fr 340px;gap:16px;max-width:1320px;margin:12px auto;padding:0 12px 40px}
+  .wrap{display:grid;grid-template-columns:1fr 360px;gap:16px;max-width:1320px;margin:12px auto;padding:0 12px 40px}
   #gameArea{position:relative;background:#06090f;border:1px solid var(--border);border-radius:14px;overflow:hidden;min-height:70vh}
   canvas{display:block;width:100%;height:100%}
   aside{position:sticky;top:12px;align-self:start;background:linear-gradient(180deg,#0e1624,#0c1320);
@@ -37,12 +37,12 @@
   <div id="gameArea">
     <canvas id="game"></canvas>
     <div class="hint">
-      WASD move • Mouse aims • <span class="kbd">J</span> Journal • <span class="kbd">F</span> Flashlight •
-      <span class="kbd">V</span> Spirit Box • <span class="kbd">U</span> UV Lamp
+      WASD move • Mouse aims • <span class="kbd">F</span> Flashlight • <span class="kbd">E</span> Open/Close door •
+      <span class="kbd">H</span> Hide/Unhide • <span class="kbd">V</span> Spirit Box • <span class="kbd">J</span> Journal
     </div>
   </div>
   <aside>
-    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT <span style="color:#9db0d7;font-weight:600">v1.4</span></h3>
+    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT <span style="color:#9db0d7;font-weight:600">v1.5</span></h3>
     <button class="btn" id="newRun">Start New Contract</button>
 
     <div class="row" style="margin-top:8px">
@@ -51,6 +51,7 @@
       <span class="chip">Temp <b id="tempVal">21.0°C</b></span>
       <span class="chip">Box <b id="boxVal">Idle</b></span>
       <span class="chip">UV <b id="uvVal">OFF</b></span>
+      <span class="chip" id="hideStat">Hiding: NO</span>
     </div>
 
     <div style="margin-top:10px;color:#9db0d7;font-size:12px">
@@ -72,7 +73,7 @@
       <button class="btn" id="closeJournal" style="width:auto">Close</button>
     </div>
     <p style="color:#9db0d7;font-size:12px;margin:.4rem 0 0.6rem 0">
-      Tick evidence you’ve found. You can freely untick anything—tools will never force-check boxes.
+      Tick evidence you’ve found. You can freely untick anything—tools never force-check boxes.
     </p>
     <div class="evidence-grid">
       <div class="evi"><label><input type="checkbox" data-evi="EMF5"> EMF Level 5</label></div>
@@ -94,11 +95,11 @@
       <button class="btn" id="closeHelp" style="width:auto">Close</button>
     </div>
     <ol>
-      <li>Move with <span class="kbd">WASD</span>. Aim flashlight with the mouse. Toggle with <span class="kbd">F</span>.</li>
-      <li>Tools: EMF (auto), Thermometer (smoothed), Spirit Box (<span class="kbd">V</span> to hold), UV Lamp (<span class="kbd">U</span> to toggle).</li>
-      <li>Ghost Writing may appear if you linger in the ghost room.</li>
-      <li>Open <span class="kbd">J</span> to tick evidence and select a ghost. Exit via the green van to submit.</li>
-      <li>Sanity drains in darkness; at low sanity the ghost hunts. Don’t get caught!</li>
+      <li>Move with <span class="kbd">WASD</span>. Aim flashlight with the mouse. Toggle with <span class="kbd">F</span> (no batteries).</li>
+      <li><b>E</b> near a door toggles it open/closed (closed doors block you and line of sight).</li>
+      <li>Stand inside a wardrobe/locker and press <b>H</b> to hide. Hidden = safe unless the ghost physically touches you.</li>
+      <li>Tools: EMF (auto), Thermometer (smoothed), Spirit Box (<span class="kbd">V</span> hold), UV Lamp (<span class="kbd">U</span> toggle).</li>
+      <li>Open <span class="kbd">J</span> for the Journal. Exit via the green van to submit your guess.</li>
     </ol>
   </div>
 </div>
@@ -136,20 +137,19 @@ const inside=(p,r)=>p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h;
 const state = {
   running:false,time:0,dt:0,last:0, uiTimer:0,
   keys:new Set(),mouse:{x:200,y:200},
-  flashlight:true, // no batteries anymore
+  flashlight:true, uv:false, hiding:false,
   sanity:100, emf:1,
-  temp:21, tempTarget:21, tempSmooth:21, tempTimer:0, // smoothing and retarget timer
-  box:"Idle", boxHold:false, boxMsgUntil:0, // spirit box clarity
-  uv:false, linger:0,
+  temp:21, tempTarget:21, tempSmooth:21, tempTimer:0, // temp smoothing
+  box:"Idle", boxHold:false, boxMsgUntil:0,
   evidences:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},
   found:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},
   map:null, player:null, ghost:null, ghostRoom:null, vanZone:null,
+  rooms:[], doors:[], furniture:[], hideSpots:[],
   orbs:[], prints:[], writingSpots:[], writingVisible:false,
   inHunt:false, huntTimer:0, gameOver:false, won:false, selectedGhost:null
 };
 
 const EVI = ["EMF5","Freezing","SpiritBox","Orbs","Fingerprints","Writing"];
-
 const GHOSTS = [
   {name:"Phantom",  ev:["EMF5","SpiritBox","Orbs"], notes:"Shy; vanishes during events."},
   {name:"Wraith",   ev:["EMF5","SpiritBox","Freezing"], notes:"Floats; aggressive if provoked."},
@@ -163,7 +163,7 @@ const GHOSTS = [
   {name:"Myling",   ev:["EMF5","Writing","Fingerprints"], notes:"Quiet hunts; strong evidence."},
 ];
 
-// ===== Map & collision =====
+// ===== Map, doors, furniture =====
 function buildMap(){
   const rooms = [
     {x:60,y:60,w:280,h:200,name:"Entrance"},
@@ -173,20 +173,46 @@ function buildMap(){
     {x:380,y:270,w:260,h:250,name:"Bedroom"},
     {x:680,y:300,w:280,h:240,name:"Kitchen"},
   ];
+  // Doors become interactive; closed by default
   const doors = [
-    {x:340,y:150,w:20,h:40},{x:660,y:140,w:20,h:40},
-    {x:380,y:260,w:40,h:20},{x:170,y:260,w:60,h:20},
-    {x:340,y:420,w:20,h:40},{x:680,y:260,w:40,h:20},
+    {x:340,y:150,w:20,h:40, open:false, name:"Entrance–Living"},
+    {x:660,y:140,w:20,h:40, open:false, name:"Living–Garage"},
+    {x:380,y:260,w:40,h:20, open:false, name:"Living–Bedroom"},
+    {x:170,y:260,w:60,h:20, open:false, name:"Entrance–Hall"},
+    {x:340,y:420,w:20,h:40, open:false, name:"Hall–Kitchen"},
+    {x:680,y:260,w:40,h:20, open:false, name:"Kitchen–Garage"},
+  ];
+  // Furniture (solid) and hide spots (slightly smaller rect inside)
+  const furniture = [
+    // Living room sofa + cabinet
+    {x:430,y:90,w:100,h:26,type:"sofa"},
+    {x:620,y:200,w:28,h:80,type:"cabinet"},
+    // Bedroom wardrobe (hide)
+    {x:390,y:290,w:60,h:40,type:"wardrobe"},
+    // Garage shelves
+    {x:720,y:80,w:180,h:20,type:"shelf"},
+    // Hall closet (hide)
+    {x:80,y:330,w:50,h:40,type:"closet"},
+    // Kitchen island
+    {x:740,y:380,w:120,h:40,type:"island"},
+  ];
+  const hideSpots = [
+    {x:395,y:295,w:50,h:30,label:"Wardrobe"},
+    {x:85,y:335,w:40,h:30,label:"Closet"},
   ];
   const van = {x:20,y:20,w:40,h:40};
-  return {rooms,doors,van};
+  return {rooms,doors,furniture,hideSpots,van};
 }
+function isInAny(pt, arr){ for(const r of arr) if(inside(pt,r)) return r; return null; }
 function isWalkable(pt, map){
-  // You may stand inside any room or any door or the van.
-  for(const r of map.rooms) if(inside(pt,r)) return true;
-  for(const d of map.doors) if(inside(pt,d)) return true;
-  if(inside(pt,map.van)) return true;
-  return false;
+  // must be inside a room or (open) door or van
+  const inRoom = isInAny(pt, map.rooms);
+  const inOpenDoor = map.doors.some(d=>d.open && inside(pt,d));
+  const inVan = inside(pt, map.van);
+  if(!(inRoom || inOpenDoor || inVan)) return false;
+  // cannot stand inside furniture solids
+  if(isInAny(pt, map.furniture)) return false;
+  return true;
 }
 
 // ===== Entities =====
@@ -203,6 +229,7 @@ const tempVal=document.getElementById('tempVal');
 const boxVal=document.getElementById('boxVal');
 const flashStat=document.getElementById('flashStat');
 const uvVal=document.getElementById('uvVal');
+const hideStat=document.getElementById('hideStat');
 const toastEl=document.getElementById('toast');
 
 function toast(msg,ms=1600){
@@ -252,6 +279,8 @@ window.addEventListener('keydown',e=>{
   if(k==='f') {state.flashlight=!state.flashlight; flashStat.textContent=state.flashlight?'ON':'OFF';}
   if(k==='u') {state.uv=!state.uv; uvVal.textContent=state.uv?'ON':'OFF';}
   if(k==='v') state.boxHold=true;
+  if(k==='e') tryToggleDoor();
+  if(k==='h') tryToggleHide();
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase(); state.keys.delete(k); if(k==='v'){state.boxHold=false;}});
 canvas.addEventListener('mousemove',e=>{
@@ -263,11 +292,13 @@ canvas.addEventListener('mousemove',e=>{
 
 // ===== Game setup & loop =====
 function reset(){
-  state.map=buildMap();
+  const {rooms,doors,furniture,hideSpots,van} = buildMap();
+  state.rooms=rooms; state.doors=doors; state.furniture=furniture; state.hideSpots=hideSpots;
+  state.map={rooms,doors,van,furniture,hideSpots};
   state.player=newPlayer();
   state.ghost=newGhost();
-  state.ghostRoom=state.map.rooms[Math.floor(Math.random()*state.map.rooms.length)];
-  state.vanZone=state.map.van;
+  state.ghostRoom=rooms[Math.floor(Math.random()*rooms.length)];
+  state.vanZone=van;
 
   state.orbs=[]; state.prints=[]; state.writingSpots=[]; state.writingVisible=false;
   if(state.ghost.evidences.has("Orbs")){
@@ -293,7 +324,8 @@ function reset(){
 
   state.sanity=100; state.emf=1;
   state.temp=21; state.tempSmooth=21; state.tempTarget=21; state.tempTimer=0;
-  state.box="Idle"; state.boxHold=false; state.boxMsgUntil=0; state.uv=false; state.linger=0;
+  state.box="Idle"; state.boxHold=false; state.boxMsgUntil=0; state.uv=false;
+  state.hiding=false; hideStat.textContent='Hiding: NO';
   state.evidences={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false};
   state.found={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false};
   state.inHunt=false; state.huntTimer=0; state.gameOver=false; state.won=false; state.selectedGhost=null;
@@ -311,31 +343,64 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 
+// ===== Door / Hide interactions =====
+function tryToggleDoor(){
+  // Find nearest door center within 28 px (css coords)
+  const p = state.player;
+  let nearest=null, best=1e9;
+  for(const d of state.doors){
+    const cx=d.x + d.w/2, cy=d.y + d.h/2;
+    const dd=Math.hypot(p.x-cx,p.y-cy);
+    if(dd<28 && dd<best){best=dd; nearest=d;}
+  }
+  if(nearest){
+    nearest.open = !nearest.open;
+    toast(nearest.open?'Door opened':'Door closed', 900);
+  }else{
+    toast('No door nearby.', 800);
+  }
+}
+function tryToggleHide(){
+  const p=state.player;
+  // you can hide if you're inside any hide spot
+  const spot = isInAny(p, state.hideSpots);
+  if(spot){
+    state.hiding = !state.hiding;
+    hideStat.textContent = 'Hiding: ' + (state.hiding?'YES':'NO');
+    toast(state.hiding?`Hiding in ${spot.label}`:'You step out', 900);
+  }else{
+    if(state.hiding){ state.hiding=false; hideStat.textContent='Hiding: NO'; }
+    toast('Stand inside a wardrobe/closet to hide.', 1200);
+  }
+}
+
 // ===== Update =====
 function update(dt){
   if(state.gameOver||state.won) return;
   const p=state.player;
 
-  // movement with collision: try X then Y separately (axis-resolve)
-  let mvx=0,mvy=0;
-  if(state.keys.has('w'))mvy-=1; if(state.keys.has('s'))mvy+=1;
-  if(state.keys.has('a'))mvx-=1; if(state.keys.has('d'))mvx+=1;
-  const L=Math.hypot(mvx,mvy)||1; mvx/=L; mvy/=L;
+  // movement with collision (disabled while hiding)
+  if(!state.hiding){
+    let mvx=0,mvy=0;
+    if(state.keys.has('w'))mvy-=1; if(state.keys.has('s'))mvy+=1;
+    if(state.keys.has('a'))mvx-=1; if(state.keys.has('d'))mvx+=1;
+    const L=Math.hypot(mvx,mvy)||1; mvx/=L; mvy/=L;
 
-  // attempt X
-  const tryX = {x: clamp(p.x + mvx*p.spd*dt, 0, canvas.width/DPR), y: p.y};
-  if(isWalkable(tryX, state.map)) p.x = tryX.x;
-  // attempt Y
-  const tryY = {x: p.x, y: clamp(p.y + mvy*p.spd*dt, 0, canvas.height/DPR)};
-  if(isWalkable(tryY, state.map)) p.y = tryY.y;
+    // axis-resolve with walkability checks
+    const tryX = {x: clamp(p.x + mvx*160*dt, 0, canvas.width/DPR), y: p.y};
+    if(isWalkable(tryX, state.map)) p.x = tryX.x;
+    const tryY = {x: p.x, y: clamp(p.y + mvy*160*dt, 0, canvas.height/DPR)};
+    if(isWalkable(tryY, state.map)) p.y = tryY.y;
 
-  // aim smoothing
-  const targetAngle=Math.atan2(state.mouse.y-p.y,state.mouse.x-p.x);
-  p.angle += (targetAngle - p.angle) * 0.25;
+    // aim
+    const targetAngle=Math.atan2(state.mouse.y-p.y,state.mouse.x-p.x);
+    p.angle += (targetAngle - p.angle) * 0.25;
+  }
 
-  // sanity
+  // sanity (slower when hiding)
   const lightFactor = state.flashlight ? 0.25 : 1.0;
-  state.sanity=clamp(state.sanity - dt*(0.55*lightFactor + (state.inHunt?1.4:0)), 0, 100);
+  const hideFactor = state.hiding ? 0.35 : 1.0;
+  state.sanity=clamp(state.sanity - dt*(0.50*lightFactor*hideFactor + (state.inHunt?1.2:0)), 0, 100);
 
   // ghost roam
   const g=state.ghost;
@@ -350,42 +415,39 @@ function update(dt){
     if(d>2){ g.x+=mx/d*g.speed*dt*(state.inHunt?1.8:1); g.y+=my/d*g.speed*dt*(state.inHunt?1.8:1); }
   }
 
-  // --------- SUPER SMOOTH TEMPERATURE ----------
-  // Retarget every ~2.2s. Between retargets, temp eases toward target with capped rate.
+  // ---- Smooth Temperature ----
   state.tempTimer -= dt;
   if(state.tempTimer<=0){
-    const base = isWalkable(p,state.map) && inside(p,state.ghostRoom) ? rand(-1.0,3.0) : rand(20.0,22.0);
-    state.tempTarget = state.tempTarget*0.75 + base*0.25; // gentle drift
+    const base = (inside(p,state.ghostRoom)? rand(-1.0,3.0) : rand(20.0,22.0));
+    state.tempTarget = state.tempTarget*0.75 + base*0.25;
     state.tempTimer = 2.2;
   }
-  // Exponential smoothing + clamp rate of change (max 0.18°C/sec)
   const before = state.tempSmooth;
   const smoothK = Math.min(1, dt*0.28);
   let after = before + (state.tempTarget - before) * smoothK;
   const maxDelta = 0.18 * dt;
   after = Math.max(before - maxDelta, Math.min(before + maxDelta, after));
   state.tempSmooth = after;
-  state.temp = state.tempSmooth; // no extra noise
+  state.temp = state.tempSmooth;
   const displayTemp = Math.round(state.temp*10)/10;
 
-  // EMF by distance (throttled readout later)
+  // EMF (by distance)
   const dpg=dist(p,g);
   let emf=1; if(dpg<220)emf=2; if(dpg<160)emf=3; if(dpg<120)emf=4; if(dpg<80)emf=5;
   if(state.inHunt) emf=5;
   state.emf=emf;
 
-  // Spirit Box: clear states, no flicker
+  // Spirit Box (sticky messages)
   if(state.boxHold){
     if(state.time < state.boxMsgUntil){
-      // keep current message
+      // keep
     }else{
-      // show LISTENING while held; rare responses only sometimes
       if(dpg<110 && state.ghost.evidences.has("SpiritBox") && Math.random()<0.008){
         state.box="“...run...”"; state.found.SpiritBox=true;
-        state.boxMsgUntil = state.time + 2.2; // sticky response 2.2s
+        state.boxMsgUntil = state.time + 2.2;
       }else{
         state.box="LISTENING…";
-        state.boxMsgUntil = state.time + 0.4; // refresh slowly
+        state.boxMsgUntil = state.time + 0.4;
       }
     }
   }else{
@@ -397,15 +459,16 @@ function update(dt){
     if(Math.random()<0.008) state.found.Fingerprints=true;
   }
 
-  // Writing (linger)
+  // Writing (linger in ghost room)
   if(state.ghost.evidences.has("Writing")){
-    if(inside(p,state.ghostRoom)) state.linger += dt; else state.linger = Math.max(0, state.linger - dt*0.5);
+    if(inside(p,state.ghostRoom)) state.linger = Math.min(10, state.linger + dt);
+    else state.linger = Math.max(0, state.linger - dt*0.5);
     if(!state.writingVisible && state.linger>6){
       state.writingVisible=true; state.found.Writing=true; toast('You notice scribbles in the book…',1800);
     }
   }
 
-  // Orbs seen if you are in ghost room
+  // Orbs observed if you are in ghost room
   if(state.ghost.evidences.has("Orbs") && inside(p,state.ghostRoom)){
     if(Math.random()<0.01) state.found.Orbs=true;
   }
@@ -419,9 +482,16 @@ function update(dt){
     state.inHunt=true; state.huntTimer=rand(8,14); toast('The ghost is hunting! Hide!',1500);
   }
   if(state.inHunt){
+    // If hiding, ghost ignores you unless touching
+    const speedMul = state.hiding ? 1.3 : 1.6;
     state.huntTimer-=dt;
     const mx=p.x-g.x, my=p.y-g.y, d=Math.hypot(mx,my)||1;
-    g.x+=mx/d*(g.speed*1.6)*dt; g.y+=my/d*(g.speed*1.6)*dt;
+    // only chase if not hiding OR line-of-sight simple check (same room)
+    const sameRoom = !!(isInAny(p, state.rooms) && isInAny(g, state.rooms) && isInAny(p, state.rooms)===isInAny(g, state.rooms));
+    if(!state.hiding || sameRoom){
+      g.x+=mx/d*(g.speed*speedMul)*dt; g.y+=my/d*(g.speed*speedMul)*dt;
+    }
+    // caught?
     if(d<18){ state.gameOver=true; toast('You were caught…',2200); }
     if(state.huntTimer<=0) state.inHunt=false;
   }
@@ -433,14 +503,14 @@ function update(dt){
     toast(correct?`Correct! It was a ${state.ghost.type}.`:`Wrong! It was a ${state.ghost.type}.`,2800);
   }
 
-  // -------- UI THROTTLE (5 Hz) --------
+  // UI throttle (5 Hz)
   state.uiTimer -= dt;
   if(state.uiTimer<=0){
     sanityVal.textContent=`Sanity ${Math.round(state.sanity)}%`;
     emfVal.textContent=String(state.emf);
     tempVal.textContent=displayTemp.toFixed(1)+'°C';
     boxVal.textContent=state.box;
-    state.uiTimer = 0.2; // 5x per second
+    state.uiTimer = 0.2;
   }
 }
 
@@ -450,10 +520,44 @@ function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,w,h);
 
-  // world base
+  // base
   ctx.fillStyle='#06090f'; ctx.fillRect(0,0,w,h);
-  for(const r of state.map.rooms){ ctx.fillStyle='#0a101b'; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeStyle='#1a263b'; ctx.strokeRect(r.x,r.y,r.w,r.h); }
-  for(const d of state.map.doors){ ctx.fillStyle='#152239'; ctx.fillRect(d.x,d.y,d.w,d.h); }
+
+  // rooms (floors + walls outline)
+  for(const r of state.rooms){ ctx.fillStyle='#0a101b'; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeStyle='#1a263b'; ctx.strokeRect(r.x,r.y,r.w,r.h); }
+
+  // furniture (solids)
+  for(const f of state.furniture){
+    ctx.fillStyle = ({sofa:'#1b2b42',cabinet:'#1c2f4a',wardrobe:'#1f3556',shelf:'#18263d',closet:'#1f3556',island:'#1a2a43'})[f.type] || '#1b2b40';
+    ctx.fillRect(f.x,f.y,f.w,f.h);
+    ctx.strokeStyle='#253b5d'; ctx.strokeRect(f.x,f.y,f.w,f.h);
+  }
+
+  // doors (closed = solid, open = “gap” look)
+  for(const d of state.doors){
+    if(d.open){
+      ctx.fillStyle='#0f1c30';
+      ctx.fillRect(d.x,d.y,d.w,d.h);
+      ctx.strokeStyle='#2a4a7a'; ctx.strokeRect(d.x,d.y,d.w,d.h);
+      // draw a diagonal to show open
+      ctx.strokeStyle='#335a95';
+      ctx.beginPath(); ctx.moveTo(d.x,d.y); ctx.lineTo(d.x+d.w, d.y+d.h); ctx.stroke();
+    }else{
+      ctx.fillStyle='#233a61';
+      ctx.fillRect(d.x,d.y,d.w,d.h);
+      ctx.strokeStyle='#3a5c94'; ctx.strokeRect(d.x,d.y,d.w,d.h);
+    }
+  }
+
+  // hide spots overlay (subtle)
+  for(const s of state.hideSpots){
+    ctx.fillStyle='rgba(40,80,120,0.15)';
+    ctx.fillRect(s.x,s.y,s.w,s.h);
+    ctx.strokeStyle='rgba(90,140,200,0.25)';
+    ctx.strokeRect(s.x,s.y,s.w,s.h);
+  }
+
+  // van / exit
   const van=state.map.van; ctx.fillStyle='#0f2b17'; ctx.fillRect(van.x,van.y,van.w,van.h); ctx.strokeStyle='#2e6a40'; ctx.strokeRect(van.x,van.y,van.w,van.h);
 
   // orbs
@@ -491,36 +595,45 @@ function draw(){
   ctx.globalAlpha= state.inHunt ? 0.9 : (dpg<120 ? 0.6 : 0.15);
   ctx.fillStyle='#b3c7ff'; ctx.beginPath(); ctx.arc(g.x,g.y,10,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
 
-  ctx.fillStyle='#8fd1ff'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
+  // player (dim when hiding)
+  ctx.fillStyle= state.hiding ? '#6ba4d6' : '#8fd1ff';
+  ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
 
-  // ===== Lighting: Dark overlay + cone cutout (no batteries) =====
-  const hasFlash = state.flashlight;
+  // ===== Lighting: “real” illumination (overlay + additive cone) =====
+  // 1) Darken whole scene a bit
   ctx.save();
+  const baseDark = state.flashlight ? 0.70 : 0.92; // lighter when flashlight on
   ctx.globalCompositeOperation='source-over';
-  ctx.fillStyle = `rgba(0,0,0,${hasFlash?0.82:0.96})`;
+  ctx.fillStyle=`rgba(0,0,0,${baseDark})`;
   ctx.fillRect(0,0,w,h);
 
-  if(hasFlash){
+  if(state.flashlight){
+    // 2) Bright cone using additive blending (white gradient adds light over the darkness)
     const coneRadius = 300;
-    const coneHalfAngle = 0.38;
-    ctx.globalCompositeOperation='destination-out';
+    const coneHalf = 0.40;
     ctx.translate(p.x,p.y); ctx.rotate(p.angle);
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,coneRadius,-coneHalfAngle,coneHalfAngle); ctx.closePath(); ctx.fill();
-
-    // subtle inner glow
     ctx.globalCompositeOperation='lighter';
-    const glow = ctx.createRadialGradient(0,0,6, 0,0,120);
-    glow.addColorStop(0,'rgba(180,210,255,0.30)');
-    glow.addColorStop(1,'rgba(180,210,255,0.00)');
-    ctx.fillStyle=glow;
-    ctx.beginPath(); ctx.arc(0,0,150,-coneHalfAngle,coneHalfAngle); ctx.lineTo(0,0); ctx.fill();
+    const cone = ctx.createRadialGradient(0,0,12, 0,0,coneRadius);
+    cone.addColorStop(0,'rgba(255,255,255,0.55)');
+    cone.addColorStop(0.25,'rgba(255,255,255,0.35)');
+    cone.addColorStop(1,'rgba(255,255,255,0.00)');
+    ctx.fillStyle=cone;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,coneRadius,-coneHalf,coneHalf); ctx.closePath(); ctx.fill();
+
+    // 3) Small ambient around player
+    const glow = ctx.createRadialGradient(0,0,4, 0,0,120);
+    glow.addColorStop(0,'rgba(200,220,255,0.25)');
+    glow.addColorStop(1,'rgba(200,220,255,0.00)');
+    ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,120,-coneHalf,coneHalf); ctx.closePath(); ctx.fill();
   }
   ctx.restore();
+  // ===== end lighting =====
 
   // labels
   ctx.fillStyle='#5c84c7'; ctx.font='12px ui-monospace,Menlo,Consolas';
   ctx.fillText('Van Exit', state.map.van.x, state.map.van.y-6);
   ctx.fillText(state.ghostRoom.name+' (colder)', state.ghostRoom.x+6, state.ghostRoom.y+12);
+  ctx.fillText('Doors: E to open/close', 10, h-10);
 
   if(state.gameOver||state.won){
     ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,w,h);
