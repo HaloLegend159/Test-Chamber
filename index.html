@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ghost Hunt v1.3 – Solid Flashlight + Smooth Temps</title>
+<title>Ghost Hunt v1.4 – Solid Walls, Clear Tools, Smooth Temps</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{--bg:#0b0f14;--panel:#0e1624;--ink:#e6f0ff;--muted:#9db0d7;--border:#1a2537}
@@ -42,7 +42,7 @@
     </div>
   </div>
   <aside>
-    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT <span style="color:#9db0d7;font-weight:600">v1.3</span></h3>
+    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT <span style="color:#9db0d7;font-weight:600">v1.4</span></h3>
     <button class="btn" id="newRun">Start New Contract</button>
 
     <div class="row" style="margin-top:8px">
@@ -60,7 +60,7 @@
       <button class="btn" id="openJournal">Open Journal (J)</button>
       <button class="btn" id="howTo">How to Play</button>
     </div>
-    <div style="margin-top:10px;color:#9db0d7;font-size:12px">Flashlight: <b id="flashStat">ON</b> • Battery <span id="batPct">100%</span></div>
+    <div style="margin-top:10px;color:#9db0d7;font-size:12px">Flashlight: <b id="flashStat">ON</b></div>
   </aside>
 </div>
 
@@ -95,7 +95,7 @@
     </div>
     <ol>
       <li>Move with <span class="kbd">WASD</span>. Aim flashlight with the mouse. Toggle with <span class="kbd">F</span>.</li>
-      <li>Tools: EMF (auto), Thermometer (auto), Spirit Box (<span class="kbd">V</span> to hold), UV Lamp (<span class="kbd">U</span> to toggle).</li>
+      <li>Tools: EMF (auto), Thermometer (smoothed), Spirit Box (<span class="kbd">V</span> to hold), UV Lamp (<span class="kbd">U</span> to toggle).</li>
       <li>Ghost Writing may appear if you linger in the ghost room.</li>
       <li>Open <span class="kbd">J</span> to tick evidence and select a ghost. Exit via the green van to submit.</li>
       <li>Sanity drains in darkness; at low sanity the ghost hunts. Don’t get caught!</li>
@@ -134,12 +134,13 @@ const inside=(p,r)=>p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h;
 
 // ===== State =====
 const state = {
-  running:false,time:0,dt:0,last:0,
+  running:false,time:0,dt:0,last:0, uiTimer:0,
   keys:new Set(),mouse:{x:200,y:200},
-  flashlight:true,battery:1,holdingBox:false, uv:false,
+  flashlight:true, // no batteries anymore
   sanity:100, emf:1,
-  temp:21, tempTarget:21, tempSmooth:21, tempTimer:0, // << smoothing timers
-  box:"Idle", linger:0,
+  temp:21, tempTarget:21, tempSmooth:21, tempTimer:0, // smoothing and retarget timer
+  box:"Idle", boxHold:false, boxMsgUntil:0, // spirit box clarity
+  uv:false, linger:0,
   evidences:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},
   found:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},
   map:null, player:null, ghost:null, ghostRoom:null, vanZone:null,
@@ -162,7 +163,7 @@ const GHOSTS = [
   {name:"Myling",   ev:["EMF5","Writing","Fingerprints"], notes:"Quiet hunts; strong evidence."},
 ];
 
-// ===== Map =====
+// ===== Map & collision =====
 function buildMap(){
   const rooms = [
     {x:60,y:60,w:280,h:200,name:"Entrance"},
@@ -180,6 +181,13 @@ function buildMap(){
   const van = {x:20,y:20,w:40,h:40};
   return {rooms,doors,van};
 }
+function isWalkable(pt, map){
+  // You may stand inside any room or any door or the van.
+  for(const r of map.rooms) if(inside(pt,r)) return true;
+  for(const d of map.doors) if(inside(pt,d)) return true;
+  if(inside(pt,map.van)) return true;
+  return false;
+}
 
 // ===== Entities =====
 const newPlayer=()=>({x:90,y:90,r:10,spd:160,angle:0,alive:true});
@@ -195,7 +203,6 @@ const tempVal=document.getElementById('tempVal');
 const boxVal=document.getElementById('boxVal');
 const flashStat=document.getElementById('flashStat');
 const uvVal=document.getElementById('uvVal');
-const batPct=document.getElementById('batPct');
 const toastEl=document.getElementById('toast');
 
 function toast(msg,ms=1600){
@@ -244,9 +251,9 @@ window.addEventListener('keydown',e=>{
   if(k==='j') {toggleModal('journal',true); updateJournalList();}
   if(k==='f') {state.flashlight=!state.flashlight; flashStat.textContent=state.flashlight?'ON':'OFF';}
   if(k==='u') {state.uv=!state.uv; uvVal.textContent=state.uv?'ON':'OFF';}
-  if(k==='v') state.holdingBox=true;
+  if(k==='v') state.boxHold=true;
 });
-window.addEventListener('keyup',e=>{const k=e.key.toLowerCase(); state.keys.delete(k); if(k==='v'){state.holdingBox=false; state.box='Idle';}});
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase(); state.keys.delete(k); if(k==='v'){state.boxHold=false;}});
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();
   const sx=canvas.width/r.width, sy=canvas.height/r.height;
@@ -284,17 +291,13 @@ function reset(){
     }
   }
 
-  state.flashlight=true; state.uv=false; state.battery=1;
   state.sanity=100; state.emf=1;
-
-  // temperature smoothing
   state.temp=21; state.tempSmooth=21; state.tempTarget=21; state.tempTimer=0;
-
-  state.box='Idle'; state.linger=0;
+  state.box="Idle"; state.boxHold=false; state.boxMsgUntil=0; state.uv=false; state.linger=0;
   state.evidences={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false};
   state.found={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false};
   state.inHunt=false; state.huntTimer=0; state.gameOver=false; state.won=false; state.selectedGhost=null;
-  state.time=0; state.last=performance.now(); state.running=true;
+  state.time=0; state.last=performance.now(); state.uiTimer=0; state.running=true;
   toast('New Contract started.');
   updateJournalList();
 }
@@ -313,22 +316,26 @@ function update(dt){
   if(state.gameOver||state.won) return;
   const p=state.player;
 
-  // movement
-  let dx=0,dy=0;
-  if(state.keys.has('w'))dy-=1; if(state.keys.has('s'))dy+=1;
-  if(state.keys.has('a'))dx-=1; if(state.keys.has('d'))dx+=1;
-  const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
-  p.x=clamp(p.x+dx*p.spd*dt,10, canvas.width/DPR-10);
-  p.y=clamp(p.y+dy*p.spd*dt,10, canvas.height/DPR-10);
+  // movement with collision: try X then Y separately (axis-resolve)
+  let mvx=0,mvy=0;
+  if(state.keys.has('w'))mvy-=1; if(state.keys.has('s'))mvy+=1;
+  if(state.keys.has('a'))mvx-=1; if(state.keys.has('d'))mvx+=1;
+  const L=Math.hypot(mvx,mvy)||1; mvx/=L; mvy/=L;
+
+  // attempt X
+  const tryX = {x: clamp(p.x + mvx*p.spd*dt, 0, canvas.width/DPR), y: p.y};
+  if(isWalkable(tryX, state.map)) p.x = tryX.x;
+  // attempt Y
+  const tryY = {x: p.x, y: clamp(p.y + mvy*p.spd*dt, 0, canvas.height/DPR)};
+  if(isWalkable(tryY, state.map)) p.y = tryY.y;
+
+  // aim smoothing
   const targetAngle=Math.atan2(state.mouse.y-p.y,state.mouse.x-p.x);
   p.angle += (targetAngle - p.angle) * 0.25;
 
-  // battery + sanity
-  if(state.flashlight) state.battery=Math.max(0,state.battery-dt*0.015);
-  document.getElementById('batPct').textContent=Math.round(state.battery*100)+'%';
-  const darkFactor=(state.flashlight&&state.battery>0)?0.25:1.0;
-  state.sanity=clamp(state.sanity - dt*(0.6*darkFactor + (state.inHunt?1.4:0)), 0, 100);
-  sanityVal.textContent=`Sanity ${Math.round(state.sanity)}%`;
+  // sanity
+  const lightFactor = state.flashlight ? 0.25 : 1.0;
+  state.sanity=clamp(state.sanity - dt*(0.55*lightFactor + (state.inHunt?1.4:0)), 0, 100);
 
   // ghost roam
   const g=state.ghost;
@@ -343,42 +350,51 @@ function update(dt){
     if(d>2){ g.x+=mx/d*g.speed*dt*(state.inHunt?1.8:1); g.y+=my/d*g.speed*dt*(state.inHunt?1.8:1); }
   }
 
-  // --------- MUCH SMOOTHER TEMPERATURE ---------
-  // Update target only every ~1.2s (prevents jittery spam)
+  // --------- SUPER SMOOTH TEMPERATURE ----------
+  // Retarget every ~2.2s. Between retargets, temp eases toward target with capped rate.
   state.tempTimer -= dt;
   if(state.tempTimer<=0){
-    const base = inside(p,state.ghostRoom) ? rand(-1.0,3.0) : rand(20.0,22.0);
-    // keep target near previous target (gentle drift)
-    state.tempTarget = state.tempTarget*0.7 + base*0.3;
-    state.tempTimer = 1.2; // seconds
+    const base = isWalkable(p,state.map) && inside(p,state.ghostRoom) ? rand(-1.0,3.0) : rand(20.0,22.0);
+    state.tempTarget = state.tempTarget*0.75 + base*0.25; // gentle drift
+    state.tempTimer = 2.2;
   }
-  // Ease toward target with small noise
-  const smoothK = Math.min(1, dt*0.35);   // smaller = smoother
-  state.tempSmooth += (state.tempTarget - state.tempSmooth) * smoothK;
-  state.temp = state.tempSmooth + (Math.random()*0.04 - 0.02); // tiny ±0.02 noise
-  // snap to 0.1 for a calmer display
+  // Exponential smoothing + clamp rate of change (max 0.18°C/sec)
+  const before = state.tempSmooth;
+  const smoothK = Math.min(1, dt*0.28);
+  let after = before + (state.tempTarget - before) * smoothK;
+  const maxDelta = 0.18 * dt;
+  after = Math.max(before - maxDelta, Math.min(before + maxDelta, after));
+  state.tempSmooth = after;
+  state.temp = state.tempSmooth; // no extra noise
   const displayTemp = Math.round(state.temp*10)/10;
-  tempVal.textContent = displayTemp.toFixed(1)+'°C';
-  if(displayTemp<=0 && state.ghost.evidences.has("Freezing")) state.found.Freezing=true;
 
-  // EMF
+  // EMF by distance (throttled readout later)
   const dpg=dist(p,g);
   let emf=1; if(dpg<220)emf=2; if(dpg<160)emf=3; if(dpg<120)emf=4; if(dpg<80)emf=5;
   if(state.inHunt) emf=5;
-  state.emf=emf; emfVal.textContent=emf.toFixed(0);
-  if(emf>=5 && state.ghost.evidences.has("EMF5")) state.found.EMF5=true;
+  state.emf=emf;
 
-  // Spirit Box
-  if(state.holdingBox){
-    if(dpg<110 && state.ghost.evidences.has("SpiritBox") && Math.random()<0.015){
-      state.box="…whisper… RUN"; state.found.SpiritBox=true;
-    }else state.box="Scanning…";
-  }else state.box="Idle";
-  boxVal.textContent=state.box;
+  // Spirit Box: clear states, no flicker
+  if(state.boxHold){
+    if(state.time < state.boxMsgUntil){
+      // keep current message
+    }else{
+      // show LISTENING while held; rare responses only sometimes
+      if(dpg<110 && state.ghost.evidences.has("SpiritBox") && Math.random()<0.008){
+        state.box="“...run...”"; state.found.SpiritBox=true;
+        state.boxMsgUntil = state.time + 2.2; // sticky response 2.2s
+      }else{
+        state.box="LISTENING…";
+        state.boxMsgUntil = state.time + 0.4; // refresh slowly
+      }
+    }
+  }else{
+    state.box="Idle"; state.boxMsgUntil = state.time + 0.4;
+  }
 
   // Fingerprints (UV + in room)
   if(state.uv && state.ghost.evidences.has("Fingerprints") && inside(p,state.ghostRoom)){
-    if(Math.random()<0.01) state.found.Fingerprints=true;
+    if(Math.random()<0.008) state.found.Fingerprints=true;
   }
 
   // Writing (linger)
@@ -389,10 +405,14 @@ function update(dt){
     }
   }
 
-  // Orbs observed if you are in ghost room
+  // Orbs seen if you are in ghost room
   if(state.ghost.evidences.has("Orbs") && inside(p,state.ghostRoom)){
-    if(Math.random()<0.012) state.found.Orbs=true;
+    if(Math.random()<0.01) state.found.Orbs=true;
   }
+
+  // Freezing & EMF evidence flags (no auto-checking UI)
+  if(displayTemp<=0 && state.ghost.evidences.has("Freezing")) state.found.Freezing=true;
+  if(emf>=5 && state.ghost.evidences.has("EMF5")) state.found.EMF5=true;
 
   // hunts
   if(!state.inHunt && (state.sanity<40 || (state.sanity<60 && Math.random()<0.001))){
@@ -411,6 +431,16 @@ function update(dt){
     const correct=state.selectedGhost===state.ghost.type;
     state.won=correct; state.gameOver=!correct;
     toast(correct?`Correct! It was a ${state.ghost.type}.`:`Wrong! It was a ${state.ghost.type}.`,2800);
+  }
+
+  // -------- UI THROTTLE (5 Hz) --------
+  state.uiTimer -= dt;
+  if(state.uiTimer<=0){
+    sanityVal.textContent=`Sanity ${Math.round(state.sanity)}%`;
+    emfVal.textContent=String(state.emf);
+    tempVal.textContent=displayTemp.toFixed(1)+'°C';
+    boxVal.textContent=state.box;
+    state.uiTimer = 0.2; // 5x per second
   }
 }
 
@@ -463,32 +493,29 @@ function draw(){
 
   ctx.fillStyle='#8fd1ff'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
 
-  // ===== Robust lighting: Dark overlay + cut-out cone + small glow =====
-  const hasFlash = state.flashlight && state.battery>0;
+  // ===== Lighting: Dark overlay + cone cutout (no batteries) =====
+  const hasFlash = state.flashlight;
   ctx.save();
-  // 1) Lay down darkness
   ctx.globalCompositeOperation='source-over';
   ctx.fillStyle = `rgba(0,0,0,${hasFlash?0.82:0.96})`;
   ctx.fillRect(0,0,w,h);
 
   if(hasFlash){
-    // 2) Cut the cone from the darkness (reveals the scene below on THIS canvas)
     const coneRadius = 300;
     const coneHalfAngle = 0.38;
     ctx.globalCompositeOperation='destination-out';
     ctx.translate(p.x,p.y); ctx.rotate(p.angle);
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,coneRadius,-coneHalfAngle,coneHalfAngle); ctx.closePath(); ctx.fill();
 
-    // 3) Add a faint inner glow in the cone to “brighten” perception
+    // subtle inner glow
     ctx.globalCompositeOperation='lighter';
     const glow = ctx.createRadialGradient(0,0,6, 0,0,120);
-    glow.addColorStop(0,'rgba(180,210,255,0.35)');
+    glow.addColorStop(0,'rgba(180,210,255,0.30)');
     glow.addColorStop(1,'rgba(180,210,255,0.00)');
     ctx.fillStyle=glow;
     ctx.beginPath(); ctx.arc(0,0,150,-coneHalfAngle,coneHalfAngle); ctx.lineTo(0,0); ctx.fill();
   }
   ctx.restore();
-  // ===== end lighting =====
 
   // labels
   ctx.fillStyle='#5c84c7'; ctx.font='12px ui-monospace,Menlo,Consolas';
