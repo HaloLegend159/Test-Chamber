@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ghost Hunt v1.2 – More Evidence + Fixed Light + Smooth Temps</title>
+<title>Ghost Hunt v1.3 – Solid Flashlight + Smooth Temps</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{--bg:#0b0f14;--panel:#0e1624;--ink:#e6f0ff;--muted:#9db0d7;--border:#1a2537}
@@ -42,7 +42,7 @@
     </div>
   </div>
   <aside>
-    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT <span style="color:#9db0d7;font-weight:600">v1.2</span></h3>
+    <h3 style="margin:.2rem 0 .4rem 0">GHOST HUNT <span style="color:#9db0d7;font-weight:600">v1.3</span></h3>
     <button class="btn" id="newRun">Start New Contract</button>
 
     <div class="row" style="margin-top:8px">
@@ -137,10 +137,11 @@ const state = {
   running:false,time:0,dt:0,last:0,
   keys:new Set(),mouse:{x:200,y:200},
   flashlight:true,battery:1,holdingBox:false, uv:false,
-  sanity:100, emf:1, temp:21, tempTarget:21, tempSmooth:21, box:"Idle",
-  linger:0, // time spent in ghost room
-  evidences:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false}, // manual
-  found:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},     // observed hints (no auto-check)
+  sanity:100, emf:1,
+  temp:21, tempTarget:21, tempSmooth:21, tempTimer:0, // << smoothing timers
+  box:"Idle", linger:0,
+  evidences:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},
+  found:{EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false},
   map:null, player:null, ghost:null, ghostRoom:null, vanZone:null,
   orbs:[], prints:[], writingSpots:[], writingVisible:false,
   inHunt:false, huntTimer:0, gameOver:false, won:false, selectedGhost:null
@@ -148,7 +149,6 @@ const state = {
 
 const EVI = ["EMF5","Freezing","SpiritBox","Orbs","Fingerprints","Writing"];
 
-// 10 ghost types (3-evidence combos from 6)
 const GHOSTS = [
   {name:"Phantom",  ev:["EMF5","SpiritBox","Orbs"], notes:"Shy; vanishes during events."},
   {name:"Wraith",   ev:["EMF5","SpiritBox","Freezing"], notes:"Floats; aggressive if provoked."},
@@ -215,9 +215,7 @@ function updateJournalList(){
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
         <div>
           <strong>${g.name}</strong>
-          <div style="color:#9db0d7;font-size:12px">
-            ${g.ev.map((e,i)=>`${e}${badges[i]||''}`).join(' • ')}
-          </div>
+          <div style="color:#9db0d7;font-size:12px">${g.ev.map((e,i)=>`${e}${badges[i]||''}`).join(' • ')}</div>
           <div style="color:#88a0c7;font-size:12px">${g.notes||''}</div>
         </div>
         <button class="btn" data-choose="${g.name}" style="width:auto">Select</button>
@@ -229,19 +227,16 @@ function updateJournalList(){
   });
 }
 
-// ===== Modals =====
+// ===== Modals & inputs =====
 function toggleModal(id,show){const m=document.getElementById(id); m.classList.toggle('show', show===undefined ? !m.classList.contains('show') : show);}
 document.getElementById('openJournal').onclick=()=>{toggleModal('journal',true);updateJournalList();}
 document.getElementById('closeJournal').onclick=()=>toggleModal('journal',false);
 document.getElementById('howTo').onclick=()=>toggleModal('help',true);
 document.getElementById('closeHelp').onclick=()=>toggleModal('help',false);
-
-// Evidence checkboxes (manual only)
 document.querySelectorAll('[data-evi]').forEach(cb=>{
   cb.addEventListener('change',()=>{state.evidences[cb.dataset.evi]=cb.checked; updateJournalList();});
 });
 
-// ===== Input =====
 window.addEventListener('keydown',e=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
   const k=e.key.toLowerCase();
@@ -267,7 +262,6 @@ function reset(){
   state.ghostRoom=state.map.rooms[Math.floor(Math.random()*state.map.rooms.length)];
   state.vanZone=state.map.van;
 
-  // Orbs / Prints / Writing spots
   state.orbs=[]; state.prints=[]; state.writingSpots=[]; state.writingVisible=false;
   if(state.ghost.evidences.has("Orbs")){
     for(let i=0;i<24;i++){
@@ -291,9 +285,12 @@ function reset(){
   }
 
   state.flashlight=true; state.uv=false; state.battery=1;
-  state.sanity=100; state.emf=1; state.temp=21; state.tempTarget=21; state.tempSmooth=21; state.box='Idle';
-  state.linger=0;
+  state.sanity=100; state.emf=1;
 
+  // temperature smoothing
+  state.temp=21; state.tempSmooth=21; state.tempTarget=21; state.tempTimer=0;
+
+  state.box='Idle'; state.linger=0;
   state.evidences={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false};
   state.found={EMF5:false,Freezing:false,SpiritBox:false,Orbs:false,Fingerprints:false,Writing:false};
   state.inHunt=false; state.huntTimer=0; state.gameOver=false; state.won=false; state.selectedGhost=null;
@@ -346,15 +343,23 @@ function update(dt){
     if(d>2){ g.x+=mx/d*g.speed*dt*(state.inHunt?1.8:1); g.y+=my/d*g.speed*dt*(state.inHunt?1.8:1); }
   }
 
-  // --------- Smooth Temperature ----------
-  // set target per room; small random walk to avoid static readings
-  state.tempTarget = inside(p,state.ghostRoom) ? rand(-1.0, 3.0) : rand(19.0, 22.0);
-  // exponential smoothing toward target; noise significantly reduced
-  const k = Math.min(1, dt*0.6); // slower = smoother
-  state.tempSmooth += (state.tempTarget - state.tempSmooth) * k;
-  state.temp = state.tempSmooth + (Math.random()*0.06 - 0.03); // tiny noise
-  tempVal.textContent = state.temp.toFixed(1)+'°C';
-  if(state.temp<=0 && state.ghost.evidences.has("Freezing")) state.found.Freezing=true;
+  // --------- MUCH SMOOTHER TEMPERATURE ---------
+  // Update target only every ~1.2s (prevents jittery spam)
+  state.tempTimer -= dt;
+  if(state.tempTimer<=0){
+    const base = inside(p,state.ghostRoom) ? rand(-1.0,3.0) : rand(20.0,22.0);
+    // keep target near previous target (gentle drift)
+    state.tempTarget = state.tempTarget*0.7 + base*0.3;
+    state.tempTimer = 1.2; // seconds
+  }
+  // Ease toward target with small noise
+  const smoothK = Math.min(1, dt*0.35);   // smaller = smoother
+  state.tempSmooth += (state.tempTarget - state.tempSmooth) * smoothK;
+  state.temp = state.tempSmooth + (Math.random()*0.04 - 0.02); // tiny ±0.02 noise
+  // snap to 0.1 for a calmer display
+  const displayTemp = Math.round(state.temp*10)/10;
+  tempVal.textContent = displayTemp.toFixed(1)+'°C';
+  if(displayTemp<=0 && state.ghost.evidences.has("Freezing")) state.found.Freezing=true;
 
   // EMF
   const dpg=dist(p,g);
@@ -371,13 +376,12 @@ function update(dt){
   }else state.box="Idle";
   boxVal.textContent=state.box;
 
-  // Fingerprints (UV must be on and in ghost room to "observe")
+  // Fingerprints (UV + in room)
   if(state.uv && state.ghost.evidences.has("Fingerprints") && inside(p,state.ghostRoom)){
-    // chance to observe
     if(Math.random()<0.01) state.found.Fingerprints=true;
   }
 
-  // Writing (linger in ghost room)
+  // Writing (linger)
   if(state.ghost.evidences.has("Writing")){
     if(inside(p,state.ghostRoom)) state.linger += dt; else state.linger = Math.max(0, state.linger - dt*0.5);
     if(!state.writingVisible && state.linger>6){
@@ -385,7 +389,7 @@ function update(dt){
     }
   }
 
-  // Orbs observed if you are in ghost room with flashlight or slight ambient
+  // Orbs observed if you are in ghost room
   if(state.ghost.evidences.has("Orbs") && inside(p,state.ghostRoom)){
     if(Math.random()<0.012) state.found.Orbs=true;
   }
@@ -413,21 +417,16 @@ function update(dt){
 // ===== Draw =====
 function draw(){
   const w = canvas.width/DPR, h = canvas.height/DPR;
-
-  // clear scene
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,w,h);
 
-  // --- Draw world (under lighting) ---
-  // floor
+  // world base
   ctx.fillStyle='#06090f'; ctx.fillRect(0,0,w,h);
-  // rooms
   for(const r of state.map.rooms){ ctx.fillStyle='#0a101b'; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeStyle='#1a263b'; ctx.strokeRect(r.x,r.y,r.w,r.h); }
   for(const d of state.map.doors){ ctx.fillStyle='#152239'; ctx.fillRect(d.x,d.y,d.w,d.h); }
-  // van
   const van=state.map.van; ctx.fillStyle='#0f2b17'; ctx.fillRect(van.x,van.y,van.w,van.h); ctx.strokeStyle='#2e6a40'; ctx.strokeRect(van.x,van.y,van.w,van.h);
 
-  // orbs (only in ghost room)
+  // orbs
   if(state.ghost.evidences.has("Orbs")){
     for(const o of state.orbs){
       o.a+=0.02*o.s; o.x+=Math.cos(o.a)*0.2; o.y+=Math.sin(o.a)*0.2;
@@ -437,20 +436,18 @@ function draw(){
     }
   }
 
-  // fingerprints (UV visible)
+  // fingerprints (UV)
   if(state.uv && state.ghost.evidences.has("Fingerprints")){
     ctx.globalAlpha = 0.9;
     for(const f of state.prints){
-      ctx.save();
-      ctx.translate(f.x,f.y); ctx.rotate(f.a);
-      ctx.fillStyle='#8cffd5'; // UV glow
-      ctx.beginPath(); ctx.ellipse(0,0,f.r, f.r*0.6, 0, 0, Math.PI*2); ctx.fill();
+      ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
+      ctx.fillStyle='#8cffd5'; ctx.beginPath(); ctx.ellipse(0,0,f.r, f.r*0.6, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
     }
     ctx.globalAlpha = 1;
   }
 
-  // writing (simple symbol)
+  // writing
   if(state.writingVisible){
     ctx.fillStyle='#d1cab1';
     for(const s of state.writingSpots){
@@ -459,65 +456,45 @@ function draw(){
     }
   }
 
-  // ghost
-  const g=state.ghost, p=state.player; const dpg=dist(p,g);
+  // ghost & player
+  const g=state.ghost, p=state.player; const dpg=Math.hypot(p.x-g.x,p.y-g.y);
   ctx.globalAlpha= state.inHunt ? 0.9 : (dpg<120 ? 0.6 : 0.15);
   ctx.fillStyle='#b3c7ff'; ctx.beginPath(); ctx.arc(g.x,g.y,10,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
 
-  // player
   ctx.fillStyle='#8fd1ff'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
 
-  // --- Lighting pass: stable & actually reveals scene ---
-  // Darkness layer
+  // ===== Robust lighting: Dark overlay + cut-out cone + small glow =====
   const hasFlash = state.flashlight && state.battery>0;
-  const darknessAlpha = hasFlash ? 0.86 : 0.96;
   ctx.save();
+  // 1) Lay down darkness
   ctx.globalCompositeOperation='source-over';
-  ctx.fillStyle=`rgba(0,0,0,${darknessAlpha})`;
+  ctx.fillStyle = `rgba(0,0,0,${hasFlash?0.82:0.96})`;
   ctx.fillRect(0,0,w,h);
 
   if(hasFlash){
-    // Cut the cone (destination-out) — this reveals the world we already drew
-    const coneRadius = 280;
-    const coneHalfAngle = 0.36;
+    // 2) Cut the cone from the darkness (reveals the scene below on THIS canvas)
+    const coneRadius = 300;
+    const coneHalfAngle = 0.38;
     ctx.globalCompositeOperation='destination-out';
-    ctx.translate(p.x,p.y);
-    ctx.rotate(p.angle);
-    // hard cut
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.arc(0,0,coneRadius,-coneHalfAngle,coneHalfAngle);
-    ctx.closePath();
-    ctx.fill();
+    ctx.translate(p.x,p.y); ctx.rotate(p.angle);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,coneRadius,-coneHalfAngle,coneHalfAngle); ctx.closePath(); ctx.fill();
 
-    // Soften the edges by partially putting back some darkness at outer rim
-    ctx.globalCompositeOperation='destination-over';
-    const edge = ctx.createRadialGradient(0,0,160, 0,0,coneRadius);
-    edge.addColorStop(0,'rgba(0,0,0,0)');
-    edge.addColorStop(1,'rgba(0,0,0,0.55)');
-    ctx.fillStyle=edge;
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.arc(0,0,coneRadius,-coneHalfAngle,coneHalfAngle);
-    ctx.closePath();
-    ctx.fill();
-
-    // Inner glow to increase perceived illumination
+    // 3) Add a faint inner glow in the cone to “brighten” perception
     ctx.globalCompositeOperation='lighter';
     const glow = ctx.createRadialGradient(0,0,6, 0,0,120);
-    glow.addColorStop(0,'rgba(170,200,255,0.35)');
-    glow.addColorStop(1,'rgba(170,200,255,0.00)');
+    glow.addColorStop(0,'rgba(180,210,255,0.35)');
+    glow.addColorStop(1,'rgba(180,210,255,0.00)');
     ctx.fillStyle=glow;
     ctx.beginPath(); ctx.arc(0,0,150,-coneHalfAngle,coneHalfAngle); ctx.lineTo(0,0); ctx.fill();
   }
   ctx.restore();
+  // ===== end lighting =====
 
   // labels
   ctx.fillStyle='#5c84c7'; ctx.font='12px ui-monospace,Menlo,Consolas';
   ctx.fillText('Van Exit', state.map.van.x, state.map.van.y-6);
   ctx.fillText(state.ghostRoom.name+' (colder)', state.ghostRoom.x+6, state.ghostRoom.y+12);
 
-  // End banners
   if(state.gameOver||state.won){
     ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,w,h);
     ctx.fillStyle=state.won?'#86efac':'#ff6b6b'; ctx.font='bold 42px Inter,system-ui'; ctx.textAlign='center';
