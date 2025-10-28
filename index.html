@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quick QR – Generator</title>
 <meta name="color-scheme" content="dark light" />
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <style>
   :root{
     --bg:#0b1220; --panel:#0f172a; --ink:#e6edf7; --muted:#9fb0c9; --accent:#60a5fa; --border:#1f2a44;
@@ -19,67 +18,48 @@
   body{
     margin:0; background:radial-gradient(1000px 600px at 20% -10%, rgba(96,165,250,.15), transparent),
     radial-gradient(900px 600px at 120% 10%, rgba(99,102,241,.12), transparent), var(--bg);
-    color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+    color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, -apple-system,"Segoe UI",Roboto,Helvetica,Arial;
     letter-spacing:.2px;
   }
   .wrap{ max-width:1100px; margin:24px auto 80px; padding:0 14px }
-  .hero{
-    text-align:center; margin:8px 0 20px;
-  }
-  .title{ font-size:clamp(24px, 4vw, 38px); font-weight:800; letter-spacing:.4px; margin:0 0 6px }
+  .hero{ text-align:center; margin:8px 0 20px; }
+  .title{ font-size:clamp(24px,4vw,38px); font-weight:800; margin:0 0 6px }
   .subtitle{ color:var(--muted); margin:0; font-size:clamp(14px,2vw,16px) }
-
-  .grid{
-    display:grid; grid-template-columns: 1.2fr .9fr; gap:20px; align-items:stretch;
-  }
-  @media (max-width: 900px){
-    .grid{ grid-template-columns: 1fr; }
-  }
-
-  .card{
-    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);
-  }
-
-  .row{ display:grid; grid-template-columns: 1fr; gap:var(--gap); }
-  .row.cols{ grid-template-columns: 1fr 1fr; }
-  .row.cols-3{ grid-template-columns: 1fr 1fr 1fr; }
-  @media (max-width:600px){ .row.cols, .row.cols-3{ grid-template-columns: 1fr; } }
-
+  .grid{ display:grid; grid-template-columns: 1.2fr .9fr; gap:20px; align-items:stretch; }
+  @media (max-width:900px){ .grid{ grid-template-columns:1fr; } }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
+  .row{ display:grid; grid-template-columns:1fr; gap:var(--gap) }
+  .row.cols-3{ grid-template-columns:1fr 1fr 1fr }
+  @media (max-width:600px){ .row.cols-3{ grid-template-columns:1fr } }
   label{ font-weight:600; font-size:13px; color:var(--muted); display:block; margin:0 0 6px }
-  input[type="text"], input[type="url"], select, input[type="color"]{
+  input[type="text"], select, input[type="color"]{
     width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:#0000;
-    color:var(--ink); outline:none; transition: border-color .15s ease, box-shadow .15s ease; font-size:15px;
+    color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s; font-size:15px;
   }
   input::placeholder{ color:color-mix(in oklab, var(--muted) 60%, transparent) }
   input:focus, select:focus{ border-color:color-mix(in oklab, var(--accent) 60%, var(--border)); box-shadow:0 0 0 4px color-mix(in oklab, var(--accent) 18%, transparent) }
-
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; font-weight:700;
-    background:linear-gradient(180deg, color-mix(in oklab, var(--accent) 90%, #fff 10%), var(--accent));
-    color:white; border:none; border-radius:12px; cursor:pointer; transition: transform .06s ease, filter .15s ease;
-  }
-  .btn:active{ transform: translateY(1px) scale(.995) }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; font-weight:700;
+        background:linear-gradient(180deg, color-mix(in oklab, var(--accent) 90%, #fff 10%), var(--accent));
+        color:white; border:none; border-radius:12px; cursor:pointer; transition:transform .06s ease }
+  .btn:active{ transform:translateY(1px) scale(.995) }
   .btn.secondary{ background:#0000; color:var(--ink); border:1px solid var(--border) }
   .btn.ghost{ background:#0000; color:var(--muted); border:1px dashed var(--border) }
-  .btnbar{ display:flex; flex-wrap:wrap; gap:10px; }
-
-  .qr-box{
-    display:grid; place-items:center; background:repeating-conic-gradient(from 45deg, #0000 0 90deg, #0001 90deg 180deg);
-    border-radius:12px; padding:18px; min-height:360px; border:1px solid var(--border);
-  }
+  .btnbar{ display:flex; flex-wrap:wrap; gap:10px }
+  .qr-box{ display:grid; place-items:center; border-radius:12px; padding:18px; min-height:360px; border:1px solid var(--border) }
   .qr-wrap{ background:var(--panel); padding:16px; border-radius:12px; border:1px solid var(--border) }
   .qr-wrap canvas, .qr-wrap img{ display:block; height:auto; max-width:100% }
-
   .note{ color:var(--muted); font-size:13px }
   .footer{ margin-top:18px; color:var(--muted); text-align:center; font-size:12px }
   .spacer{ height:8px }
+  .err{ color:#ff6b6b; font-weight:700; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
     <h1 class="title">Quick&nbsp;QR</h1>
-    <p class="subtitle">Type a link or any text → get a crisp QR code you can copy or download.</p>
+    <p class="subtitle">Type a link or any text → get a crisp QR you can copy or download.</p>
+    <noscript><p class="err">This page needs JavaScript enabled.</p></noscript>
   </header>
 
   <div class="grid">
@@ -89,7 +69,7 @@
         <div class="row">
           <div>
             <label for="text">Text or URL</label>
-            <input id="text" type="url" inputmode="url" placeholder="https://example.com (or any text)" />
+            <input id="text" type="text" placeholder="https://example.com (or any text)" />
           </div>
         </div>
 
@@ -108,14 +88,14 @@
           <div>
             <label for="ecc">Error correction</label>
             <select id="ecc">
-              <option value="L">L (smallest / 7%)</option>
+              <option value="L">L (7%)</option>
               <option value="M" selected>M (15%)</option>
               <option value="Q">Q (25%)</option>
-              <option value="H">H (largest / 30%)</option>
+              <option value="H">H (30%)</option>
             </select>
           </div>
           <div>
-            <label for="margin">Margin (quiet zone)</label>
+            <label for="margin">Margin</label>
             <select id="margin">
               <option value="0">0 modules</option>
               <option value="2" selected>2 modules</option>
@@ -125,7 +105,7 @@
           </div>
         </div>
 
-        <div class="row cols" style="margin-top:8px">
+        <div class="row cols-3" style="margin-top:8px">
           <div>
             <label for="fg">Foreground</label>
             <input id="fg" type="color" value="#000000" />
@@ -134,18 +114,21 @@
             <label for="bg">Background</label>
             <input id="bg" type="color" value="#ffffff" />
           </div>
+          <div>
+            <label>&nbsp;</label>
+            <button type="submit" class="btn" id="generateBtn">Generate QR</button>
+          </div>
         </div>
 
         <div class="spacer"></div>
         <div class="btnbar">
-          <button type="submit" class="btn" id="generateBtn">Generate QR</button>
           <button type="button" class="btn secondary" id="copyBtn">Copy image</button>
           <button type="button" class="btn secondary" id="pngBtn">Download PNG</button>
-          <button type="button" class="btn ghost" id="shareBtn" title="Update the page URL so you can bookmark/share with your settings">Share link</button>
+          <button type="button" class="btn ghost" id="shareBtn" title="Update the page URL with your settings">Share link</button>
           <span class="note" id="status"></span>
         </div>
       </form>
-      <p class="note" style="margin-top:10px">Tip: Press <b>Enter</b> to (re)generate. Your last settings are saved in the URL so you can share or bookmark them.</p>
+      <p class="note" style="margin-top:10px">Tip: Press <b>Enter</b> to (re)generate. If it still doesn’t show, check the status line below.</p>
     </section>
 
     <!-- Output -->
@@ -153,137 +136,110 @@
       <div class="qr-box">
         <div class="qr-wrap" id="qrcode" aria-live="polite" aria-label="QR code will appear here"></div>
       </div>
-      <div class="footer">No tracking. All generation happens in your browser.</div>
+      <div class="footer">All generation happens in your browser.</div>
     </section>
   </div>
 </div>
 
-<!-- QRCode.js (CDN) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-MpG2Lr3N1n7S9YjG2V2r7Hh1wzqU1h3G6yO5bB6Wf8e0Kk8YQxP7g1mU5q9Gk0gq6xv3wN2Vcf2g4xgB1zB5wQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- QRCode.js (no SRI; reliable CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
 (function(){
-  const el = (id)=>document.getElementById(id);
-
-  const text   = el('text');
-  const size   = el('size');
-  const ecc    = el('ecc');
-  const margin = el('margin');
-  const fg     = el('fg');
-  const bg     = el('bg');
-
-  const form   = el('qrForm');
-  const box    = el('qrcode');
-  const copyBtn= el('copyBtn');
-  const pngBtn = el('pngBtn');
-  const shareBtn=el('shareBtn');
-  const status = el('status');
+  const $ = (id)=>document.getElementById(id);
+  const text   = $('text'), size=$('size'), ecc=$('ecc'), margin=$('margin'), fg=$('fg'), bg=$('bg');
+  const form   = $('qrForm'), box=$('qrcode'), status=$('status');
+  const copyBtn=$('copyBtn'), pngBtn=$('pngBtn'), shareBtn=$('shareBtn');
 
   let qr;
 
-  // Parse query params for deep links
-  const params = new URLSearchParams(location.search);
-  if (params.has('t')) {
-    text.value = decodeURIComponent(params.get('t'));
+  function setStatus(msg, isErr=false){
+    status.textContent = msg || '';
+    status.className = isErr ? 'note err' : 'note';
   }
+
+  function clearQR(){ box.innerHTML=''; qr=null; }
+
+  function eccMap(v){
+    return {L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H}[v] ?? QRCode.CorrectLevel.M;
+  }
+
+  function makeQR(){
+    const val = text.value.trim();
+    if(!val){ setStatus('Enter text or a URL to generate.', true); clearQR(); return; }
+    setStatus('');
+    clearQR();
+    try{
+      qr = new QRCode(box, {
+        text: val,
+        width: +size.value,
+        height:+size.value,
+        colorDark: fg.value,
+        colorLight: bg.value,
+        correctLevel: eccMap(ecc.value)
+      });
+      const canv = box.querySelector('canvas') || box.querySelector('img');
+      if (canv){
+        const modPad = Number(margin.value);
+        const px = Math.round((+size.value)/25 * (modPad/2)); // heuristic for quiet zone
+        canv.style.background = bg.value;
+        box.style.padding = Math.max(8, px) + 'px';
+      }
+    }catch(err){
+      setStatus('Could not render QR: ' + String(err), true);
+    }
+  }
+
+  form.addEventListener('submit', (e)=>{ e.preventDefault(); makeQR(); });
+  text.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); makeQR(); } });
+
+  copyBtn.addEventListener('click', async ()=>{
+    const canvas = box.querySelector('canvas');
+    if (!canvas){ setStatus('Generate a QR first.', true); return; }
+    try{
+      const blob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      setStatus('Copied PNG to clipboard ✅');
+      setTimeout(()=>setStatus(''), 2000);
+    }catch{ setStatus('Copy failed (browser may block). Try Download PNG.', true); }
+  });
+
+  pngBtn.addEventListener('click', ()=>{
+    const canvas = box.querySelector('canvas');
+    if (!canvas){ setStatus('Generate a QR first.', true); return; }
+    const a = document.createElement('a');
+    a.download = 'qr.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  shareBtn.addEventListener('click', ()=>{
+    const qp = new URLSearchParams();
+    if (text.value.trim()) qp.set('t', encodeURIComponent(text.value.trim()));
+    qp.set('s', size.value); qp.set('e', ecc.value); qp.set('m', margin.value);
+    qp.set('fg', fg.value); qp.set('bg', bg.value);
+    const newUrl = location.pathname + '?' + qp.toString();
+    history.replaceState(null, '', newUrl);
+    setStatus('Link updated — you can share/bookmark this page.');
+    setTimeout(()=>setStatus(''), 2500);
+  });
+
+  // Deep-link support
+  const params = new URLSearchParams(location.search);
+  if (params.has('t')) text.value = decodeURIComponent(params.get('t'));
   if (params.has('s')) size.value = params.get('s');
   if (params.has('e')) ecc.value = params.get('e');
   if (params.has('m')) margin.value = params.get('m');
   if (params.has('fg')) fg.value = params.get('fg');
   if (params.has('bg')) bg.value = params.get('bg');
-
-  // Helpers
-  function clearQR(){
-    box.innerHTML = '';
-    qr = null;
-  }
-
-  function eccMap(val){
-    switch(val){
-      case 'L': return QRCode.CorrectLevel.L;
-      case 'M': return QRCode.CorrectLevel.M;
-      case 'Q': return QRCode.CorrectLevel.Q;
-      case 'H': return QRCode.CorrectLevel.H;
-      default:  return QRCode.CorrectLevel.M;
-    }
-  }
-
-  function makeQR(){
-    const val = text.value.trim();
-    if (!val){
-      status.textContent = 'Enter text or a URL to generate.';
-      clearQR();
-      return;
-    }
-    status.textContent = '';
-    clearQR();
-    qr = new QRCode(box, {
-      text: val,
-      width: +size.value,
-      height:+size.value,
-      colorDark: fg.value,
-      colorLight: bg.value,
-      correctLevel: eccMap(ecc.value)
-    });
-    // Apply margin by surrounding the canvas with padding that equals margin * moduleSize
-    // qrcodejs doesn’t expose module size directly; we approximate by padding in CSS pixels.
-    // For typical sizes this is visually correct.
-    const canv = box.querySelector('canvas') || box.querySelector('img');
-    if (canv){
-      const modPad = Number(margin.value);
-      const px = Math.round((+size.value)/25 * (modPad/2)); // heuristic
-      canv.style.background = bg.value;
-      box.style.padding = Math.max(8, px) + 'px';
-    }
-  }
-
-  // Generate on submit
-  form.addEventListener('submit', (e)=>{ e.preventDefault(); makeQR(); });
-
-  // Enter in the input regenerates quickly
-  text.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); makeQR(); } });
-
-  // Copy image to clipboard
-  copyBtn.addEventListener('click', async ()=>{
-    const canvas = box.querySelector('canvas');
-    if (!canvas){ status.textContent='Generate a QR first.'; return; }
-    try{
-      const blob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      status.textContent = 'Copied PNG to clipboard ✅';
-      setTimeout(()=>status.textContent='', 2000);
-    }catch(err){
-      status.textContent = 'Copy failed (browser may block). Try Download PNG.';
-    }
-  });
-
-  // Download PNG
-  pngBtn.addEventListener('click', ()=>{
-    const canvas = box.querySelector('canvas');
-    if (!canvas){ status.textContent='Generate a QR first.'; return; }
-    const link = document.createElement('a');
-    link.download = 'qr.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  });
-
-  // Share/update URL with settings
-  shareBtn.addEventListener('click', ()=>{
-    const qp = new URLSearchParams();
-    if (text.value.trim()) qp.set('t', encodeURIComponent(text.value.trim()));
-    qp.set('s', size.value);
-    qp.set('e', ecc.value);
-    qp.set('m', margin.value);
-    qp.set('fg', fg.value);
-    qp.set('bg', bg.value);
-    const newUrl = location.pathname + '?' + qp.toString();
-    history.replaceState(null, '', newUrl);
-    status.textContent = 'Link updated — you can share/bookmark this page.';
-    setTimeout(()=>status.textContent='', 2500);
-  });
-
-  // If we landed with a prefilled value, render immediately
   if (text.value.trim()) makeQR();
+
+  // Surface script-load issues
+  window.addEventListener('error', (e)=>{
+    if(String(e?.message||'').includes('QRCode')){
+      setStatus('QR library failed to load. If you use aggressive content blockers, allow cdn.jsdelivr.net.', true);
+    }
+  });
 })();
 </script>
 </body>
