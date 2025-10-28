@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Quick QR – Styled + Logo</title>
+<title>Quick QR – Styled + Logo (Extended)</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
@@ -16,57 +16,61 @@
   *{ box-sizing:border-box }
   html,body{ height:100% }
   body{
-    margin:0; background:radial-gradient(1000px 600px at 20% -10%, rgba(96,165,250,.15), transparent),
-    radial-gradient(900px 600px at 120% 10%, rgba(99,102,241,.12), transparent), var(--bg);
-    color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, -apple-system,"Segoe UI",Roboto,Helvetica,Arial;
-    letter-spacing:.2px;
+    margin:0;
+    background:radial-gradient(1000px 600px at 20% -10%, rgba(96,165,250,.15), transparent),
+               radial-gradient(900px 600px at 120% 10%, rgba(99,102,241,.12), transparent),
+               var(--bg);
+    color:var(--ink);
+    font:15px/1.5 ui-sans-serif, system-ui, -apple-system,"Segoe UI",Roboto,Helvetica,Arial;
   }
   .wrap{ max-width:1200px; margin:24px auto 80px; padding:0 14px }
   .hero{ text-align:center; margin:8px 0 20px; }
   .title{ font-size:clamp(24px,4vw,38px); font-weight:800; margin:0 0 6px }
   .subtitle{ color:var(--muted); margin:0; font-size:clamp(14px,2vw,16px) }
-  .grid{ display:grid; grid-template-columns: 1.25fr .9fr; gap:20px; align-items:start; }
-  @media (max-width:1000px){ .grid{ grid-template-columns:1fr; } }
-  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
+  .grid{ display:grid; grid-template-columns:1.25fr .9fr; gap:20px; align-items:start }
+  @media (max-width:1000px){ .grid{ grid-template-columns:1fr } }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+         padding:18px; box-shadow:var(--shadow) }
   .row{ display:grid; grid-template-columns:1fr; gap:var(--gap) }
   .cols-2{ grid-template-columns:1fr 1fr }
   .cols-3{ grid-template-columns:1fr 1fr 1fr }
   .cols-4{ grid-template-columns:1fr 1fr 1fr 1fr }
   @media (max-width:700px){ .cols-2,.cols-3,.cols-4{ grid-template-columns:1fr } }
   label{ font-weight:600; font-size:13px; color:var(--muted); display:block; margin:0 0 6px }
-  input[type="text"], input[type="url"], input[type="number"], input[type="range"], select, input[type="color"]{
-    width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--border); background:#0000;
-    color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s; font-size:15px;
+  input[type="text"], input[type="url"], input[type="number"], input[type="range"],
+  select, input[type="color"]{
+    width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--border);
+    background:#0000; color:var(--ink); outline:none;
   }
-  input::placeholder{ color:color-mix(in oklab, var(--muted) 60%, transparent) }
-  input:focus, select:focus{ border-color:color-mix(in oklab, var(--accent) 60%, var(--border)); box-shadow:0 0 0 4px color-mix(in oklab, var(--accent) 18%, transparent) }
+  input:focus, select:focus{
+    border-color:color-mix(in oklab, var(--accent) 60%, var(--border));
+    box-shadow:0 0 0 4px color-mix(in oklab, var(--accent) 18%, transparent);
+  }
   .file{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
   .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 14px; font-weight:700;
     background:linear-gradient(180deg, color-mix(in oklab, var(--accent) 90%, #fff 10%), var(--accent));
-    color:white; border:none; border-radius:12px; cursor:pointer; transition:transform .06s ease;
+    color:white; border:none; border-radius:12px; cursor:pointer;
   }
-  .btn:active{ transform:translateY(1px) scale(.995) }
   .btn.secondary{ background:#0000; color:var(--ink); border:1px solid var(--border) }
   .btn.ghost{ background:#0000; color:var(--muted); border:1px dashed var(--border) }
   .btnbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center }
-  .qr-box{ display:grid; place-items:center; border-radius:12px; padding:18px; min-height:380px; border:1px solid var(--border) }
+  .qr-box{ display:grid; place-items:center; border-radius:12px; padding:18px;
+           min-height:380px; border:1px solid var(--border) }
   .qr-wrap{ background:var(--panel); padding:16px; border-radius:12px; border:1px solid var(--border) }
   .qr-wrap canvas, .qr-wrap img{ display:block; height:auto; max-width:100% }
   .note{ color:var(--muted); font-size:13px }
   .footer{ margin-top:18px; color:var(--muted); text-align:center; font-size:12px }
-  .spacer{ height:8px }
-  .err{ color:#ff6b6b; font-weight:700 }
   .inline{ display:flex; align-items:center; gap:10px }
-  .rangeval{ min-width:42px; text-align:right; font-variant-numeric: tabular-nums }
+  .rangeval{ min-width:42px; text-align:right; font-variant-numeric:tabular-nums }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
     <h1 class="title">Quick&nbsp;QR — Styled</h1>
-    <p class="subtitle">Customize dots, corners, colors, size, ECC, margin — and drop a logo in the middle.</p>
-    <noscript><p class="err">This page needs JavaScript enabled.</p></noscript>
+    <p class="subtitle">Customize appearance and insert a logo in the middle.</p>
   </header>
 
   <div class="grid">
@@ -74,304 +78,134 @@
     <section class="card">
       <form id="qrForm" autocomplete="on">
         <div class="row">
-          <div>
-            <label for="text">Text or URL</label>
-            <input id="text" type="text" placeholder="https://example.com (or any text)" />
-          </div>
+          <label for="text">Text or URL</label>
+          <input id="text" type="text" placeholder="https://example.com (or any text)" />
         </div>
 
         <div class="row cols-4" style="margin-top:8px">
-          <div>
-            <label for="size">Size</label>
-            <select id="size">
-              <option value="256" selected>256 px</option>
-              <option value="384">384 px</option>
-              <option value="512">512 px</option>
-              <option value="768">768 px</option>
-              <option value="1024">1024 px</option>
-            </select>
-          </div>
-          <div>
-            <label for="margin">Margin (quiet zone)</label>
-            <input id="margin" type="number" value="8" min="0" step="1" />
-          </div>
-          <div>
-            <label for="ecc">Error correction</label>
-            <select id="ecc">
-              <option value="L">L (7%)</option>
-              <option value="M" selected>M (15%)</option>
-              <option value="Q">Q (25%)</option>
-              <option value="H">H (30%)</option>
-            </select>
-          </div>
-          <div>
-            <label for="bg">Background</label>
-            <input id="bg" type="color" value="#ffffff" />
-          </div>
+          <div><label for="size">Size</label>
+            <select id="size"><option value="256" selected>256</option>
+              <option value="384">384</option><option value="512">512</option>
+              <option value="768">768</option><option value="1024">1024</option></select></div>
+          <div><label for="margin">Margin</label><input id="margin" type="number" value="8" min="0" step="1"/></div>
+          <div><label for="ecc">ECC</label>
+            <select id="ecc"><option value="L">L</option><option value="M" selected>M</option>
+              <option value="Q">Q</option><option value="H">H</option></select></div>
+          <div><label for="bg">Background</label><input id="bg" type="color" value="#ffffff"/></div>
         </div>
 
         <div class="row cols-3" style="margin-top:8px">
-          <div>
-            <label for="fg">Dots color</label>
-            <input id="fg" type="color" value="#000000" />
-          </div>
-          <div>
-            <label for="dotType">Dots style</label>
-            <select id="dotType">
-              <option value="square">square</option>
-              <option value="dots">dots</option>
+          <div><label for="fg">Dots color</label><input id="fg" type="color" value="#000000"/></div>
+          <div><label for="dotType">Dots style</label>
+            <select id="dotType"><option value="square">square</option>
               <option value="rounded" selected>rounded</option>
-              <option value="classy">classy</option>
-              <option value="classy-rounded">classy-rounded</option>
-              <option value="extra-rounded">extra-rounded</option>
-            </select>
-          </div>
-          <div>
-            <label for="gradient">Gradient</label>
-            <select id="gradient">
-              <option value="none" selected>none</option>
-              <option value="linear">linear</option>
-              <option value="radial">radial</option>
-            </select>
-          </div>
+              <option value="dots">dots</option><option value="classy">classy</option></select></div>
+          <div><label for="gradient">Gradient</label>
+            <select id="gradient"><option value="none" selected>none</option>
+              <option value="linear">linear</option><option value="radial">radial</option></select></div>
         </div>
 
         <div class="row cols-3">
-          <div>
-            <label for="cornerSq">Corner squares</label>
-            <select id="cornerSq">
-              <option value="square">square</option>
-              <option value="extra-rounded" selected>extra-rounded</option>
-              <option value="dot">dot</option>
-            </select>
-          </div>
-          <div>
-            <label for="cornerDot">Corner dots</label>
-            <select id="cornerDot">
-              <option value="square">square</option>
-              <option value="dot" selected>dot</option>
-            </select>
-          </div>
-          <div>
-            <label for="cornerColor">Corner color</label>
-            <input id="cornerColor" type="color" value="#000000" />
-          </div>
+          <div><label for="cornerSq">Corner squares</label>
+            <select id="cornerSq"><option value="square">square</option>
+              <option value="extra-rounded" selected>extra-rounded</option><option value="dot">dot</option></select></div>
+          <div><label for="cornerDot">Corner dots</label>
+            <select id="cornerDot"><option value="square">square</option><option value="dot" selected>dot</option></select></div>
+          <div><label for="cornerColor">Corner color</label><input id="cornerColor" type="color" value="#000000"/></div>
         </div>
 
         <div class="row" style="margin-top:6px">
           <div class="inline">
             <label for="imgUrl" style="min-width:120px">Center image URL</label>
-            <input id="imgUrl" type="url" placeholder="https://site.com/logo.png (optional)" />
+            <input id="imgUrl" type="url" placeholder="https://site.com/logo.png" />
             <button type="button" class="btn secondary" id="applyUrl">Apply</button>
           </div>
           <div class="file">
             <input id="imgFile" type="file" accept="image/*" />
-            <button type="button" class="btn secondary" id="clearImg">Remove image</button>
+            <button type="button" class="btn secondary" id="clearImg">Remove</button>
           </div>
           <div class="inline">
             <label for="imgScale" style="min-width:120px">Image size</label>
-            <input id="imgScale" type="range" min="0.1" max="0.5" step="0.01" value="0.28" />
+            <input id="imgScale" type="range" min="0.1" max="0.8" step="0.01" value="0.28" />
             <span class="rangeval" id="imgScaleVal">0.28</span>
-            <label class="inline"><input type="checkbox" id="hideDots" style="margin-left:10px" checked> Hide dots behind image</label>
+            <label class="inline"><input type="checkbox" id="hideDots" style="margin-left:10px" checked>
+              Hide dots behind image</label>
           </div>
         </div>
 
-        <div class="spacer"></div>
-        <div class="btnbar">
+        <div class="btnbar" style="margin-top:12px">
           <button type="submit" class="btn">Generate / Update</button>
           <button type="button" class="btn secondary" id="copyBtn">Copy PNG</button>
           <button type="button" class="btn secondary" id="pngBtn">Download PNG</button>
-          <button type="button" class="btn ghost" id="shareBtn" title="Update URL with settings (image URL only)">Share link</button>
           <span class="note" id="status"></span>
         </div>
       </form>
-      <p class="note" style="margin-top:10px">
-        Tip: Use higher ECC (Q/H) if you add a larger logo so the QR stays scannable. Aim to keep the logo ≤30% of the code.
-      </p>
     </section>
 
     <!-- Output -->
     <section class="card">
       <div class="qr-box">
-        <div class="qr-wrap" id="qrcode" aria-live="polite" aria-label="QR code will appear here"></div>
+        <div class="qr-wrap" id="qrcode"></div>
       </div>
-      <div class="footer">All generation happens in your browser. No uploads.</div>
+      <div class="footer">All generation happens locally in your browser.</div>
     </section>
   </div>
 </div>
 
-<!-- QR Code Styling (supports shapes + center image) -->
 <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
-
 <script>
 (function(){
-  const $ = (id)=>document.getElementById(id);
-  const text=$('text'), size=$('size'), margin=$('margin'), ecc=$('ecc');
-  const fg=$('fg'), bg=$('bg'), dotType=$('dotType'), gradient=$('gradient');
-  const cornerSq=$('cornerSq'), cornerDot=$('cornerDot'), cornerColor=$('cornerColor');
-  const imgUrl=$('imgUrl'), imgFile=$('imgFile'), applyUrl=$('applyUrl'), clearImg=$('clearImg');
-  const imgScale=$('imgScale'), imgScaleVal=$('imgScaleVal'), hideDots=$('hideDots');
-  const form=$('qrForm'), box=$('qrcode'), status=$('status');
-  const copyBtn=$('copyBtn'), pngBtn=$('pngBtn'), shareBtn=$('shareBtn');
+  const $=(id)=>document.getElementById(id);
+  const text=$('text'), size=$('size'), margin=$('margin'), ecc=$('ecc'),
+        fg=$('fg'), bg=$('bg'), dotType=$('dotType'), gradient=$('gradient'),
+        cornerSq=$('cornerSq'), cornerDot=$('cornerDot'), cornerColor=$('cornerColor'),
+        imgUrl=$('imgUrl'), imgFile=$('imgFile'), applyUrl=$('applyUrl'), clearImg=$('clearImg'),
+        imgScale=$('imgScale'), imgScaleVal=$('imgScaleVal'), hideDots=$('hideDots'),
+        form=$('qrForm'), box=$('qrcode'), status=$('status'),
+        copyBtn=$('copyBtn'), pngBtn=$('pngBtn');
+  let currentImage='', qr;
 
-  let currentImage = '';
-  let qr;
-
-  function setStatus(msg, err=false){ status.textContent = msg || ''; status.className = err ? 'note err' : 'note'; }
-
+  function setStatus(msg,err=false){status.textContent=msg||'';status.className=err?'note err':'note';}
   function dotsOptions(){
-    // Base color or gradient
-    if(gradient.value === 'none'){
-      return { color: fg.value, type: dotType.value };
-    }
-    const grad = {
-      type: gradient.value, // 'linear' | 'radial'
-      rotation: 0, // 0..1 for linear angle; 0 = 0deg (we'll keep 0)
-      colorStops: [
-        { offset: 0, color: fg.value },
-        { offset: 1, color: cornerColor.value } // use corner color as second stop
-      ]
-    };
-    return { gradient: grad, type: dotType.value };
+    if(gradient.value==='none') return {color:fg.value,type:dotType.value};
+    return {gradient:{type:gradient.value,rotation:0,
+      colorStops:[{offset:0,color:fg.value},{offset:1,color:cornerColor.value}]},
+      type:dotType.value};
   }
-
   function cornerOptions(){
-    return {
-      cornersSquareOptions: { type: cornerSq.value, color: cornerColor.value },
-      cornersDotOptions: { type: cornerDot.value, color: cornerColor.value }
-    };
+    return {cornersSquareOptions:{type:cornerSq.value,color:cornerColor.value},
+            cornersDotOptions:{type:cornerDot.value,color:cornerColor.value}};
   }
-
   function buildConfig(){
-    const cfg = {
-      width: +size.value,
-      height:+size.value,
-      data: text.value.trim() || ' ',
-      margin: Math.max(0, +margin.value|0),
-      qrOptions: { errorCorrectionLevel: ecc.value },
-      backgroundOptions: { color: bg.value },
-      dotsOptions: dotsOptions(),
-      ...cornerOptions(),
-      image: currentImage || undefined,
-      imageOptions: {
-        imageSize: +imgScale.value, // 0..1 of canvas size
-        margin: 0,
-        crossOrigin: 'anonymous',
-        hideBackgroundDots: hideDots.checked
-      }
-    };
-    return cfg;
+    return {width:+size.value,height:+size.value,data:text.value.trim()||' ',
+      margin:Math.max(0,+margin.value|0),
+      qrOptions:{errorCorrectionLevel:ecc.value},
+      backgroundOptions:{color:bg.value},
+      dotsOptions:dotsOptions(),...cornerOptions(),
+      image:currentImage||undefined,
+      imageOptions:{imageSize:+imgScale.value,hideBackgroundDots:hideDots.checked}};
   }
+  function ensureQR(){if(!qr){qr=new QRCodeStyling(buildConfig());qr.append(box);}}
+  async function updateQR(){if(!text.value.trim()){setStatus('Enter text or URL',true);return;}
+    ensureQR();await qr.update(buildConfig());setStatus('');}
 
-  function ensureQR(){
-    if(!qr){
-      qr = new QRCodeStyling(buildConfig());
-      qr.append(box);
-    }
-  }
-
-  async function updateQR(){
-    if(!text.value.trim()){
-      setStatus('Enter text or a URL.', true);
-      return;
-    }
-    setStatus('');
-    ensureQR();
-    await qr.update(buildConfig());
-  }
-
-  // Form submit = render/update
-  form.addEventListener('submit', (e)=>{ e.preventDefault(); updateQR(); });
-
-  // Image URL apply
-  applyUrl.addEventListener('click', async ()=>{
-    currentImage = imgUrl.value.trim();
-    if(currentImage) setStatus('Applied center image from URL.');
-    await updateQR();
-  });
-
-  // Image file upload → dataURL
-  imgFile.addEventListener('change', ()=>{
-    const f = imgFile.files?.[0];
-    if(!f){ return; }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      currentImage = String(reader.result);
-      imgUrl.value = ''; // prefer uploaded image
-      setStatus('Applied center image from file.');
-      await updateQR();
-    };
+  form.addEventListener('submit',e=>{e.preventDefault();updateQR();});
+  applyUrl.addEventListener('click',async()=>{currentImage=imgUrl.value.trim();await updateQR();});
+  imgFile.addEventListener('change',()=>{
+    const f=imgFile.files?.[0];if(!f)return;
+    const reader=new FileReader();
+    reader.onload=async()=>{currentImage=String(reader.result);imgUrl.value='';await updateQR();};
     reader.readAsDataURL(f);
   });
-
-  clearImg.addEventListener('click', async ()=>{
-    currentImage = '';
-    imgUrl.value = '';
-    imgFile.value = '';
-    setStatus('Center image removed.');
-    await updateQR();
+  clearImg.addEventListener('click',async()=>{currentImage='';imgUrl.value='';imgFile.value='';await updateQR();});
+  imgScale.addEventListener('input',()=>{imgScaleVal.textContent=(+imgScale.value).toFixed(2);});
+  copyBtn.addEventListener('click',async()=>{
+    try{const blob=await qr.getRawData('png');
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      setStatus('Copied PNG ✅');setTimeout(()=>setStatus(''),1500);}
+    catch{setStatus('Copy failed. Try Download.',true);}
   });
-
-  // Live size label
-  imgScale.addEventListener('input', ()=>{ imgScaleVal.textContent = (+imgScale.value).toFixed(2); });
-
-  // Copy as PNG
-  copyBtn.addEventListener('click', async ()=>{
-    try{
-      const blob = await qr.getRawData('png'); // returns Blob
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      setStatus('Copied PNG to clipboard ✅');
-      setTimeout(()=>setStatus(''), 1800);
-    }catch(e){
-      setStatus('Copy failed (browser may block). Try Download PNG.', true);
-    }
-  });
-
-  // Download PNG
-  pngBtn.addEventListener('click', ()=>{ qr.download({ name:'qr', extension:'png' }); });
-
-  // Share (encode settings in URL except uploaded file data)
-  shareBtn.addEventListener('click', ()=>{
-    const qp = new URLSearchParams();
-    if(text.value.trim()) qp.set('t', encodeURIComponent(text.value.trim()));
-    qp.set('s', size.value);
-    qp.set('m', String(Math.max(0, +margin.value|0)));
-    qp.set('e', ecc.value);
-    qp.set('fg', fg.value);
-    qp.set('bg', bg.value);
-    qp.set('dt', dotType.value);
-    qp.set('gr', gradient.value);
-    qp.set('cs', cornerSq.value);
-    qp.set('cd', cornerDot.value);
-    qp.set('cc', cornerColor.value);
-    qp.set('isz', imgScale.value);
-    qp.set('hid', hideDots.checked ? '1':'0');
-    if(imgUrl.value.trim()) qp.set('img', encodeURIComponent(imgUrl.value.trim())); // only URL form is shareable
-    const newUrl = location.pathname + '?' + qp.toString();
-    history.replaceState(null, '', newUrl);
-    setStatus('Link updated — you can share/bookmark this configuration.');
-    setTimeout(()=>setStatus(''), 2500);
-  });
-
-  // Deep-link support
-  const params = new URLSearchParams(location.search);
-  if (params.has('t')) text.value = decodeURIComponent(params.get('t'));
-  if (params.has('s')) size.value = params.get('s');
-  if (params.has('m')) margin.value = params.get('m');
-  if (params.has('e')) ecc.value = params.get('e');
-  if (params.has('fg')) fg.value = params.get('fg');
-  if (params.has('bg')) bg.value = params.get('bg');
-  if (params.has('dt')) dotType.value = params.get('dt');
-  if (params.has('gr')) gradient.value = params.get('gr');
-  if (params.has('cs')) cornerSq.value = params.get('cs');
-  if (params.has('cd')) cornerDot.value = params.get('cd');
-  if (params.has('cc')) cornerColor.value = params.get('cc');
-  if (params.has('isz')) { imgScale.value = params.get('isz'); imgScaleVal.textContent = (+imgScale.value).toFixed(2); }
-  if (params.has('hid')) hideDots.checked = params.get('hid') === '1';
-  if (params.has('img')) { imgUrl.value = decodeURIComponent(params.get('img')); currentImage = imgUrl.value; }
-
-  // Auto-render if we have initial text
-  if (text.value.trim()) updateQR();
+  pngBtn.addEventListener('click',()=>qr.download({name:'qr',extension:'png'}));
 })();
 </script>
 </body>
