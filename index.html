@@ -1,692 +1,1432 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>T-Shirt Mockup Studio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.15);
-      --text: #e5e7eb;
-      --text-muted: #9ca3af;
-      --border: #1f2937;
-      --radius-lg: 18px;
-      --radius-md: 10px;
-      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.7);
-    }
+<meta charset="utf-8" />
+<title>MockuPlay – Professional T-Shirt Mockup Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Modern, professional T-shirt mockup generator. Upload your design, adjust color and placement, and export preview-ready mockups." />
+<meta name="color-scheme" content="light" />
 
-    * {
-      box-sizing: border-box;
-    }
+<!-- Font -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: radial-gradient(circle at top, #1f2937 0, #020617 38%, #020617 100%);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
+<style>
+:root{
+  --bg-page:#ffffff;
+  --bg-section:#f5f6f7;
+  --text-main:#1a1a1c;
+  --text-muted:#8a8d92;
+  --accent:#3b82f6;
+  --accent-soft:rgba(59,130,246,0.09);
+  --border-soft:#e5e7eb;
+  --border-strong:#d1d5db;
+  --radius-lg:16px;
+  --radius-md:12px;
+  --radius-sm:8px;
+  --shadow-soft:0 16px 40px rgba(15,23,42,0.12);
+  --shadow-card:0 6px 18px rgba(15,23,42,0.08);
+  --nav-h:64px;
+}
 
-    .app-shell {
-      width: 100%;
-      max-width: 1120px;
-      background: linear-gradient(135deg, #020617 0%, #020617 40%, #020617 100%);
-      border-radius: 32px;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      box-shadow: var(--shadow-soft);
-      padding: 24px 28px 28px;
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2.2fr);
-      gap: 24px;
-    }
+*,
+*::before,
+*::after{box-sizing:border-box;}
 
-    @media (max-width: 900px) {
-      .app-shell {
-        grid-template-columns: 1fr;
-        padding: 16px;
-        border-radius: 24px;
-      }
-    }
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+}
 
-    .header {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      gap: 12px;
-    }
+body{
+  font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;
+  color:var(--text-main);
+  background:var(--bg-page);
+  -webkit-font-smoothing:antialiased;
+}
 
-    .title-group h1 {
-      font-size: 24px;
-      margin: 0 0 4px;
-      letter-spacing: 0.03em;
-    }
+.page{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
 
-    .title-group p {
-      margin: 0;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+/* Layout helpers */
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 16px;
+}
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(15, 118, 110, 0.06);
-      border: 1px solid rgba(45, 212, 191, 0.3);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: #a5f3fc;
-      white-space: nowrap;
-    }
+/* HEADER */
+.header{
+  position:fixed;
+  inset:0 0 auto 0;
+  height:var(--nav-h);
+  display:flex;
+  align-items:center;
+  z-index:40;
+  transition:background-color 200ms ease,box-shadow 200ms ease,border-color 200ms ease;
+  backdrop-filter:blur(12px);
+}
+.header-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+}
+.header.transparent{
+  background:linear-gradient(to bottom,rgba(255,255,255,0.88),rgba(255,255,255,0.75));
+  border-bottom:1px solid rgba(229,231,235,0.6);
+  box-shadow:none;
+}
+.header.solid{
+  background:rgba(255,255,255,0.98);
+  border-bottom:1px solid var(--border-soft);
+  box-shadow:0 6px 20px rgba(15,23,42,0.08);
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.brand-mark{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  background:
+    linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.5));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--accent);
+  font-weight:700;
+  font-size:18px;
+}
+.brand-text{
+  font-weight:600;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  font-size:13px;
+}
+.nav{
+  display:flex;
+  gap:24px;
+  align-items:center;
+}
+.nav a{
+  position:relative;
+  font-size:14px;
+  font-weight:500;
+  color:var(--text-main);
+  text-decoration:none;
+  padding:4px 0;
+}
+.nav a::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:-2px;
+  width:0;
+  height:2px;
+  border-radius:999px;
+  background:var(--accent);
+  transform:translateX(-50%);
+  transition:width 180ms ease;
+}
+.nav a:hover::after,
+.nav a:focus-visible::after{
+  width:100%;
+}
+.header-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:8px 14px;
+  border-radius:999px;
+  border:1px solid transparent;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  background:transparent;
+  color:var(--text-main);
+  transition:transform 160ms ease,box-shadow 160ms ease,background-color 160ms ease,border-color 160ms ease;
+}
+.btn-primary{
+  background:var(--accent);
+  color:#ffffff;
+  box-shadow:0 10px 26px rgba(59,130,246,0.4);
+}
+.btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 16px 40px rgba(59,130,246,0.48);
+}
+.btn-primary:active{
+  transform:translateY(0);
+  box-shadow:0 8px 20px rgba(59,130,246,0.35);
+}
+.btn-outline{
+  border-color:var(--border-strong);
+}
+.btn-outline:hover{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
 
-    .pill-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
-    }
+@media (max-width:860px){
+  .nav{display:none;}
+}
 
-    /* Canvas Panel */
-    .preview-card {
-      background: radial-gradient(circle at top, #1e293b 0, #020617 40%);
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      padding: 18px;
-      position: relative;
-      overflow: hidden;
-    }
+/* MAIN */
+main{
+  padding-top:var(--nav-h);
+}
 
-    .preview-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
+/* HERO */
+.hero{
+  padding:56px 0 64px;
+  background:
+    radial-gradient(1200px 500px at top left,rgba(59,130,246,0.12),transparent),
+    var(--bg-page);
+}
+.hero-inner{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 16px;
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  gap:40px;
+  align-items:center;
+}
+@media (max-width:960px){
+  .hero-inner{grid-template-columns:minmax(0,1fr);}
+}
+.hero-title{
+  font-size:clamp(40px,5vw,56px);
+  line-height:1.1;
+  font-weight:700;
+  margin:0 0 16px;
+}
+.hero-sub{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--text-muted);
+  margin:0 0 24px;
+}
+.hero-cta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:24px;
+}
+.hero-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  color:var(--text-muted);
+  font-size:13px;
+}
+.hero-meta span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.hero-dot{
+  width:6px;
+  height:6px;
+  border-radius:999px;
+  background:#22c55e;
+}
 
-    .preview-tag {
-      padding: 3px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-    }
+/* Hero mockup preview */
+.hero-preview{
+  border-radius:var(--radius-lg);
+  border:1px solid var(--border-soft);
+  background:linear-gradient(135deg,#f9fafb,#eef2ff);
+  padding:24px;
+  box-shadow:var(--shadow-soft);
+}
+.hero-preview-inner{
+  border-radius:var(--radius-md);
+  background:#ffffff;
+  padding:18px;
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+  gap:18px;
+  align-items:center;
+}
+@media (max-width:640px){
+  .hero-preview-inner{grid-template-columns:minmax(0,1fr);}
+}
+.hero-shirt{
+  position:relative;
+  aspect-ratio:3/4;
+  border-radius:18px;
+  background:#f3f4f6;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.shirt-base{
+  width:74%;
+  aspect-ratio:3/4;
+  border-radius:26px 26px 24px 24px;
+  background:linear-gradient(180deg,#e5e7eb,#d1d5db);
+  position:relative;
+  box-shadow:0 12px 28px rgba(15,23,42,0.22);
+}
+.shirt-base::before{
+  content:"";
+  position:absolute;
+  inset:7% 22% auto;
+  height:16%;
+  border-radius:40px 40px 26px 26px;
+  background:#e5e7eb;
+}
+.hero-design{
+  position:absolute;
+  inset:auto 18% 24%;
+  height:32%;
+  border-radius:16px;
+  background:radial-gradient(circle at 20% 0,#4f46e5,#22c55e);
+  opacity:.95;
+  box-shadow:0 12px 30px rgba(79,70,229,0.4);
+}
+.hero-panel-label{
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  margin-bottom:4px;
+}
+.hero-panel-title{
+  font-size:15px;
+  font-weight:600;
+  margin-bottom:4px;
+}
+.hero-panel-body{
+  font-size:14px;
+  color:var(--text-muted);
+  margin-bottom:12px;
+}
+.hero-mini-controls{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  font-size:11px;
+}
+.hero-mini-pill{
+  padding:6px 8px;
+  border-radius:999px;
+  background:#f3f4ff;
+  color:#1e40af;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
 
-    .canvas-wrapper {
-      background: radial-gradient(circle at top, #0b1120 0, #020617 50%);
-      border-radius: 18px;
-      border: 1px solid rgba(15, 23, 42, 0.9);
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+/* SECTION TITLE */
+.section{
+  padding:64px 0;
+  background:var(--bg-section);
+}
+.section-inner{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 16px;
+}
+.section-header{
+  margin-bottom:24px;
+}
+.section-title{
+  font-size:32px;
+  line-height:1.2;
+  font-weight:600;
+  margin:0 0 8px;
+}
+.section-sub{
+  margin:0;
+  color:var(--text-muted);
+}
 
-    canvas {
-      max-width: 100%;
-      height: auto;
-      border-radius: 16px;
-      background: transparent;
-      cursor: default;
-    }
+/* MOCKUP TOOL */
+.tool-layout{
+  display:grid;
+  grid-template-columns: minmax(0,280px) minmax(0,1.4fr) minmax(0,260px);
+  gap:20px;
+}
+@media (max-width:1100px){
+  .tool-layout{grid-template-columns:minmax(0,1fr);}
+}
+.tool-panel{
+  background:#ffffff;
+  border-radius:var(--radius-lg);
+  border:1px solid var(--border-soft);
+  box-shadow:var(--shadow-card);
+  padding:16px 16px 18px;
+}
+.tool-panel h3{
+  margin:0 0 12px;
+  font-size:15px;
+  font-weight:600;
+}
+.field-label{
+  font-size:12px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--text-muted);
+  margin-bottom:6px;
+}
+.swatch-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:10px;
+}
+.swatch{
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  border:1px solid var(--border-soft);
+  cursor:pointer;
+}
+.swatch.is-active{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+input[type="color"].color-input{
+  width:44px;
+  height:32px;
+  padding:0;
+  border-radius:8px;
+  border:1px solid var(--border-soft);
+  background:none;
+  cursor:pointer;
+}
 
-    .canvas-hint {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 11px;
-      color: var(--text-muted);
-      background: rgba(15, 23, 42, 0.9);
-      padding: 5px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      backdrop-filter: blur(10px);
-      pointer-events: none;
-    }
+.upload-zone{
+  border-radius:var(--radius-md);
+  border:1px dashed var(--border-strong);
+  padding:10px 10px;
+  background:#f9fafb;
+  font-size:13px;
+  color:var(--text-muted);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.upload-zone strong{
+  color:var(--text-main);
+}
+.upload-zone input[type="file"]{
+  font-size:12px;
+}
 
-    /* Controls Panel */
-    .control-panel {
-      background: var(--panel);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      padding: 16px 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+.slider-group{
+  margin-top:10px;
+}
+.slider-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+.slider-row label{
+  flex:0 0 76px;
+  font-size:13px;
+  color:var(--text-muted);
+}
+.slider-row input[type="range"]{
+  flex:1;
+}
+.slider-value{
+  width:42px;
+  font-size:12px;
+  text-align:right;
+  color:var(--text-muted);
+}
 
-    .section-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
+.view-tabs{
+  display:inline-flex;
+  border-radius:999px;
+  border:1px solid var(--border-soft);
+  overflow:hidden;
+  margin-top:12px;
+}
+.view-tab{
+  font-size:13px;
+  padding:6px 10px;
+  cursor:pointer;
+  border:none;
+  background:transparent;
+  color:var(--text-muted);
+}
+.view-tab.is-active{
+  background:var(--accent-soft);
+  color:var(--accent);
+}
 
-    .control-group {
-      background: #020617;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      padding: 10px 11px;
-    }
+/* Canvas */
+.canvas-panel{
+  position:relative;
+  min-height:360px;
+  background:#f9fafb;
+  border-radius:var(--radius-lg);
+  border:1px solid var(--border-soft);
+  box-shadow:var(--shadow-card);
+  padding:18px;
+  overflow:hidden;
+}
+.canvas-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:13px;
+  color:var(--text-muted);
+  margin-bottom:10px;
+}
+.canvas-stage{
+  position:relative;
+  height:100%;
+  min-height:320px;
+  border-radius:14px;
+  background:#e5e7eb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.canvas-shirt{
+  position:relative;
+  width:66%;
+  max-width:380px;
+  aspect-ratio:3/4;
+  border-radius:24px;
+  background:var(--shirt-color,#e5e7eb);
+  box-shadow:0 18px 40px rgba(15,23,42,0.3);
+}
+.canvas-shirt::before{
+  content:"";
+  position:absolute;
+  inset:7% 18% auto;
+  height:15%;
+  border-radius:40px 40px 26px 26px;
+  background:rgba(255,255,255,0.22);
+}
+.design-img{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.7);
+  transform-origin:center center;
+  cursor:grab;
+  user-select:none;
+  max-width:70%;
+  max-height:70%;
+  opacity:0.95;
+}
+.design-img.dragging{
+  cursor:grabbing;
+}
+.canvas-guides{
+  position:absolute;
+  inset:14% 14%;
+  border-radius:18px;
+  border:1px dashed rgba(255,255,255,0.6);
+  pointer-events:none;
+}
 
-    .control-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
+/* Right panel */
+.download-group{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:12px;
+}
+.radio-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  font-size:13px;
+}
+.radio-row input{margin:0;}
+.badge-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:11px;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid var(--border-soft);
+  background:#f9fafb;
+  color:var(--text-muted);
+}
+.template-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  max-height:260px;
+  overflow:auto;
+  padding-right:4px;
+}
+.template-card{
+  border-radius:var(--radius-md);
+  border:1px solid var(--border-soft);
+  background:#ffffff;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition:box-shadow 180ms ease,transform 180ms ease,border-color 180ms ease;
+}
+.template-thumb{
+  border-radius:10px;
+  background:#f3f4f6;
+  aspect-ratio:3/4;
+  position:relative;
+  overflow:hidden;
+}
+.template-thumb::before{
+  content:"";
+  position:absolute;
+  inset:12% 18% auto;
+  height:18%;
+  border-radius:30px 30px 20px 20px;
+  background:#e5e7eb;
+}
+.template-thumb::after{
+  content:"";
+  position:absolute;
+  inset:auto 20% 20%;
+  height:30%;
+  border-radius:14px;
+  background:linear-gradient(135deg,#4f46e5,#22c55e);
+  opacity:.8;
+}
+.template-card-title{
+  font-size:12px;
+  font-weight:500;
+}
+.template-card button{
+  margin-top:auto;
+  font-size:11px;
+  border-radius:999px;
+  padding:4px 8px;
+  border:1px solid var(--border-soft);
+  background:#f9fafb;
+  cursor:pointer;
+}
+.template-card:hover{
+  box-shadow:var(--shadow-card);
+  transform:translateY(-2px);
+  border-color:var(--accent);
+}
 
-    .control-row:last-child {
-      margin-bottom: 0;
-    }
+/* TEMPLATES PAGE */
+.templates-section{
+  background:var(--bg-page);
+}
+.filters-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:18px;
+  font-size:13px;
+}
+.select-lite{
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid var(--border-soft);
+  background:#ffffff;
+}
+.templates-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+}
+@media (max-width:1100px){.templates-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media (max-width:800px){.templates-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:560px){.templates-grid{grid-template-columns:minmax(0,1fr);}}
 
-    .control-label {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+/* FAQ */
+.faq-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);
+  gap:24px;
+}
+@media (max-width:900px){.faq-grid{grid-template-columns:minmax(0,1fr);}}
+.faq-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.faq-item{
+  border-radius:var(--radius-md);
+  border:1px solid var(--border-soft);
+  background:#ffffff;
+  padding:12px 14px;
+}
+.faq-q{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+}
+.faq-q span{
+  font-size:14px;
+  font-weight:500;
+}
+.faq-a{
+  font-size:14px;
+  color:var(--text-muted);
+  margin-top:6px;
+  display:none;
+}
+.faq-item.open .faq-a{display:block;}
+.faq-toggle-icon{
+  font-size:18px;
+  color:var(--text-muted);
+}
 
-    .control-sub {
-      font-size: 11px;
-      color: #6b7280;
-    }
+/* Chat bubble */
+.support-bubble{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:30;
+}
+.support-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 14px;
+  border-radius:999px;
+  border:none;
+  background:var(--accent);
+  color:#ffffff;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow:0 16px 34px rgba(59,130,246,0.5);
+  transition:transform 160ms ease,box-shadow 160ms ease;
+}
+.support-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 18px 40px rgba(59,130,246,0.6);
+}
 
-    input[type="color"] {
-      appearance: none;
-      -webkit-appearance: none;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      border-radius: 999px;
-      width: 38px;
-      height: 22px;
-      padding: 0;
-      background: transparent;
-      cursor: pointer;
-    }
+/* FOOTER */
+.footer{
+  margin-top:auto;
+  border-top:1px solid var(--border-soft);
+  background:#f9fafb;
+  padding:32px 0 24px;
+}
+.footer-inner{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 16px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:20px;
+  font-size:14px;
+}
+.footer-col-title{
+  font-weight:600;
+  margin-bottom:10px;
+}
+.footer a{
+  color:var(--text-muted);
+  text-decoration:none;
+  display:block;
+  margin-bottom:6px;
+  font-size:14px;
+}
+.footer a:hover{
+  color:var(--text-main);
+}
+.footer-bottom{
+  margin-top:18px;
+  font-size:13px;
+  color:var(--text-muted);
+  text-align:center;
+}
 
-    input[type="color"]::-webkit-color-swatch {
-      border: none;
-      border-radius: 999px;
-    }
+/* Toast */
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:24px;
+  transform:translate(-50%,8px);
+  padding:8px 12px;
+  border-radius:999px;
+  background:#111827;
+  color:#e5e7eb;
+  font-size:13px;
+  box-shadow:var(--shadow-soft);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 180ms ease,transform 180ms ease;
+  z-index:35;
+}
+.toast.show{
+  opacity:1;
+  transform:translate(-50%,0);
+}
 
-    input[type="color"]::-moz-color-swatch {
-      border: none;
-      border-radius: 999px;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px dashed rgba(148, 163, 184, 0.6);
-      background: rgba(15, 23, 42, 0.7);
-      font-size: 12px;
-      color: var(--text-muted);
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .file-input-wrapper span.icon {
-      font-size: 14px;
-    }
-
-    #imageUpload {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--accent);
-    }
-
-    .footer-controls {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 9px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
-    }
-
-    button.primary {
-      background: linear-gradient(135deg, #0ea5e9, #22c55e);
-      color: #0b1120;
-      box-shadow: 0 10px 30px rgba(56, 189, 248, 0.5);
-      flex: 1.1;
-    }
-
-    button.primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 40px rgba(56, 189, 248, 0.7);
-    }
-
-    button.primary:active {
-      transform: translateY(0);
-      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.5);
-    }
-
-    button.secondary {
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      flex: 0.9;
-    }
-
-    button.secondary:hover {
-      background: rgba(15, 23, 42, 1);
-      transform: translateY(-1px);
-    }
-
-    button.secondary:active {
-      transform: translateY(0);
-    }
-
-    .small-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
-      line-height: 1.5;
-    }
-
-    .kbd {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1px 6px;
-      border-radius: 4px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      background: rgba(15, 23, 42, 0.8);
-      font-size: 10px;
-      margin: 0 2px;
-    }
-  </style>
+/* Focus */
+:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+</style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="header">
-      <div class="title-group">
-        <h1>T-Shirt Mockup Studio</h1>
-        <p>Pick a color, drop your design, drag it into place, and export a clean PNG.</p>
-      </div>
-      <div class="pill">
-        <span class="pill-dot"></span>
-        LIVE CANVAS · CLIENT-SIDE
-      </div>
-    </header>
+<div class="page">
 
-    <!-- Canvas / Preview -->
-    <section class="preview-card">
-      <div class="preview-card-header">
-        <div class="preview-tag">Preview</div>
-        <span>1:1 export · transparent background</span>
+  <!-- HEADER -->
+  <header class="header transparent" id="siteHeader">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div class="brand-text">MockuPlay</div>
       </div>
-
-      <div class="canvas-wrapper">
-        <canvas id="shirtCanvas" width="700" height="800"></canvas>
+      <nav class="nav">
+        <a href="#generator">Mockup Generator</a>
+        <a href="#templates">Templates</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn btn-outline">Sign in</button>
+        <button class="btn btn-primary">Sign up</button>
       </div>
+    </div>
+  </header>
 
-      <div class="canvas-hint">
-        Upload an image, then drag it around the shirt · Scroll wheel = zoom
-      </div>
-    </section>
+  <main>
 
-    <!-- Controls -->
-    <section class="control-panel">
-      <div>
-        <div class="section-label">Fabric & Color</div>
-        <div class="control-group">
-          <div class="control-row">
-            <div>
-              <div class="control-label">Shirt color</div>
-              <div class="control-sub">Live updates on the canvas</div>
-            </div>
-            <input type="color" id="shirtColor" value="#ffffff" />
-          </div>
-        </div>
-      </div>
+    <!-- HERO -->
+    <section class="hero" id="home">
+      <div class="hero-inner">
+        <div>
+          <h1 class="hero-title">Professional T-shirt mockups in just a few clicks.</h1>
+          <p class="hero-sub">
+            Upload your artwork, pick a shirt color, and position your design on realistic tees. Export clean, high-resolution mockups for stores, socials, and clients.
+          </p>
 
-      <div>
-        <div class="section-label">Artwork</div>
-        <div class="control-group">
-          <div class="control-row">
-            <div>
-              <div class="control-label">Upload design</div>
-              <div class="control-sub">PNG with transparency works best</div>
-            </div>
-            <label class="file-input-wrapper">
-              <span class="icon">📁</span>
-              <span>Choose file</span>
-              <input type="file" id="imageUpload" accept="image/*" />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="section-label">Placement</div>
-        <div class="control-group">
-          <div class="control-row">
-            <div>
-              <div class="control-label">Design size</div>
-              <div class="control-sub">Drag slider or use mouse wheel on canvas</div>
-            </div>
-          </div>
-          <input type="range" id="imageScale" min="20" max="200" value="100" />
-        </div>
-      </div>
-
-      <div>
-        <div class="section-label">Export</div>
-        <div class="control-group">
-          <div class="footer-controls">
-            <button class="secondary" id="resetBtn" type="button">
-              Reset
+          <div class="hero-cta-row">
+            <button class="btn btn-primary" onclick="document.getElementById('generator').scrollIntoView({behavior:'smooth'})">
+              Start designing
             </button>
-            <button class="primary" id="downloadBtn" type="button">
-              Download PNG
+            <button class="btn btn-outline" onclick="document.getElementById('templates').scrollIntoView({behavior:'smooth'})">
+              Explore templates
             </button>
           </div>
-          <div class="small-text">
-            Tip: Drag your design with the mouse. Use the scroll wheel to fine-tune the size.
-            Hold <span class="kbd">Shift</span> while scrolling to scale faster.
+
+          <div class="hero-meta">
+            <span><span class="hero-dot"></span> No watermark</span>
+            <span>Transparent PNG &amp; JPG exports</span>
+            <span>Designed for print-ready previews</span>
+          </div>
+        </div>
+
+        <div class="hero-preview">
+          <div class="hero-preview-inner">
+            <div class="hero-shirt">
+              <div class="shirt-base">
+                <div class="hero-design"></div>
+              </div>
+            </div>
+            <div>
+              <div class="hero-panel-label">Live preview</div>
+              <div class="hero-panel-title">Drop your design onto a clean tee.</div>
+              <div class="hero-panel-body">
+                Adjust scale, rotation, and opacity, then export a crisp mockup ready for your storefront or client presentation.
+              </div>
+              <div class="hero-mini-controls">
+                <div class="hero-mini-pill">
+                  <span>Scale</span><span>78%</span>
+                </div>
+                <div class="hero-mini-pill">
+                  <span>Rotate</span><span>4°</span>
+                </div>
+                <div class="hero-mini-pill">
+                  <span>Shirt</span><span>Soft white</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- MOCKUP GENERATOR -->
+    <section class="section" id="generator">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">Mockup Generator</h2>
+          <p class="section-sub">A distraction-free workspace for building T-shirt mockups that actually look like your final product.</p>
+        </div>
+
+        <div class="tool-layout">
+          <!-- Left: settings -->
+          <aside class="tool-panel">
+            <h3>Shirt &amp; Design</h3>
+
+            <div style="margin-bottom:12px;">
+              <div class="field-label">Shirt color</div>
+              <div class="swatch-row" id="shirtSwatches">
+                <button class="swatch is-active" data-color="#e5e7eb" style="background:#e5e7eb;"></button>
+                <button class="swatch" data-color="#ffffff" style="background:#ffffff;"></button>
+                <button class="swatch" data-color="#111827" style="background:#111827;"></button>
+                <button class="swatch" data-color="#f97316" style="background:#f97316;"></button>
+                <button class="swatch" data-color="#22c55e" style="background:#22c55e;"></button>
+                <button class="swatch" data-color="#3b82f6" style="background:#3b82f6;"></button>
+              </div>
+              <input type="color" id="shirtColorPicker" class="color-input" value="#e5e7eb" />
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <div class="field-label">Artwork</div>
+              <div class="upload-zone">
+                <div><strong>Upload a design</strong> or drop it onto the shirt.</div>
+                <input type="file" id="designUpload" accept="image/*" />
+                <div style="font-size:11px;">Recommended: PNG with transparent background, at least 1500px wide.</div>
+              </div>
+            </div>
+
+            <div class="slider-group">
+              <div class="field-label">Placement</div>
+              <div class="slider-row">
+                <label for="scaleSlider">Scale</label>
+                <input type="range" id="scaleSlider" min="40" max="140" value="80" />
+                <span class="slider-value" id="scaleValue">80%</span>
+              </div>
+              <div class="slider-row">
+                <label for="rotateSlider">Rotation</label>
+                <input type="range" id="rotateSlider" min="-30" max="30" value="0" />
+                <span class="slider-value" id="rotateValue">0°</span>
+              </div>
+              <div class="slider-row">
+                <label for="opacitySlider">Opacity</label>
+                <input type="range" id="opacitySlider" min="40" max="100" value="96" />
+                <span class="slider-value" id="opacityValue">96%</span>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <div class="field-label">View</div>
+              <div class="view-tabs" id="viewTabs">
+                <button class="view-tab is-active" data-view="front">Front</button>
+                <button class="view-tab" data-view="back">Back</button>
+                <button class="view-tab" data-view="sleeve">Sleeve</button>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Center: canvas -->
+          <section class="canvas-panel">
+            <div class="canvas-header">
+              <span id="viewLabel">Front view</span>
+              <span style="font-size:12px;color:var(--text-muted);">Tip: drag the artwork on the shirt to adjust position.</span>
+            </div>
+            <div class="canvas-stage" id="canvasStage">
+              <div class="canvas-shirt" id="canvasShirt">
+                <img id="designImg" class="design-img" src="" alt="Design mockup" style="display:none;" draggable="false" />
+                <div class="canvas-guides"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Right: export & templates -->
+          <aside class="tool-panel">
+            <h3>Download &amp; Templates</h3>
+
+            <div class="download-group">
+              <div class="field-label">Format</div>
+              <label class="radio-row">
+                <input type="radio" name="format" value="png" checked />
+                <span>PNG <span class="badge-pill">Transparent background</span></span>
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="format" value="jpg" />
+                <span>JPG <span class="badge-pill">Solid background</span></span>
+              </label>
+            </div>
+
+            <div class="download-group">
+              <div class="field-label">Export size</div>
+              <select id="exportSize" class="select-lite" style="width:100%;">
+                <option value="1080">1080p (1080 × 1080)</option>
+                <option value="1440">2K (1440 × 1440)</option>
+                <option value="2160">4K (2160 × 2160)</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+              <button class="btn btn-primary" type="button" id="downloadBtn">Download mockup</button>
+              <button class="btn btn-outline" type="button" id="copyBtn">Copy preview</button>
+            </div>
+
+            <div class="field-label">Templates</div>
+            <div class="template-grid">
+              <div class="template-card" data-template="front">
+                <div class="template-thumb"></div>
+                <div class="template-card-title">Front – standard</div>
+                <button type="button">Select template</button>
+              </div>
+              <div class="template-card" data-template="back">
+                <div class="template-thumb"></div>
+                <div class="template-card-title">Back – standard</div>
+                <button type="button">Select template</button>
+              </div>
+              <div class="template-card" data-template="hanging">
+                <div class="template-thumb"></div>
+                <div class="template-card-title">Front – hanging</div>
+                <button type="button">Select template</button>
+              </div>
+              <div class="template-card" data-template="folded">
+                <div class="template-thumb"></div>
+                <div class="template-card-title">Front – folded</div>
+                <button type="button">Select template</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEMPLATES PAGE -->
+    <section class="section templates-section" id="templates">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">Templates</h2>
+          <p class="section-sub">Start from clean, ready-made T-shirt setups. Swap colors, drop in your artwork, and you’re done.</p>
+        </div>
+
+        <div class="filters-bar">
+          <select class="select-lite">
+            <option>View: All</option>
+            <option>Front</option>
+            <option>Back</option>
+            <option>Flat lay</option>
+            <option>Hanging</option>
+          </select>
+          <select class="select-lite">
+            <option>Style: All</option>
+            <option>Unisex</option>
+            <option>Oversized</option>
+            <option>Women’s</option>
+          </select>
+        </div>
+
+        <div class="templates-grid">
+          <!-- Repeat a few example cards -->
+          <div class="template-card">
+            <div class="template-thumb"></div>
+            <div class="template-card-title">Front • Unisex</div>
+            <button type="button">Select template</button>
+          </div>
+          <div class="template-card">
+            <div class="template-thumb"></div>
+            <div class="template-card-title">Back • Unisex</div>
+            <button type="button">Select template</button>
+          </div>
+          <div class="template-card">
+            <div class="template-thumb"></div>
+            <div class="template-card-title">Flat lay • Oversized</div>
+            <button type="button">Select template</button>
+          </div>
+          <div class="template-card">
+            <div class="template-thumb"></div>
+            <div class="template-card-title">Hanging • Women’s</div>
+            <button type="button">Select template</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING (simple stub) -->
+    <section class="section" id="pricing">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">Pricing</h2>
+          <p class="section-sub">Simple pricing for freelancers, studios, and teams. No hidden fees.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;">
+          <div class="tool-panel">
+            <h3>Free</h3>
+            <p style="font-size:32px;font-weight:600;margin:6px 0;">$0</p>
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">Test the workflow, export a few mockups, and see if it fits.</p>
+            <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted);">
+              <li>• 5 mockups / month</li>
+              <li>• 1080p exports</li>
+              <li>• Basic templates</li>
+            </ul>
+          </div>
+          <div class="tool-panel" style="border-color:var(--accent);box-shadow:var(--shadow-soft);">
+            <h3>Creator</h3>
+            <p style="font-size:32px;font-weight:600;margin:6px 0;">$9<span style="font-size:18px;">/mo</span></p>
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">For designers and small shops shipping new graphics every week.</p>
+            <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted);">
+              <li>• Unlimited mockups</li>
+              <li>• Up to 4K exports</li>
+              <li>• Full template library</li>
+            </ul>
+          </div>
+          <div class="tool-panel">
+            <h3>Studio</h3>
+            <p style="font-size:32px;font-weight:600;margin:6px 0;">$29<span style="font-size:18px;">/mo</span></p>
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">Best for agencies and teams collaborating on brand visuals.</p>
+            <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted);">
+              <li>• Team seats</li>
+              <li>• Shared template sets</li>
+              <li>• Priority support</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">FAQ &amp; support</h2>
+          <p class="section-sub">Straightforward answers. If you still need help, we’re one message away.</p>
+        </div>
+
+        <div class="faq-grid">
+          <div class="faq-list" id="faqList">
+            <div class="faq-item">
+              <div class="faq-q">
+                <span>Can I use these mockups for client work and products I sell?</span>
+                <span class="faq-toggle-icon">+</span>
+              </div>
+              <div class="faq-a">Yes. You can use exported mockups in client presentations, online stores, social posts, and marketing materials.</div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">
+                <span>Will the exported images have watermarks?</span>
+                <span class="faq-toggle-icon">+</span>
+              </div>
+              <div class="faq-a">No. All exports are clean, watermark-free images.</div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">
+                <span>Do you compress or downscale my artwork?</span>
+                <span class="faq-toggle-icon">+</span>
+              </div>
+              <div class="faq-a">Your artwork stays in your browser. We only scale visually for the mockup canvas; your original file is not uploaded.</div>
+            </div>
+          </div>
+
+          <div class="tool-panel">
+            <h3>Need a real person?</h3>
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">
+              Reach out if you run into a bug, need a specific template, or want help matching your brand system.
+            </p>
+            <p style="font-size:14px;">Email: <a href="mailto:support@mockuplay.app">support@mockuplay.app</a></p>
+            <p style="font-size:14px;">Response time: under 24 hours on business days.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- SUPPORT BUBBLE -->
+  <div class="support-bubble">
+    <button class="support-btn" type="button">
+      <span>Support</span>
+      <span style="font-size:18px;">💬</span>
+    </button>
   </div>
 
-  <script>
-    const canvas = document.getElementById("shirtCanvas");
-    const ctx = canvas.getContext("2d");
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-col-title">Product</div>
+        <a href="#generator">Mockup generator</a>
+        <a href="#templates">Templates</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <a href="#">About</a>
+        <a href="#">Changelog</a>
+        <a href="#">Contact</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Legal</div>
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Cookie policy</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Social</div>
+        <a href="#">Instagram</a>
+        <a href="#">Dribbble</a>
+        <a href="#">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © <span id="year"></span> MockuPlay. Built for designers who care about the details.
+    </div>
+  </footer>
+</div>
 
-    const shirtColorInput = document.getElementById("shirtColor");
-    const imageUploadInput = document.getElementById("imageUpload");
-    const imageScaleInput = document.getElementById("imageScale");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const resetBtn = document.getElementById("resetBtn");
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    let shirtColor = shirtColorInput.value;
-    let designImage = null;
-    let designLoaded = false;
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
 
-    // We'll store original natural size of image
-    let imgNaturalWidth = 0;
-    let imgNaturalHeight = 0;
+  const header = $('siteHeader');
+  const yearSpan = $('year');
+  yearSpan.textContent = new Date().getFullYear();
 
-    // Position and scale are in "canvas space"
-    let designScale = 1.0; // 1.0 = 100% slider
-    let designCenter = { x: canvas.width / 2, y: canvas.height / 2 - 40 };
-
-    // Drag state
-    let isDragging = false;
-    let dragOffset = { x: 0, y: 0 };
-
-    // --- Drawing the shirt shape ---
-    function drawShirtBase(color) {
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Background (transparent, so do nothing here if you want transparency)
-      // Draw a subtle shadow / grounding
-      ctx.fillStyle = "rgba(15,15,30,0.65)";
-      ctx.beginPath();
-      ctx.ellipse(canvas.width / 2, canvas.height - 60, 160, 26, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Shirt body (simple stylized t-shirt)
-      const cx = canvas.width / 2;
-      const topY = 120;
-      const bodyWidth = 260;
-      const bodyHeight = 380;
-      const sleeveWidth = 120;
-      const neckWidth = 90;
-      const neckDepth = 30;
-      const radius = 22;
-
-      ctx.fillStyle = color;
-      ctx.strokeStyle = "rgba(0,0,0,0.12)";
-      ctx.lineWidth = 3;
-
-      ctx.beginPath();
-      // Left sleeve top
-      ctx.moveTo(cx - bodyWidth / 2 - sleeveWidth / 2, topY + 40);
-      ctx.lineTo(cx - bodyWidth / 2, topY);
-      // Across shoulders to neckline
-      ctx.lineTo(cx - neckWidth / 2, topY);
-      ctx.quadraticCurveTo(cx, topY + neckDepth, cx + neckWidth / 2, topY);
-      // Right shoulder & sleeve
-      ctx.lineTo(cx + bodyWidth / 2, topY);
-      ctx.lineTo(cx + bodyWidth / 2 + sleeveWidth / 2, topY + 40);
-      // Sleeve ends
-      ctx.lineTo(cx + bodyWidth / 2 + sleeveWidth / 2 - 24, topY + 120);
-      ctx.lineTo(cx + bodyWidth / 2, topY + 90);
-      // Right body side
-      ctx.lineTo(cx + bodyWidth / 2, topY + bodyHeight - radius);
-      ctx.quadraticCurveTo(
-        cx + bodyWidth / 2,
-        topY + bodyHeight,
-        cx + bodyWidth / 2 - radius,
-        topY + bodyHeight
-      );
-      // Bottom
-      ctx.lineTo(cx - bodyWidth / 2 + radius, topY + bodyHeight);
-      ctx.quadraticCurveTo(
-        cx - bodyWidth / 2,
-        topY + bodyHeight,
-        cx - bodyWidth / 2,
-        topY + bodyHeight - radius
-      );
-      // Left side and sleeve
-      ctx.lineTo(cx - bodyWidth / 2, topY + 90);
-      ctx.lineTo(cx - bodyWidth / 2 - sleeveWidth / 2 + 24, topY + 120);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Subtle inner shading
-      const grad = ctx.createLinearGradient(cx, topY, cx, topY + bodyHeight);
-      grad.addColorStop(0, "rgba(0,0,0,0.18)");
-      grad.addColorStop(0.4, "rgba(0,0,0,0.05)");
-      grad.addColorStop(1, "rgba(0,0,0,0.12)");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(cx - bodyWidth / 2 + 10, topY + 20);
-      ctx.lineTo(cx + bodyWidth / 2 - 10, topY + 20);
-      ctx.lineTo(cx + bodyWidth / 2 - 10, topY + bodyHeight - 10);
-      ctx.lineTo(cx - bodyWidth / 2 + 10, topY + bodyHeight - 10);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.restore();
+  function updateHeaderMode(){
+    if(window.scrollY > 16){
+      header.classList.remove('transparent');
+      header.classList.add('solid');
+    } else {
+      header.classList.add('transparent');
+      header.classList.remove('solid');
     }
+  }
+  updateHeaderMode();
+  window.addEventListener('scroll', updateHeaderMode);
 
-    // --- Drawing the design image ---
-    function drawDesign() {
-      if (!designImage || !designLoaded) return;
+  /* Toast */
+  const toast = $('toast');
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1700);
+  }
 
-      const baseScale = designScale; // derived from slider / wheel
-      const maxWidth = canvas.width * 0.5;
-      const maxHeight = canvas.height * 0.5;
+  /* Shirt color */
+  const shirtSwatches = document.getElementById('shirtSwatches');
+  const shirtColorPicker = document.getElementById('shirtColorPicker');
+  const canvasShirt = document.getElementById('canvasShirt');
 
-      // Fit natural size into a logical max, then apply user scale
-      let drawWidth = imgNaturalWidth;
-      let drawHeight = imgNaturalHeight;
+  function setShirtColor(color){
+    canvasShirt.style.setProperty('--shirt-color', color);
+    shirtColorPicker.value = color;
+  }
 
-      const ratio = Math.min(maxWidth / drawWidth, maxHeight / drawHeight, 1);
-      drawWidth *= ratio * baseScale;
-      drawHeight *= ratio * baseScale;
+  shirtSwatches.addEventListener('click', (e)=>{
+    const sw = e.target.closest('.swatch');
+    if(!sw) return;
+    [...shirtSwatches.querySelectorAll('.swatch')].forEach(s=>s.classList.remove('is-active'));
+    sw.classList.add('is-active');
+    setShirtColor(sw.dataset.color);
+  });
 
-      const x = designCenter.x - drawWidth / 2;
-      const y = designCenter.y - drawHeight / 2;
+  shirtColorPicker.addEventListener('input', (e)=>{
+    setShirtColor(e.target.value);
+    [...shirtSwatches.querySelectorAll('.swatch')].forEach(s=>s.classList.remove('is-active'));
+  });
 
-      ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(designImage, x, y, drawWidth, drawHeight);
-      ctx.restore();
+  /* View tabs */
+  const viewTabs = document.getElementById('viewTabs');
+  const viewLabel = document.getElementById('viewLabel');
+  viewTabs.addEventListener('click',(e)=>{
+    const tab = e.target.closest('.view-tab');
+    if(!tab) return;
+    [...viewTabs.querySelectorAll('.view-tab')].forEach(t=>t.classList.remove('is-active'));
+    tab.classList.add('is-active');
+    const view = tab.dataset.view;
+    viewLabel.textContent = view.charAt(0).toUpperCase() + view.slice(1) + ' view';
+  });
 
-      // Store last drawn bounds for hit detection during drag
-      designImage._bounds = { x, y, w: drawWidth, h: drawHeight };
-    }
+  /* Design image & controls */
+  const designUpload = document.getElementById('designUpload');
+  const designImg = document.getElementById('designImg');
+  const scaleSlider = document.getElementById('scaleSlider');
+  const rotateSlider = document.getElementById('rotateSlider');
+  const opacitySlider = document.getElementById('opacitySlider');
+  const scaleValue = document.getElementById('scaleValue');
+  const rotateValue = document.getElementById('rotateValue');
+  const opacityValue = document.getElementById('opacityValue');
+  const canvasStage = document.getElementById('canvasStage');
 
-    function redraw() {
-      drawShirtBase(shirtColor);
-      drawDesign();
-    }
+  const designState = {
+    scale: 0.8,
+    rotation: 0,
+    opacity: 0.96,
+    offsetX: 0,
+    offsetY: -10
+  };
 
-    // --- Event Handlers ---
+  function applyDesignTransform(){
+    const { scale, rotation, offsetX, offsetY, opacity } = designState;
+    designImg.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) rotate(${rotation}deg) scale(${scale})`;
+    designImg.style.opacity = opacity;
+  }
 
-    shirtColorInput.addEventListener("input", (e) => {
-      shirtColor = e.target.value;
-      redraw();
-    });
+  function ensureDemoArt(){
+    if(designImg.src && designImg.style.display !== 'none') return;
+    // Simple gradient block as fallback
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 800;
+    const ctx = canvas.getContext('2d');
+    const g = ctx.createLinearGradient(0,0,800,800);
+    g.addColorStop(0,'#4f46e5');
+    g.addColorStop(1,'#22c55e');
+    ctx.fillStyle = g;
+    ctx.fillRect(80,80,640,640);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(80,160,640,120);
+    ctx.fillRect(80,520,640,80);
+    designImg.src = canvas.toDataURL('image/png');
+    designImg.style.display = 'block';
+    applyDesignTransform();
+  }
 
-    imageUploadInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (ev) {
-        const img = new Image();
-        img.onload = function () {
-          designImage = img;
-          designLoaded = true;
-          imgNaturalWidth = img.width;
-          imgNaturalHeight = img.height;
-          // Reset placement & scale
-          designCenter = { x: canvas.width / 2, y: canvas.height / 2 };
-          designScale = 1.0;
-          imageScaleInput.value = 100;
-          redraw();
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
+  ensureDemoArt();
 
-    imageScaleInput.addEventListener("input", (e) => {
-      const val = parseInt(e.target.value, 10) || 100;
-      // Map 20–200 range to 0.4–2.0 scale
-      designScale = val / 100;
-      redraw();
-    });
+  designUpload.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      designImg.src = ev.target.result;
+      designImg.style.display = 'block';
+      designState.scale = 0.8;
+      designState.rotation = 0;
+      designState.opacity = 0.96;
+      designState.offsetX = 0;
+      designState.offsetY = -10;
+      scaleSlider.value = 80;
+      rotateSlider.value = 0;
+      opacitySlider.value = 96;
+      scaleValue.textContent = '80%';
+      rotateValue.textContent = '0°';
+      opacityValue.textContent = '96%';
+      applyDesignTransform();
+      showToast('Artwork added to mockup');
+    };
+    reader.readAsDataURL(file);
+  });
 
-    // Dragging logic
-    function getMousePos(evt) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: ((evt.clientX - rect.left) / rect.width) * canvas.width,
-        y: ((evt.clientY - rect.top) / rect.height) * canvas.height,
-      };
-    }
+  scaleSlider.addEventListener('input',(e)=>{
+    designState.scale = e.target.value/100;
+    scaleValue.textContent = e.target.value + '%';
+    applyDesignTransform();
+  });
+  rotateSlider.addEventListener('input',(e)=>{
+    designState.rotation = parseInt(e.target.value,10);
+    rotateValue.textContent = designState.rotation + '°';
+    applyDesignTransform();
+  });
+  opacitySlider.addEventListener('input',(e)=>{
+    designState.opacity = e.target.value/100;
+    opacityValue.textContent = e.target.value + '%';
+    applyDesignTransform();
+  });
 
-    canvas.addEventListener("mousedown", (e) => {
-      if (!designImage || !designImage._bounds) return;
-      const pos = getMousePos(e);
-      const b = designImage._bounds;
-      if (pos.x >= b.x && pos.x <= b.x + b.w && pos.y >= b.y && pos.y <= b.y + b.h) {
-        isDragging = true;
-        dragOffset.x = pos.x - designCenter.x;
-        dragOffset.y = pos.y - designCenter.y;
-      }
-    });
+  /* Dragging */
+  let isDragging = false;
+  let dragStartX = 0, dragStartY = 0;
+  let startOffsetX = 0, startOffsetY = 0;
 
-    window.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      const pos = getMousePos(e);
-      designCenter.x = pos.x - dragOffset.x;
-      designCenter.y = pos.y - dragOffset.y;
-      redraw();
-    });
-
-    window.addEventListener("mouseup", () => {
+  designImg.addEventListener('mousedown',(e)=>{
+    isDragging = true;
+    designImg.classList.add('dragging');
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    startOffsetX = designState.offsetX;
+    startOffsetY = designState.offsetY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove',(e)=>{
+    if(!isDragging) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    designState.offsetX = startOffsetX + dx;
+    designState.offsetY = startOffsetY + dy;
+    applyDesignTransform();
+  });
+  window.addEventListener('mouseup',()=>{
+    if(isDragging){
       isDragging = false;
+      designImg.classList.remove('dragging');
+    }
+  });
+
+  /* Drag & drop onto canvas */
+  ;['dragenter','dragover'].forEach(evt=>{
+    canvasStage.addEventListener(evt,(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      canvasStage.style.outline = '2px dashed ' + '#3b82f6';
+      canvasStage.style.outlineOffset = '-6px';
     });
-
-    // Prevent accidental drag outside window if mouse leaves
-    canvas.addEventListener("mouseleave", () => {
-      isDragging = false;
+  });
+  ;['dragleave','drop'].forEach(evt=>{
+    canvasStage.addEventListener(evt,(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      canvasStage.style.outline = 'none';
     });
+  });
+  canvasStage.addEventListener('drop',(e)=>{
+    const file = (e.dataTransfer.files||[])[0];
+    if(!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      designImg.src = ev.target.result;
+      designImg.style.display = 'block';
+      designState.offsetX = 0;
+      designState.offsetY = -10;
+      applyDesignTransform();
+      showToast('Artwork dropped onto shirt');
+    };
+    reader.readAsDataURL(file);
+  });
 
-    // Scroll wheel to scale
-    canvas.addEventListener(
-      "wheel",
-      (e) => {
-        if (!designImage) return;
-        e.preventDefault();
-        const step = e.shiftKey ? 0.2 : 0.06;
-        if (e.deltaY < 0) {
-          designScale *= 1 + step;
-        } else {
-          designScale *= 1 - step;
-        }
-        designScale = Math.max(0.2, Math.min(designScale, 3.0));
-        imageScaleInput.value = Math.round(designScale * 100);
-        redraw();
-      },
-      { passive: false }
-    );
-
-    // Download
-    downloadBtn.addEventListener("click", () => {
-      redraw(); // ensure canvas is up to date
-      const link = document.createElement("a");
-      link.download = "tshirt-mockup.png";
-      link.href = canvas.toDataURL("image/png");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  /* Templates selection (simple UX only) */
+  document.querySelectorAll('.template-card button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      showToast('Template selected (demo)');
     });
+  });
 
-    // Reset
-    resetBtn.addEventListener("click", () => {
-      shirtColor = "#ffffff";
-      shirtColorInput.value = "#ffffff";
-      designImage = null;
-      designLoaded = false;
-      imgNaturalWidth = 0;
-      imgNaturalHeight = 0;
-      designScale = 1.0;
-      imageScaleInput.value = 100;
-      designCenter = { x: canvas.width / 2, y: canvas.height / 2 - 40 };
-      redraw();
-    });
+  /* FAQ accordion */
+  const faqList = document.getElementById('faqList');
+  faqList.addEventListener('click',(e)=>{
+    const item = e.target.closest('.faq-item');
+    if(!item || !e.target.closest('.faq-q')) return;
+    item.classList.toggle('open');
+    const icon = item.querySelector('.faq-toggle-icon');
+    if(icon){ icon.textContent = item.classList.contains('open') ? '–' : '+'; }
+  });
 
-    // Initial draw
-    redraw();
-  </script>
+  /* Mock download / copy buttons */
+  document.getElementById('downloadBtn').addEventListener('click',()=>{
+    showToast('Download triggered (wireframe)');
+  });
+  document.getElementById('copyBtn').addEventListener('click',()=>{
+    showToast('Preview copied (wireframe)');
+  });
+})();
+</script>
 </body>
 </html>
