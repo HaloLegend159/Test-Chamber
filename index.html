@@ -807,12 +807,12 @@ input[type="color"].color-input{
       <nav class="nav">
         <a href="#generator">Mockup Generator</a>
         <a href="#templates">Templates</a>
-        <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
       <div class="header-actions">
-        <button class="btn btn-outline">Sign in</button>
-        <button class="btn btn-primary">Sign up</button>
+        <button class="btn btn-primary" onclick="document.getElementById('generator').scrollIntoView({behavior:'smooth'})">
+          Start designing
+        </button>
       </div>
     </div>
   </header>
@@ -1035,7 +1035,6 @@ input[type="color"].color-input{
         </div>
 
         <div class="templates-grid">
-          <!-- Repeat a few example cards -->
           <div class="template-card">
             <div class="template-thumb"></div>
             <div class="template-card-title">Front • Unisex</div>
@@ -1055,48 +1054,6 @@ input[type="color"].color-input{
             <div class="template-thumb"></div>
             <div class="template-card-title">Hanging • Women’s</div>
             <button type="button">Select template</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PRICING (simple stub) -->
-    <section class="section" id="pricing">
-      <div class="section-inner">
-        <div class="section-header">
-          <h2 class="section-title">Pricing</h2>
-          <p class="section-sub">Simple pricing for freelancers, studios, and teams. No hidden fees.</p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;">
-          <div class="tool-panel">
-            <h3>Free</h3>
-            <p style="font-size:32px;font-weight:600;margin:6px 0;">$0</p>
-            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">Test the workflow, export a few mockups, and see if it fits.</p>
-            <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted);">
-              <li>• 5 mockups / month</li>
-              <li>• 1080p exports</li>
-              <li>• Basic templates</li>
-            </ul>
-          </div>
-          <div class="tool-panel" style="border-color:var(--accent);box-shadow:var(--shadow-soft);">
-            <h3>Creator</h3>
-            <p style="font-size:32px;font-weight:600;margin:6px 0;">$9<span style="font-size:18px;">/mo</span></p>
-            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">For designers and small shops shipping new graphics every week.</p>
-            <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted);">
-              <li>• Unlimited mockups</li>
-              <li>• Up to 4K exports</li>
-              <li>• Full template library</li>
-            </ul>
-          </div>
-          <div class="tool-panel">
-            <h3>Studio</h3>
-            <p style="font-size:32px;font-weight:600;margin:6px 0;">$29<span style="font-size:18px;">/mo</span></p>
-            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">Best for agencies and teams collaborating on brand visuals.</p>
-            <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted);">
-              <li>• Team seats</li>
-              <li>• Shared template sets</li>
-              <li>• Priority support</li>
-            </ul>
           </div>
         </div>
       </div>
@@ -1163,7 +1120,6 @@ input[type="color"].color-input{
         <div class="footer-col-title">Product</div>
         <a href="#generator">Mockup generator</a>
         <a href="#templates">Templates</a>
-        <a href="#pricing">Pricing</a>
       </div>
       <div>
         <div class="footer-col-title">Company</div>
@@ -1230,6 +1186,8 @@ input[type="color"].color-input{
     shirtColorPicker.value = color;
   }
 
+  setShirtColor('#e5e7eb');
+
   shirtSwatches.addEventListener('click', (e)=>{
     const sw = e.target.closest('.swatch');
     if(!sw) return;
@@ -1271,7 +1229,7 @@ input[type="color"].color-input{
     rotation: 0,
     opacity: 0.96,
     offsetX: 0,
-    offsetY: -10
+    offsetY: -10 // px relative to center
   };
 
   function applyDesignTransform(){
@@ -1282,7 +1240,6 @@ input[type="color"].color-input{
 
   function ensureDemoArt(){
     if(designImg.src && designImg.style.display !== 'none') return;
-    // Simple gradient block as fallback
     const canvas = document.createElement('canvas');
     canvas.width = 800;
     canvas.height = 800;
@@ -1372,7 +1329,7 @@ input[type="color"].color-input{
   });
 
   /* Drag & drop onto canvas */
-  ;['dragenter','dragover'].forEach(evt=>{
+  ['dragenter','dragover'].forEach(evt=>{
     canvasStage.addEventListener(evt,(e)=>{
       e.preventDefault();
       e.stopPropagation();
@@ -1380,7 +1337,7 @@ input[type="color"].color-input{
       canvasStage.style.outlineOffset = '-6px';
     });
   });
-  ;['dragleave','drop'].forEach(evt=>{
+  ['dragleave','drop'].forEach(evt=>{
     canvasStage.addEventListener(evt,(e)=>{
       e.preventDefault();
       e.stopPropagation();
@@ -1419,12 +1376,160 @@ input[type="color"].color-input{
     if(icon){ icon.textContent = item.classList.contains('open') ? '–' : '+'; }
   });
 
-  /* Mock download / copy buttons */
-  document.getElementById('downloadBtn').addEventListener('click',()=>{
-    showToast('Download triggered (wireframe)');
+  /* RENDER TO CANVAS FOR DOWNLOAD / COPY */
+  async function renderMockup(size, format){
+    return new Promise((resolve,reject)=>{
+      if(!designImg.src){
+        reject('No design');
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      if(format === 'jpg'){
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,size,size);
+      } else {
+        ctx.clearRect(0,0,size,size);
+      }
+
+      // Draw t-shirt
+      const shirtW = size * 0.55;
+      const shirtH = size * 0.7;
+      const shirtX = (size - shirtW) / 2;
+      const shirtY = size * 0.15;
+      const bodyTop = shirtY + shirtH * 0.18;
+      const bodyHeight = shirtH * 0.78;
+
+      const shirtColor = canvasShirt.style.getPropertyValue('--shirt-color') || '#e5e7eb';
+
+      ctx.save();
+      ctx.fillStyle = shirtColor;
+      ctx.strokeStyle = 'rgba(15,23,42,0.24)';
+      ctx.lineWidth = size * 0.007;
+
+      // Body
+      const r = size * 0.03;
+      if(ctx.roundRect){
+        ctx.beginPath();
+        ctx.roundRect(shirtX, bodyTop, shirtW, bodyHeight, r);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillRect(shirtX, bodyTop, shirtW, bodyHeight);
+        ctx.strokeRect(shirtX, bodyTop, shirtW, bodyHeight);
+      }
+
+      // Sleeves
+      ctx.beginPath();
+      ctx.moveTo(shirtX, bodyTop + shirtH*0.02);
+      ctx.lineTo(shirtX - shirtW*0.22, bodyTop + shirtH*0.18);
+      ctx.lineTo(shirtX, bodyTop + shirtH*0.30);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(shirtX+shirtW, bodyTop + shirtH*0.02);
+      ctx.lineTo(shirtX+shirtW+shirtW*0.22, bodyTop + shirtH*0.18);
+      ctx.lineTo(shirtX+shirtW, bodyTop + shirtH*0.30);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Neck line
+      ctx.beginPath();
+      ctx.arc(size/2, shirtY + shirtH*0.15, shirtW*0.16, Math.PI*1.05, Math.PI*1.95);
+      ctx.lineWidth = size*0.01;
+      ctx.strokeStyle = 'rgba(15,23,42,0.25)';
+      ctx.stroke();
+
+      // highlight
+      ctx.globalAlpha = 0.18;
+      const grad = ctx.createLinearGradient(shirtX, shirtY, shirtX+shirtW, shirtY+shirtH);
+      grad.addColorStop(0,'#ffffff');
+      grad.addColorStop(1,'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(shirtX, shirtY, shirtW, shirtH);
+      ctx.restore();
+
+      // Draw design image
+      const img = new Image();
+      img.onload = () => {
+        ctx.save();
+        ctx.globalAlpha = designState.opacity;
+
+        const shirtRect = canvasShirt.getBoundingClientRect();
+        const shirtWidthDom = shirtRect.width || 1;
+        const shirtHeightDom = shirtRect.height || 1;
+
+        const offsetX_exp = designState.offsetX * (shirtW / shirtWidthDom);
+        const offsetY_exp = designState.offsetY * (shirtH / shirtHeightDom);
+
+        const centerX = size/2 + offsetX_exp;
+        const centerY = bodyTop + shirtH*0.28 + offsetY_exp;
+
+        const aspect = img.naturalHeight / img.naturalWidth || 1;
+        const baseWidth = shirtW * 0.6 * designState.scale;
+        const drawW = baseWidth;
+        const drawH = baseWidth * aspect;
+
+        ctx.translate(centerX, centerY);
+        ctx.rotate(designState.rotation * Math.PI / 180);
+        ctx.drawImage(img, -drawW/2, -drawH/2, drawW, drawH);
+        ctx.restore();
+
+        if(format === 'png'){
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          resolve(canvas.toDataURL('image/jpeg',0.92));
+        }
+      };
+      img.onerror = () => reject('Could not load design image');
+      img.crossOrigin = 'anonymous';
+      img.src = designImg.src;
+    });
+  }
+
+  const exportSize = document.getElementById('exportSize');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const copyBtn = document.getElementById('copyBtn');
+
+  downloadBtn.addEventListener('click', async ()=>{
+    const size = parseInt(exportSize.value,10) || 1080;
+    const format = document.querySelector('input[name="format"]:checked').value;
+    try{
+      const dataUrl = await renderMockup(size, format);
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'tshirt-mockup.' + format;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Mockup downloaded');
+    }catch(err){
+      console.error(err);
+      showToast('Failed to render mockup');
+    }
   });
-  document.getElementById('copyBtn').addEventListener('click',()=>{
-    showToast('Preview copied (wireframe)');
+
+  copyBtn.addEventListener('click', async ()=>{
+    if(!navigator.clipboard || !window.ClipboardItem){
+      showToast('Clipboard not supported in this browser');
+      return;
+    }
+    try{
+      const dataUrl = await renderMockup(1080,'png');
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      showToast('Preview copied to clipboard');
+    }catch(err){
+      console.error(err);
+      showToast('Could not copy image');
+    }
   });
 })();
 </script>
