@@ -2,1535 +2,795 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>MockuPlay – Professional T-Shirt Mockup Studio</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="description" content="Modern, professional T-shirt mockup generator. Upload your design, adjust color and placement, and export preview-ready mockups." />
-<meta name="color-scheme" content="light" />
-
-<!-- Font -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lofi-Checkpoint Flappy</title>
+<meta name="color-scheme" content="dark light" />
 <style>
-:root{
-  --bg-page:#ffffff;
-  --bg-section:#f5f6f7;
-  --text-main:#1a1a1c;
-  --text-muted:#8a8d92;
-  --accent:#3b82f6;
-  --accent-soft:rgba(59,130,246,0.09);
-  --border-soft:#e5e7eb;
-  --border-strong:#d1d5db;
-  --radius-lg:16px;
-  --radius-md:12px;
-  --radius-sm:8px;
-  --shadow-soft:0 16px 40px rgba(15,23,42,0.12);
-  --shadow-card:0 6px 18px rgba(15,23,42,0.08);
-  --nav-h:64px;
-}
+  :root{
+    /* Checkpoint-style default palette (overridden by theme object) */
+    --bg1:#020707;
+    --bg2:#00120a;
+    --ink:#e7ffe9;
+    --muted:#7fa489;
+    --panel:#020a06;
+    --line:#0b2515;
+    --pri:#54ff79;   /* neon green */
+    --sec:#e3ff9c;   /* softer yellow-green */
+    --acc:#54ff79;
+    --warn:#ffd848;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    position:relative;
+    background:radial-gradient(1200px 60% at 50% 110%, var(--bg2), var(--bg1));
+    color:var(--ink);
+    font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Inter",sans-serif;
+    overflow:hidden;
+    touch-action:none;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
 
-*,
-*::before,
-*::after{box-sizing:border-box;}
+  /* Halftone / dither overlay like Discord Checkpoint */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    background-image:
+      radial-gradient(circle at 0 0, rgba(84,255,121,0.20) 0, rgba(84,255,121,0.20) 1px, transparent 1px),
+      radial-gradient(circle at 4px 4px, rgba(84,255,121,0.13) 0, rgba(84,255,121,0.13) 1px, transparent 1px);
+    background-size:8px 8px;
+    opacity:0.25;
+    mix-blend-mode:screen;
+  }
 
-html,body{
-  margin:0;
-  padding:0;
-  height:100%;
-}
+  .hud{position:fixed;inset:0;pointer-events:none;z-index:2}
+  .topbar{
+    position:absolute;left:0;right:0;top:0;
+    display:flex;gap:8px;align-items:center;justify-content:space-between;
+    padding:10px 14px;
+    background:linear-gradient(180deg,#000c,#0000);
+    backdrop-filter:blur(6px);
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px;border:1px solid var(--line);border-radius:999px;
+    background:#020a06f0;pointer-events:auto;
+  }
+  .score{font-weight:700;letter-spacing:1px}
+  .btn{
+    pointer-events:auto;appearance:none;border:1px solid var(--line);
+    background:#020a06; color:var(--ink);
+    padding:8px 12px;border-radius:10px;cursor:pointer;
+    transition:transform .06s ease, box-shadow .06s ease, border-color .06s ease;
+    font-weight:600;
+    box-shadow:0 0 0 0 rgba(84,255,121,0.0);
+  }
+  .btn:hover{
+    transform:translateY(-1px);
+    border-color:var(--pri);
+    box-shadow:0 0 12px 0 rgba(84,255,121,0.5);
+  }
+  .btn:active{
+    transform:translateY(0);
+    box-shadow:0 0 4px 0 rgba(84,255,121,0.7);
+  }
+  .panel{
+    position:absolute;right:10px;top:58px;
+    width:min(460px,calc(100vw - 20px));
+    max-height:calc(100vh - 78px);
+    overflow:auto;pointer-events:auto;
+    background:#020a06f0;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px;
+    box-shadow:0 20px 60px #000c;
+    backdrop-filter:blur(4px);
+  }
+  .row{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin:10px 0}
+  .row label{color:var(--muted)}
+  select,input[type="range"],input[type="checkbox"],input[type="number"]{width:100%}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .sub{font-size:12px;color:var(--muted);margin-top:-2px}
+  .pill{
+    display:inline-flex;gap:6px;border:1px dashed var(--line);
+    padding:6px 9px;border-radius:999px;color:var(--muted);
+  }
+  .footer{
+    position:absolute;left:10px;bottom:10px;
+    display:flex;gap:8px;align-items:center;pointer-events:auto;
+  }
+  .key{border:1px solid var(--line);padding:4px 8px;border-radius:8px;background:#020a06cc}
+  canvas{
+    display:block;position:fixed;inset:0;
+    touch-action:none;
+    z-index:1;
+  }
+  .panel.hidden{display:none}
+  .mobile-only{display:none}
+  @media (max-width:900px){ .mobile-only{display:block} }
 
-body{
-  font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  font-size:16px;
-  color:var(--text-main);
-  background:var(--bg-page);
-  -webkit-font-smoothing:antialiased;
-}
-
-.page{
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-
-/* Layout helpers */
-.container{
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 16px;
-}
-
-/* HEADER */
-.header{
-  position:fixed;
-  inset:0 0 auto 0;
-  height:var(--nav-h);
-  display:flex;
-  align-items:center;
-  z-index:40;
-  transition:background-color 200ms ease,box-shadow 200ms ease,border-color 200ms ease;
-  backdrop-filter:blur(12px);
-}
-.header-inner{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:24px;
-}
-.header.transparent{
-  background:linear-gradient(to bottom,rgba(255,255,255,0.88),rgba(255,255,255,0.75));
-  border-bottom:1px solid rgba(229,231,235,0.6);
-  box-shadow:none;
-}
-.header.solid{
-  background:rgba(255,255,255,0.98);
-  border-bottom:1px solid var(--border-soft);
-  box-shadow:0 6px 20px rgba(15,23,42,0.08);
-}
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.brand-mark{
-  width:32px;
-  height:32px;
-  border-radius:10px;
-  background:
-    linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.5));
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--accent);
-  font-weight:700;
-  font-size:18px;
-}
-.brand-text{
-  font-weight:600;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-  font-size:13px;
-}
-.nav{
-  display:flex;
-  gap:24px;
-  align-items:center;
-}
-.nav a{
-  position:relative;
-  font-size:14px;
-  font-weight:500;
-  color:var(--text-main);
-  text-decoration:none;
-  padding:4px 0;
-}
-.nav a::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  bottom:-2px;
-  width:0;
-  height:2px;
-  border-radius:999px;
-  background:var(--accent);
-  transform:translateX(-50%);
-  transition:width 180ms ease;
-}
-.nav a:hover::after,
-.nav a:focus-visible::after{
-  width:100%;
-}
-.header-actions{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-.btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  padding:8px 14px;
-  border-radius:999px;
-  border:1px solid transparent;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  background:transparent;
-  color:var(--text-main);
-  transition:transform 160ms ease,box-shadow 160ms ease,background-color 160ms ease,border-color 160ms ease;
-}
-.btn-primary{
-  background:var(--accent);
-  color:#ffffff;
-  box-shadow:0 10px 26px rgba(59,130,246,0.4);
-}
-.btn-primary:hover{
-  transform:translateY(-1px);
-  box-shadow:0 16px 40px rgba(59,130,246,0.48);
-}
-.btn-primary:active{
-  transform:translateY(0);
-  box-shadow:0 8px 20px rgba(59,130,246,0.35);
-}
-.btn-outline{
-  border-color:var(--border-strong);
-}
-.btn-outline:hover{
-  border-color:var(--accent);
-  background:var(--accent-soft);
-}
-
-@media (max-width:860px){
-  .nav{display:none;}
-}
-
-/* MAIN */
-main{
-  padding-top:var(--nav-h);
-}
-
-/* HERO */
-.hero{
-  padding:56px 0 64px;
-  background:
-    radial-gradient(1200px 500px at top left,rgba(59,130,246,0.12),transparent),
-    var(--bg-page);
-}
-.hero-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 16px;
-  display:grid;
-  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
-  gap:40px;
-  align-items:center;
-}
-@media (max-width:960px){
-  .hero-inner{grid-template-columns:minmax(0,1fr);}
-}
-.hero-title{
-  font-size:clamp(40px,5vw,56px);
-  line-height:1.1;
-  font-weight:700;
-  margin:0 0 16px;
-}
-.hero-sub{
-  font-size:17px;
-  line-height:1.6;
-  color:var(--text-muted);
-  margin:0 0 24px;
-}
-.hero-cta-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-  margin-bottom:24px;
-}
-.hero-meta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:16px;
-  color:var(--text-muted);
-  font-size:13px;
-}
-.hero-meta span{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-}
-.hero-dot{
-  width:6px;
-  height:6px;
-  border-radius:999px;
-  background:#22c55e;
-}
-
-/* Hero mockup preview */
-.hero-preview{
-  border-radius:var(--radius-lg);
-  border:1px solid var(--border-soft);
-  background:linear-gradient(135deg,#f9fafb,#eef2ff);
-  padding:24px;
-  box-shadow:var(--shadow-soft);
-}
-.hero-preview-inner{
-  border-radius:var(--radius-md);
-  background:#ffffff;
-  padding:18px;
-  display:grid;
-  grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
-  gap:18px;
-  align-items:center;
-}
-@media (max-width:640px){
-  .hero-preview-inner{grid-template-columns:minmax(0,1fr);}
-}
-.hero-shirt{
-  position:relative;
-  aspect-ratio:3/4;
-  border-radius:18px;
-  background:#f3f4f6;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-.shirt-base{
-  width:74%;
-  aspect-ratio:3/4;
-  border-radius:26px 26px 24px 24px;
-  background:linear-gradient(180deg,#e5e7eb,#d1d5db);
-  position:relative;
-  box-shadow:0 12px 28px rgba(15,23,42,0.22);
-}
-.shirt-base::before{
-  content:"";
-  position:absolute;
-  inset:7% 22% auto;
-  height:16%;
-  border-radius:40px 40px 26px 26px;
-  background:#e5e7eb;
-}
-.hero-design{
-  position:absolute;
-  inset:auto 18% 24%;
-  height:32%;
-  border-radius:16px;
-  background:radial-gradient(circle at 20% 0,#4f46e5,#22c55e);
-  opacity:.95;
-  box-shadow:0 12px 30px rgba(79,70,229,0.4);
-}
-.hero-panel-label{
-  font-size:13px;
-  font-weight:600;
-  color:var(--text-muted);
-  text-transform:uppercase;
-  letter-spacing:.12em;
-  margin-bottom:4px;
-}
-.hero-panel-title{
-  font-size:15px;
-  font-weight:600;
-  margin-bottom:4px;
-}
-.hero-panel-body{
-  font-size:14px;
-  color:var(--text-muted);
-  margin-bottom:12px;
-}
-.hero-mini-controls{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:8px;
-  font-size:11px;
-}
-.hero-mini-pill{
-  padding:6px 8px;
-  border-radius:999px;
-  background:#f3f4ff;
-  color:#1e40af;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-/* SECTION TITLE */
-.section{
-  padding:64px 0;
-  background:var(--bg-section);
-}
-.section-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 16px;
-}
-.section-header{
-  margin-bottom:24px;
-}
-.section-title{
-  font-size:32px;
-  line-height:1.2;
-  font-weight:600;
-  margin:0 0 8px;
-}
-.section-sub{
-  margin:0;
-  color:var(--text-muted);
-}
-
-/* MOCKUP TOOL */
-.tool-layout{
-  display:grid;
-  grid-template-columns: minmax(0,280px) minmax(0,1.4fr) minmax(0,260px);
-  gap:20px;
-}
-@media (max-width:1100px){
-  .tool-layout{grid-template-columns:minmax(0,1fr);}
-}
-.tool-panel{
-  background:#ffffff;
-  border-radius:var(--radius-lg);
-  border:1px solid var(--border-soft);
-  box-shadow:var(--shadow-card);
-  padding:16px 16px 18px;
-}
-.tool-panel h3{
-  margin:0 0 12px;
-  font-size:15px;
-  font-weight:600;
-}
-.field-label{
-  font-size:12px;
-  font-weight:600;
-  text-transform:uppercase;
-  letter-spacing:.12em;
-  color:var(--text-muted);
-  margin-bottom:6px;
-}
-.swatch-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-bottom:10px;
-}
-.swatch{
-  width:22px;
-  height:22px;
-  border-radius:999px;
-  border:1px solid var(--border-soft);
-  cursor:pointer;
-}
-.swatch.is-active{
-  outline:2px solid var(--accent);
-  outline-offset:2px;
-}
-input[type="color"].color-input{
-  width:44px;
-  height:32px;
-  padding:0;
-  border-radius:8px;
-  border:1px solid var(--border-soft);
-  background:none;
-  cursor:pointer;
-}
-
-.upload-zone{
-  border-radius:var(--radius-md);
-  border:1px dashed var(--border-strong);
-  padding:10px 10px;
-  background:#f9fafb;
-  font-size:13px;
-  color:var(--text-muted);
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.upload-zone strong{
-  color:var(--text-main);
-}
-.upload-zone input[type="file"]{
-  font-size:12px;
-}
-
-.slider-group{
-  margin-top:10px;
-}
-.slider-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-}
-.slider-row label{
-  flex:0 0 76px;
-  font-size:13px;
-  color:var(--text-muted);
-}
-.slider-row input[type="range"]{
-  flex:1;
-}
-.slider-value{
-  width:42px;
-  font-size:12px;
-  text-align:right;
-  color:var(--text-muted);
-}
-
-.view-tabs{
-  display:inline-flex;
-  border-radius:999px;
-  border:1px solid var(--border-soft);
-  overflow:hidden;
-  margin-top:12px;
-}
-.view-tab{
-  font-size:13px;
-  padding:6px 10px;
-  cursor:pointer;
-  border:none;
-  background:transparent;
-  color:var(--text-muted);
-}
-.view-tab.is-active{
-  background:var(--accent-soft);
-  color:var(--accent);
-}
-
-/* Canvas */
-.canvas-panel{
-  position:relative;
-  min-height:360px;
-  background:#f9fafb;
-  border-radius:var(--radius-lg);
-  border:1px solid var(--border-soft);
-  box-shadow:var(--shadow-card);
-  padding:18px;
-  overflow:hidden;
-}
-.canvas-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-size:13px;
-  color:var(--text-muted);
-  margin-bottom:10px;
-}
-.canvas-stage{
-  position:relative;
-  height:100%;
-  min-height:320px;
-  border-radius:14px;
-  background:#e5e7eb;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-.canvas-shirt{
-  position:relative;
-  width:66%;
-  max-width:380px;
-  aspect-ratio:3/4;
-  border-radius:24px;
-  background:var(--shirt-color,#e5e7eb);
-  box-shadow:0 18px 40px rgba(15,23,42,0.3);
-}
-.canvas-shirt::before{
-  content:"";
-  position:absolute;
-  inset:7% 18% auto;
-  height:15%;
-  border-radius:40px 40px 26px 26px;
-  background:rgba(255,255,255,0.22);
-}
-.design-img{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%) scale(0.7);
-  transform-origin:center center;
-  cursor:grab;
-  user-select:none;
-  max-width:70%;
-  max-height:70%;
-  opacity:0.95;
-}
-.design-img.dragging{
-  cursor:grabbing;
-}
-.canvas-guides{
-  position:absolute;
-  inset:14% 14%;
-  border-radius:18px;
-  border:1px dashed rgba(255,255,255,0.6);
-  pointer-events:none;
-}
-
-/* Right panel */
-.download-group{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  margin-bottom:12px;
-}
-.radio-row{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  font-size:13px;
-}
-.radio-row input{margin:0;}
-.badge-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  font-size:11px;
-  padding:3px 8px;
-  border-radius:999px;
-  border:1px solid var(--border-soft);
-  background:#f9fafb;
-  color:var(--text-muted);
-}
-.template-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:10px;
-  max-height:260px;
-  overflow:auto;
-  padding-right:4px;
-}
-.template-card{
-  border-radius:var(--radius-md);
-  border:1px solid var(--border-soft);
-  background:#ffffff;
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  transition:box-shadow 180ms ease,transform 180ms ease,border-color 180ms ease;
-}
-.template-thumb{
-  border-radius:10px;
-  background:#f3f4f6;
-  aspect-ratio:3/4;
-  position:relative;
-  overflow:hidden;
-}
-.template-thumb::before{
-  content:"";
-  position:absolute;
-  inset:12% 18% auto;
-  height:18%;
-  border-radius:30px 30px 20px 20px;
-  background:#e5e7eb;
-}
-.template-thumb::after{
-  content:"";
-  position:absolute;
-  inset:auto 20% 20%;
-  height:30%;
-  border-radius:14px;
-  background:linear-gradient(135deg,#4f46e5,#22c55e);
-  opacity:.8;
-}
-.template-card-title{
-  font-size:12px;
-  font-weight:500;
-}
-.template-card button{
-  margin-top:auto;
-  font-size:11px;
-  border-radius:999px;
-  padding:4px 8px;
-  border:1px solid var(--border-soft);
-  background:#f9fafb;
-  cursor:pointer;
-}
-.template-card:hover{
-  box-shadow:var(--shadow-card);
-  transform:translateY(-2px);
-  border-color:var(--accent);
-}
-
-/* TEMPLATES PAGE */
-.templates-section{
-  background:var(--bg-page);
-}
-.filters-bar{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-bottom:18px;
-  font-size:13px;
-}
-.select-lite{
-  padding:8px 10px;
-  border-radius:999px;
-  border:1px solid var(--border-soft);
-  background:#ffffff;
-}
-.templates-grid{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:16px;
-}
-@media (max-width:1100px){.templates-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
-@media (max-width:800px){.templates-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media (max-width:560px){.templates-grid{grid-template-columns:minmax(0,1fr);}}
-
-/* FAQ */
-.faq-grid{
-  display:grid;
-  grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);
-  gap:24px;
-}
-@media (max-width:900px){.faq-grid{grid-template-columns:minmax(0,1fr);}}
-.faq-list{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-.faq-item{
-  border-radius:var(--radius-md);
-  border:1px solid var(--border-soft);
-  background:#ffffff;
-  padding:12px 14px;
-}
-.faq-q{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  cursor:pointer;
-}
-.faq-q span{
-  font-size:14px;
-  font-weight:500;
-}
-.faq-a{
-  font-size:14px;
-  color:var(--text-muted);
-  margin-top:6px;
-  display:none;
-}
-.faq-item.open .faq-a{display:block;}
-.faq-toggle-icon{
-  font-size:18px;
-  color:var(--text-muted);
-}
-
-/* Chat bubble */
-.support-bubble{
-  position:fixed;
-  right:18px;
-  bottom:18px;
-  z-index:30;
-}
-.support-btn{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:9px 14px;
-  border-radius:999px;
-  border:none;
-  background:var(--accent);
-  color:#ffffff;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  box-shadow:0 16px 34px rgba(59,130,246,0.5);
-  transition:transform 160ms ease,box-shadow 160ms ease;
-}
-.support-btn:hover{
-  transform:translateY(-2px);
-  box-shadow:0 18px 40px rgba(59,130,246,0.6);
-}
-
-/* FOOTER */
-.footer{
-  margin-top:auto;
-  border-top:1px solid var(--border-soft);
-  background:#f9fafb;
-  padding:32px 0 24px;
-}
-.footer-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 16px;
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:20px;
-  font-size:14px;
-}
-.footer-col-title{
-  font-weight:600;
-  margin-bottom:10px;
-}
-.footer a{
-  color:var(--text-muted);
-  text-decoration:none;
-  display:block;
-  margin-bottom:6px;
-  font-size:14px;
-}
-.footer a:hover{
-  color:var(--text-main);
-}
-.footer-bottom{
-  margin-top:18px;
-  font-size:13px;
-  color:var(--text-muted);
-  text-align:center;
-}
-
-/* Toast */
-.toast{
-  position:fixed;
-  left:50%;
-  bottom:24px;
-  transform:translate(-50%,8px);
-  padding:8px 12px;
-  border-radius:999px;
-  background:#111827;
-  color:#e5e7eb;
-  font-size:13px;
-  box-shadow:var(--shadow-soft);
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 180ms ease,transform 180ms ease;
-  z-index:35;
-}
-.toast.show{
-  opacity:1;
-  transform:translate(-50%,0);
-}
-
-/* Focus */
-:focus-visible{
-  outline:2px solid var(--accent);
-  outline-offset:2px;
-}
+  /* CRT scanlines & vignette */
+  .scanlines::after{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom, #0000 0px, #0000 2px, #0002 3px, #0000 4px);
+  }
+  .vignette::before{
+    content:"";position:fixed;inset:-2%;pointer-events:none;border-radius:2px;
+    box-shadow:inset 0 0 180px 40px #000a;
+  }
+  .pixelate{image-rendering:pixelated}
 </style>
 </head>
 <body>
-<div class="page">
+<canvas id="game"></canvas>
 
-  <!-- HEADER -->
-  <header class="header transparent" id="siteHeader">
-    <div class="container header-inner">
-      <div class="brand">
-        <div class="brand-mark">M</div>
-        <div class="brand-text">MockuPlay</div>
-      </div>
-      <nav class="nav">
-        <a href="#generator">Mockup Generator</a>
-        <a href="#templates">Templates</a>
-        <a href="#faq">FAQ</a>
-      </nav>
-      <div class="header-actions">
-        <button class="btn btn-primary" onclick="document.getElementById('generator').scrollIntoView({behavior:'smooth'})">
-          Start designing
-        </button>
-      </div>
+<button id="overlayStart" class="btn" style="position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);padding:14px 24px;font-size:16px;z-index:5;pointer-events:auto">
+  START CHECKPOINT
+</button>
+
+<div class="hud scanlines vignette" id="hud" data-mobile="1">
+  <div class="topbar">
+    <div class="badge">
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--pri);box-shadow:0 0 12px var(--pri)"></span>
+      <span style="opacity:.85;letter-spacing:0.16em;font-weight:700;">CHECKPOINT FLAPPY</span>
     </div>
-  </header>
-
-  <main>
-
-    <!-- HERO -->
-    <section class="hero" id="home">
-      <div class="hero-inner">
-        <div>
-          <h1 class="hero-title">Professional T-shirt mockups in just a few clicks.</h1>
-          <p class="hero-sub">
-            Upload your artwork, pick a shirt color, and position your design on realistic tees. Export clean, high-resolution mockups for stores, socials, and clients.
-          </p>
-
-          <div class="hero-cta-row">
-            <button class="btn btn-primary" onclick="document.getElementById('generator').scrollIntoView({behavior:'smooth'})">
-              Start designing
-            </button>
-            <button class="btn btn-outline" onclick="document.getElementById('templates').scrollIntoView({behavior:'smooth'})">
-              Explore templates
-            </button>
-          </div>
-
-          <div class="hero-meta">
-            <span><span class="hero-dot"></span> No watermark</span>
-            <span>Transparent PNG &amp; JPG exports</span>
-            <span>Designed for print-ready previews</span>
-          </div>
-        </div>
-
-        <div class="hero-preview">
-          <div class="hero-preview-inner">
-            <div class="hero-shirt">
-              <div class="shirt-base">
-                <div class="hero-design"></div>
-              </div>
-            </div>
-            <div>
-              <div class="hero-panel-label">Live preview</div>
-              <div class="hero-panel-title">Drop your design onto a clean tee.</div>
-              <div class="hero-panel-body">
-                Adjust scale, rotation, and opacity, then export a crisp mockup ready for your storefront or client presentation.
-              </div>
-              <div class="hero-mini-controls">
-                <div class="hero-mini-pill">
-                  <span>Scale</span><span>78%</span>
-                </div>
-                <div class="hero-mini-pill">
-                  <span>Rotate</span><span>4°</span>
-                </div>
-                <div class="hero-mini-pill">
-                  <span>Shirt</span><span>Soft white</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MOCKUP GENERATOR -->
-    <section class="section" id="generator">
-      <div class="section-inner">
-        <div class="section-header">
-          <h2 class="section-title">Mockup Generator</h2>
-          <p class="section-sub">A distraction-free workspace for building T-shirt mockups that actually look like your final product.</p>
-        </div>
-
-        <div class="tool-layout">
-          <!-- Left: settings -->
-          <aside class="tool-panel">
-            <h3>Shirt &amp; Design</h3>
-
-            <div style="margin-bottom:12px;">
-              <div class="field-label">Shirt color</div>
-              <div class="swatch-row" id="shirtSwatches">
-                <button class="swatch is-active" data-color="#e5e7eb" style="background:#e5e7eb;"></button>
-                <button class="swatch" data-color="#ffffff" style="background:#ffffff;"></button>
-                <button class="swatch" data-color="#111827" style="background:#111827;"></button>
-                <button class="swatch" data-color="#f97316" style="background:#f97316;"></button>
-                <button class="swatch" data-color="#22c55e" style="background:#22c55e;"></button>
-                <button class="swatch" data-color="#3b82f6" style="background:#3b82f6;"></button>
-              </div>
-              <input type="color" id="shirtColorPicker" class="color-input" value="#e5e7eb" />
-            </div>
-
-            <div style="margin-bottom:14px;">
-              <div class="field-label">Artwork</div>
-              <div class="upload-zone">
-                <div><strong>Upload a design</strong> or drop it onto the shirt.</div>
-                <input type="file" id="designUpload" accept="image/*" />
-                <div style="font-size:11px;">Recommended: PNG with transparent background, at least 1500px wide.</div>
-              </div>
-            </div>
-
-            <div class="slider-group">
-              <div class="field-label">Placement</div>
-              <div class="slider-row">
-                <label for="scaleSlider">Scale</label>
-                <input type="range" id="scaleSlider" min="40" max="140" value="80" />
-                <span class="slider-value" id="scaleValue">80%</span>
-              </div>
-              <div class="slider-row">
-                <label for="rotateSlider">Rotation</label>
-                <input type="range" id="rotateSlider" min="-30" max="30" value="0" />
-                <span class="slider-value" id="rotateValue">0°</span>
-              </div>
-              <div class="slider-row">
-                <label for="opacitySlider">Opacity</label>
-                <input type="range" id="opacitySlider" min="40" max="100" value="96" />
-                <span class="slider-value" id="opacityValue">96%</span>
-              </div>
-            </div>
-
-            <div style="margin-top:12px;">
-              <div class="field-label">View</div>
-              <div class="view-tabs" id="viewTabs">
-                <button class="view-tab is-active" data-view="front">Front</button>
-                <button class="view-tab" data-view="back">Back</button>
-                <button class="view-tab" data-view="sleeve">Sleeve</button>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Center: canvas -->
-          <section class="canvas-panel">
-            <div class="canvas-header">
-              <span id="viewLabel">Front view</span>
-              <span style="font-size:12px;color:var(--text-muted);">Tip: drag the artwork on the shirt to adjust position.</span>
-            </div>
-            <div class="canvas-stage" id="canvasStage">
-              <div class="canvas-shirt" id="canvasShirt">
-                <img id="designImg" class="design-img" src="" alt="Design mockup" style="display:none;" draggable="false" />
-                <div class="canvas-guides"></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Right: export & templates -->
-          <aside class="tool-panel">
-            <h3>Download &amp; Templates</h3>
-
-            <div class="download-group">
-              <div class="field-label">Format</div>
-              <label class="radio-row">
-                <input type="radio" name="format" value="png" checked />
-                <span>PNG <span class="badge-pill">Transparent background</span></span>
-              </label>
-              <label class="radio-row">
-                <input type="radio" name="format" value="jpg" />
-                <span>JPG <span class="badge-pill">Solid background</span></span>
-              </label>
-            </div>
-
-            <div class="download-group">
-              <div class="field-label">Export size</div>
-              <select id="exportSize" class="select-lite" style="width:100%;">
-                <option value="1080">1080p (1080 × 1080)</option>
-                <option value="1440">2K (1440 × 1440)</option>
-                <option value="2160">4K (2160 × 2160)</option>
-              </select>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-bottom:14px;">
-              <button class="btn btn-primary" type="button" id="downloadBtn">Download mockup</button>
-              <button class="btn btn-outline" type="button" id="copyBtn">Copy preview</button>
-            </div>
-
-            <div class="field-label">Templates</div>
-            <div class="template-grid">
-              <div class="template-card" data-template="front">
-                <div class="template-thumb"></div>
-                <div class="template-card-title">Front – standard</div>
-                <button type="button">Select template</button>
-              </div>
-              <div class="template-card" data-template="back">
-                <div class="template-thumb"></div>
-                <div class="template-card-title">Back – standard</div>
-                <button type="button">Select template</button>
-              </div>
-              <div class="template-card" data-template="hanging">
-                <div class="template-thumb"></div>
-                <div class="template-card-title">Front – hanging</div>
-                <button type="button">Select template</button>
-              </div>
-              <div class="template-card" data-template="folded">
-                <div class="template-thumb"></div>
-                <div class="template-card-title">Front – folded</div>
-                <button type="button">Select template</button>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <!-- TEMPLATES PAGE -->
-    <section class="section templates-section" id="templates">
-      <div class="section-inner">
-        <div class="section-header">
-          <h2 class="section-title">Templates</h2>
-          <p class="section-sub">Start from clean, ready-made T-shirt setups. Swap colors, drop in your artwork, and you’re done.</p>
-        </div>
-
-        <div class="filters-bar">
-          <select class="select-lite">
-            <option>View: All</option>
-            <option>Front</option>
-            <option>Back</option>
-            <option>Flat lay</option>
-            <option>Hanging</option>
-          </select>
-          <select class="select-lite">
-            <option>Style: All</option>
-            <option>Unisex</option>
-            <option>Oversized</option>
-            <option>Women’s</option>
-          </select>
-        </div>
-
-        <div class="templates-grid">
-          <div class="template-card">
-            <div class="template-thumb"></div>
-            <div class="template-card-title">Front • Unisex</div>
-            <button type="button">Select template</button>
-          </div>
-          <div class="template-card">
-            <div class="template-thumb"></div>
-            <div class="template-card-title">Back • Unisex</div>
-            <button type="button">Select template</button>
-          </div>
-          <div class="template-card">
-            <div class="template-thumb"></div>
-            <div class="template-card-title">Flat lay • Oversized</div>
-            <button type="button">Select template</button>
-          </div>
-          <div class="template-card">
-            <div class="template-thumb"></div>
-            <div class="template-card-title">Hanging • Women’s</div>
-            <button type="button">Select template</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="section" id="faq">
-      <div class="section-inner">
-        <div class="section-header">
-          <h2 class="section-title">FAQ &amp; support</h2>
-          <p class="section-sub">Straightforward answers. If you still need help, we’re one message away.</p>
-        </div>
-
-        <div class="faq-grid">
-          <div class="faq-list" id="faqList">
-            <div class="faq-item">
-              <div class="faq-q">
-                <span>Can I use these mockups for client work and products I sell?</span>
-                <span class="faq-toggle-icon">+</span>
-              </div>
-              <div class="faq-a">Yes. You can use exported mockups in client presentations, online stores, social posts, and marketing materials.</div>
-            </div>
-            <div class="faq-item">
-              <div class="faq-q">
-                <span>Will the exported images have watermarks?</span>
-                <span class="faq-toggle-icon">+</span>
-              </div>
-              <div class="faq-a">No. All exports are clean, watermark-free images.</div>
-            </div>
-            <div class="faq-item">
-              <div class="faq-q">
-                <span>Do you compress or downscale my artwork?</span>
-                <span class="faq-toggle-icon">+</span>
-              </div>
-              <div class="faq-a">Your artwork stays in your browser. We only scale visually for the mockup canvas; your original file is not uploaded.</div>
-            </div>
-          </div>
-
-          <div class="tool-panel">
-            <h3>Need a real person?</h3>
-            <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">
-              Reach out if you run into a bug, need a specific template, or want help matching your brand system.
-            </p>
-            <p style="font-size:14px;">Email: <a href="mailto:support@mockuplay.app">support@mockuplay.app</a></p>
-            <p style="font-size:14px;">Response time: under 24 hours on business days.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- SUPPORT BUBBLE -->
-  <div class="support-bubble">
-    <button class="support-btn" type="button">
-      <span>Support</span>
-      <span style="font-size:18px;">💬</span>
-    </button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn mobile-only" id="btnPanel" title="Toggle Panel">Panel</button>
+      <div class="badge"><span class="score">Score: <span id="score">0</span></span></div>
+      <div class="badge">Best: <span id="best">0</span></div>
+      <button class="btn" id="btnStart">Start</button>
+      <button class="btn" id="btnPause">Pause</button>
+      <button class="btn" id="btnReset">Reset</button>
+    </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-inner">
+  <div class="panel" id="panel">
+    <h3 style="margin:4px 0 6px;color:var(--pri);text-shadow:0 0 12px var(--pri)">Customization</h3>
+    <div class="grid">
       <div>
-        <div class="footer-col-title">Product</div>
-        <a href="#generator">Mockup generator</a>
-        <a href="#templates">Templates</a>
+        <div class="row"><label>Theme</label>
+          <select id="theme">
+            <option value="checkpoint">Checkpoint Green</option>
+            <option value="magenta">Neon Magenta</option>
+            <option value="cyan">Electric Cyan</option>
+            <option value="lime">Toxic Lime</option>
+            <option value="amber">Amber Pulse</option>
+          </select>
+        </div>
+        <div class="row"><label>Difficulty</label>
+          <select id="diff">
+            <option value="0">Easy</option>
+            <option value="1" selected>Normal</option>
+            <option value="2">Hard</option>
+          </select>
+        </div>
+        <div class="row"><label>Gravity</label>
+          <input id="gravity" type="range" min="0.1" max="1.0" step="0.02" value="0.36" />
+        </div>
+        <div class="row"><label>Flap Power</label>
+          <input id="flap" type="range" min="3" max="10" step="0.1" value="6.2" />
+        </div>
+        <div class="row"><label>World Speed</label>
+          <input id="speed" type="range" min="1.5" max="6" step="0.1" value="3.2" />
+        </div>
+        <div class="row"><label>Gap Size</label>
+          <input id="gap" type="range" min="100" max="240" step="2" value="150" />
+        </div>
+        <div class="row"><label>Pipe Width</label>
+          <input id="pipeW" type="range" min="40" max="120" step="2" value="70" />
+        </div>
       </div>
       <div>
-        <div class="footer-col-title">Company</div>
-        <a href="#">About</a>
-        <a href="#">Changelog</a>
-        <a href="#">Contact</a>
-      </div>
-      <div>
-        <div class="footer-col-title">Legal</div>
-        <a href="#">Terms</a>
-        <a href="#">Privacy</a>
-        <a href="#">Cookie policy</a>
-      </div>
-      <div>
-        <div class="footer-col-title">Social</div>
-        <a href="#">Instagram</a>
-        <a href="#">Dribbble</a>
-        <a href="#">Twitter</a>
+        <div class="row"><label>Scanlines</label><input id="scan" type="checkbox" checked></div>
+        <div class="row"><label>Vignette</label><input id="vig" type="checkbox" checked></div>
+        <div class="row"><label>Pixelate</label><input id="pix" type="checkbox"></div>
+        <div class="row"><label>Particles</label><input id="particles" type="checkbox" checked></div>
+        <div class="row"><label>Trail</label><input id="trail" type="checkbox" checked></div>
+        <div class="row"><label>Bird Skin</label>
+          <select id="skin">
+            <option value="triangle">Triangle</option>
+            <option value="disk">Disk</option>
+            <option value="cube">Cube</option>
+            <option value="ring">Ring</option>
+          </select>
+        </div>
+        <div class="row"><label>Auto-Balance</label><input id="autobal" type="checkbox" checked></div>
+        <div class="row"><label>Mute SFX</label><input id="mute" type="checkbox"></div>
+        <div class="row"><label>Background Speed</label>
+          <input id="bgSpeed" type="range" min="0" max="1.5" step="0.05" value="0.5" />
+        </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      © <span id="year"></span> MockuPlay. Built for designers who care about the details.
+
+    <h4 style="margin:10px 0 6px;color:var(--sec);">Lofi Music</h4>
+    <div class="row"><label>Enable Music</label><input id="musicOn" type="checkbox"></div>
+    <div class="row"><label>Volume</label><input id="musicVol" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+    <div class="row" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+      <button class="btn" id="btnPrev">⟲ Prev</button>
+      <button class="btn" id="btnPlayMusic">▶︎/⏸</button>
+      <button class="btn" id="btnNext">⟲ Next</button>
+      <button class="btn" id="btnShuffle">🔀</button>
     </div>
-  </footer>
+    <div class="sub" id="nowPlaying">No tracks</div>
+
+    <div class="sub">Changes apply immediately. Your best score & settings are saved locally. Music files are loaded from <code>assets/</code>.</div>
+  </div>
+
+  <div class="footer">
+    <span class="pill">Controls: <span class="key">SPACE</span> / <span class="key">↑</span> / <span class="key">Click</span> / <span class="key">Tap</span></span>
+  </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<!-- Mobile flap button -->
+<button id="btnFlap" class="btn" style="position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);padding:18px 30px;font-size:18px;border-radius:999px;z-index:6;pointer-events:auto;display:none">
+  FLAP
+</button>
 
 <script>
 (function(){
-  const $ = (id) => document.getElementById(id);
+  'use strict';
+  // ---------- Helpers ----------
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand = (a,b)=>a+Math.random()*(b-a);
+  const E = sel => document.querySelector(sel);
 
-  const header = $('siteHeader');
-  const yearSpan = $('year');
-  yearSpan.textContent = new Date().getFullYear();
-
-  function updateHeaderMode(){
-    if(window.scrollY > 16){
-      header.classList.remove('transparent');
-      header.classList.add('solid');
-    } else {
-      header.classList.add('transparent');
-      header.classList.remove('solid');
-    }
-  }
-  updateHeaderMode();
-  window.addEventListener('scroll', updateHeaderMode);
-
-  /* Toast */
-  const toast = $('toast');
-  function showToast(msg){
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1700);
-  }
-
-  /* Shirt color */
-  const shirtSwatches = document.getElementById('shirtSwatches');
-  const shirtColorPicker = document.getElementById('shirtColorPicker');
-  const canvasShirt = document.getElementById('canvasShirt');
-
-  function setShirtColor(color){
-    canvasShirt.style.setProperty('--shirt-color', color);
-    shirtColorPicker.value = color;
-  }
-
-  setShirtColor('#e5e7eb');
-
-  shirtSwatches.addEventListener('click', (e)=>{
-    const sw = e.target.closest('.swatch');
-    if(!sw) return;
-    [...shirtSwatches.querySelectorAll('.swatch')].forEach(s=>s.classList.remove('is-active'));
-    sw.classList.add('is-active');
-    setShirtColor(sw.dataset.color);
-  });
-
-  shirtColorPicker.addEventListener('input', (e)=>{
-    setShirtColor(e.target.value);
-    [...shirtSwatches.querySelectorAll('.swatch')].forEach(s=>s.classList.remove('is-active'));
-  });
-
-  /* View tabs */
-  const viewTabs = document.getElementById('viewTabs');
-  const viewLabel = document.getElementById('viewLabel');
-  viewTabs.addEventListener('click',(e)=>{
-    const tab = e.target.closest('.view-tab');
-    if(!tab) return;
-    [...viewTabs.querySelectorAll('.view-tab')].forEach(t=>t.classList.remove('is-active'));
-    tab.classList.add('is-active');
-    const view = tab.dataset.view;
-    viewLabel.textContent = view.charAt(0).toUpperCase() + view.slice(1) + ' view';
-  });
-
-  /* Design image & controls */
-  const designUpload = document.getElementById('designUpload');
-  const designImg = document.getElementById('designImg');
-  const scaleSlider = document.getElementById('scaleSlider');
-  const rotateSlider = document.getElementById('rotateSlider');
-  const opacitySlider = document.getElementById('opacitySlider');
-  const scaleValue = document.getElementById('scaleValue');
-  const rotateValue = document.getElementById('rotateValue');
-  const opacityValue = document.getElementById('opacityValue');
-  const canvasStage = document.getElementById('canvasStage');
-
-  const designState = {
-    scale: 0.8,
-    rotation: 0,
-    opacity: 0.96,
-    offsetX: 0,
-    offsetY: -10 // px relative to center
+  const THEMES = {
+    checkpoint:{ pri:'#54ff79', sec:'#e3ff9c', bg1:'#020707', bg2:'#00120a' },
+    magenta:{pri:'#ff2ea6',sec:'#00f0ff',bg1:'#0a0f1a',bg2:'#0b0018'},
+    cyan:{pri:'#00e5ff',sec:'#9fb0ff',bg1:'#06141f',bg2:'#001018'},
+    lime:{pri:'#aaff00',sec:'#ff00e0',bg1:'#0b1110',bg2:'#001400'},
+    amber:{pri:'#ffb000',sec:'#00ffd5',bg1:'#0f0a00',bg2:'#1a0f00'}
   };
 
-  function applyDesignTransform(){
-    const { scale, rotation, offsetX, offsetY, opacity } = designState;
-    designImg.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) rotate(${rotation}deg) scale(${scale})`;
-    designImg.style.opacity = opacity;
-  }
+  const defaults = {
+    theme:'checkpoint', diff:1, gravity:0.36, flap:6.2, speed:3.2, gap:150, pipeW:70,
+    scan:true, vig:true, pix:false, particles:true, trail:true, skin:'triangle', autobal:true,
+    mute:true, // default: SFX muted
+    bgSpeed:0.5,
+    musicOn:true, musicVol:0.35
+  };
 
-  function ensureDemoArt(){
-    if(designImg.src && designImg.style.display !== 'none') return;
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 800;
-    const ctx = canvas.getContext('2d');
-    const g = ctx.createLinearGradient(0,0,800,800);
-    g.addColorStop(0,'#4f46e5');
-    g.addColorStop(1,'#22c55e');
-    ctx.fillStyle = g;
-    ctx.fillRect(80,80,640,640);
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(80,160,640,120);
-    ctx.fillRect(80,520,640,80);
-    designImg.src = canvas.toDataURL('image/png');
-    designImg.style.display = 'block';
-    applyDesignTransform();
-  }
-
-  ensureDemoArt();
-
-  designUpload.addEventListener('change', (e)=>{
-    const file = e.target.files && e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev)=>{
-      designImg.src = ev.target.result;
-      designImg.style.display = 'block';
-      designState.scale = 0.8;
-      designState.rotation = 0;
-      designState.opacity = 0.96;
-      designState.offsetX = 0;
-      designState.offsetY = -10;
-      scaleSlider.value = 80;
-      rotateSlider.value = 0;
-      opacitySlider.value = 96;
-      scaleValue.textContent = '80%';
-      rotateValue.textContent = '0°';
-      opacityValue.textContent = '96%';
-      applyDesignTransform();
-      showToast('Artwork added to mockup');
-    };
-    reader.readAsDataURL(file);
-  });
-
-  scaleSlider.addEventListener('input',(e)=>{
-    designState.scale = e.target.value/100;
-    scaleValue.textContent = e.target.value + '%';
-    applyDesignTransform();
-  });
-  rotateSlider.addEventListener('input',(e)=>{
-    designState.rotation = parseInt(e.target.value,10);
-    rotateValue.textContent = designState.rotation + '°';
-    applyDesignTransform();
-  });
-  opacitySlider.addEventListener('input',(e)=>{
-    designState.opacity = e.target.value/100;
-    opacityValue.textContent = e.target.value + '%';
-    applyDesignTransform();
-  });
-
-  /* Dragging */
-  let isDragging = false;
-  let dragStartX = 0, dragStartY = 0;
-  let startOffsetX = 0, startOffsetY = 0;
-
-  designImg.addEventListener('mousedown',(e)=>{
-    isDragging = true;
-    designImg.classList.add('dragging');
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    startOffsetX = designState.offsetX;
-    startOffsetY = designState.offsetY;
-    e.preventDefault();
-  });
-  window.addEventListener('mousemove',(e)=>{
-    if(!isDragging) return;
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-    designState.offsetX = startOffsetX + dx;
-    designState.offsetY = startOffsetY + dy;
-    applyDesignTransform();
-  });
-  window.addEventListener('mouseup',()=>{
-    if(isDragging){
-      isDragging = false;
-      designImg.classList.remove('dragging');
+  // ---------- State & persistence ----------
+  function loadSettings(){
+    try {
+      const raw=localStorage.getItem('lofi-flappy-settings');
+      return raw? {...defaults,...JSON.parse(raw)}: {...defaults};
+    } catch (error) {
+      return {...defaults};
     }
-  });
+  }
+  function save(){
+    try { localStorage.setItem('lofi-flappy-settings', JSON.stringify(S)); }
+    catch (error) { /* ignore quota */ }
+  }
+  function loadBest(){ const v=parseInt(localStorage.getItem('lofi-flappy-best')||'0',10); return Number.isFinite(v)?v:0; }
 
-  /* Drag & drop onto canvas */
-  ['dragenter','dragover'].forEach(evt=>{
-    canvasStage.addEventListener(evt,(e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      canvasStage.style.outline = '2px dashed ' + '#3b82f6';
-      canvasStage.style.outlineOffset = '-6px';
-    });
-  });
-  ['dragleave','drop'].forEach(evt=>{
-    canvasStage.addEventListener(evt,(e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      canvasStage.style.outline = 'none';
-    });
-  });
-  canvasStage.addEventListener('drop',(e)=>{
-    const file = (e.dataTransfer.files||[])[0];
-    if(!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (ev)=>{
-      designImg.src = ev.target.result;
-      designImg.style.display = 'block';
-      designState.offsetX = 0;
-      designState.offsetY = -10;
-      applyDesignTransform();
-      showToast('Artwork dropped onto shirt');
-    };
-    reader.readAsDataURL(file);
-  });
+  const S = loadSettings();
+  let BEST = loadBest();
 
-  /* Templates selection (simple UX only) */
-  document.querySelectorAll('.template-card button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      showToast('Template selected (demo)');
-    });
-  });
+  // ---------- DOM ----------
+  const hud = E('#hud');
+  const canvas = E('#game');
+  const ctx = canvas.getContext('2d');
 
-  /* FAQ accordion */
-  const faqList = document.getElementById('faqList');
-  faqList.addEventListener('click',(e)=>{
-    const item = e.target.closest('.faq-item');
-    if(!item || !e.target.closest('.faq-q')) return;
-    item.classList.toggle('open');
-    const icon = item.querySelector('.faq-toggle-icon');
-    if(icon){ icon.textContent = item.classList.contains('open') ? '–' : '+'; }
-  });
+  // ---------- Background controller ----------
+  const BG = { step:160, speeds:[1.2,2.4,4.2], layers:[[],[],[]] };
 
-  /* RENDER TO CANVAS FOR DOWNLOAD / COPY */
-  async function renderMockup(size, format){
-    return new Promise((resolve,reject)=>{
-      if(!designImg.src){
-        reject('No design');
-        return;
+  // ---------- Apply theme ----------
+  function applyTheme(){
+    const t = THEMES[S.theme] || THEMES.checkpoint;
+    document.documentElement.style.setProperty('--pri',t.pri);
+    document.documentElement.style.setProperty('--sec',t.sec);
+    document.body.style.background = `radial-gradient(1200px 60% at 50% 110%, ${t.bg2}, ${t.bg1})`;
+  }
+  applyTheme();
+
+  // ---------- Audio (SFX + Music) ----------
+  let ac, masterGain;
+  const ensureAC = ()=>{ if(!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); masterGain = ac.createGain(); masterGain.gain.value=0.12; masterGain.connect(ac.destination);} };
+  const beep=(f=440,t=0.08,type='sine')=>{ if(S.mute) return; ensureAC(); const o=ac.createOscillator(); const g=ac.createGain(); o.type=type; o.frequency.value=f; o.connect(g); g.connect(masterGain); const n=ac.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.exponentialRampToValueAtTime(1,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+t); o.start(n); o.stop(n+t+0.01); };
+
+  // Initial asset list (will be replaced by manifest if present)
+  const ASSET_TRACKS = [
+    'cutie-japan-lofi-402355.mp3',
+    'lofi-study-calm-peaceful-chill-hop-112191.mp3',
+    'good-night-lofi-cozy-chill-music-160166.mp3'
+  ];
+  const audio = new Audio(); audio.loop=false; audio.preload='metadata'; audio.volume=S.musicVol; let playlist=[]; let idx=-1; let shuffled=false;
+
+  function parseTxtList(txt){
+    // Robust split that avoids multi-line regex literal issues
+    return txt.split(/[\r\n]+/).map(s=>s.replace(/#.*/, '').trim()).filter(Boolean);
+  }
+
+  function buildPlaylist(){
+    // Build from current ASSET_TRACKS immediately (keeps tests synchronous)
+    const prevName = (idx>=0 && playlist[idx]) ? playlist[idx].name : null;
+    const wasPlaying = !audio.paused && !!audio.src;
+    playlist = ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false}));
+    // try to preserve current index by name
+    if(prevName){ const j = playlist.findIndex(p=>p.name===prevName); if(j!==-1) idx=j; }
+    setNowPlaying();
+    // Try to load manifests and update in background
+    (async()=>{
+      async function tryJson(){
+        try{ const res=await fetch(new URL('assets/playlist.json', document.baseURI)); if(!res.ok) return null; const arr=await res.json(); return Array.isArray(arr)? arr: null; }
+        catch(error){ return null; }
       }
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-
-      if(format === 'jpg'){
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0,size,size);
-      } else {
-        ctx.clearRect(0,0,size,size);
+      async function tryTxt(){
+        try{ const res=await fetch(new URL('assets/playlist.txt', document.baseURI)); if(!res.ok) return null; const txt=await res.text();
+             return parseTxtList(txt); }
+        catch(error){ return null; }
       }
-
-      // Draw t-shirt
-      const shirtW = size * 0.55;
-      const shirtH = size * 0.7;
-      const shirtX = (size - shirtW) / 2;
-      const shirtY = size * 0.15;
-      const bodyTop = shirtY + shirtH * 0.18;
-      const bodyHeight = shirtH * 0.78;
-
-      const shirtColor = canvasShirt.style.getPropertyValue('--shirt-color') || '#e5e7eb';
-
-      ctx.save();
-      ctx.fillStyle = shirtColor;
-      ctx.strokeStyle = 'rgba(15,23,42,0.24)';
-      ctx.lineWidth = size * 0.007;
-
-      // Body
-      const r = size * 0.03;
-      if(ctx.roundRect){
-        ctx.beginPath();
-        ctx.roundRect(shirtX, bodyTop, shirtW, bodyHeight, r);
-        ctx.fill();
-        ctx.stroke();
-      } else {
-        ctx.fillRect(shirtX, bodyTop, shirtW, bodyHeight);
-        ctx.strokeRect(shirtX, bodyTop, shirtW, bodyHeight);
+      let names = await tryJson();
+      if(!names) names = await tryTxt();
+      if(!names) names = await tryPattern();
+      if(names && names.length){
+        const before = (idx>=0 && playlist[idx]) ? playlist[idx].name : null;
+        ASSET_TRACKS.splice(0, ASSET_TRACKS.length, ...names);
+        playlist = ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false}));
+        if(before){ const j = playlist.findIndex(p=>p.name===before); if(j!==-1) idx=j; else idx=-1; }
+        setNowPlaying();
       }
+      await verifyAssets();
+      // if we were playing before rebuild, do NOT restart; just keep playing
+      if(wasPlaying && !audio.paused){ /* no-op */ }
+    })();
+  }
 
-      // Sleeves
+  // Global probe so tryPattern and verifyAssets share it
+  async function probeURL(url){
+    return new Promise((resolve)=>{
+      const a=new Audio(); a.preload='metadata'; a.src=url;
+      const done=(ok)=>{ a.src=''; resolve(!!ok); };
+      a.addEventListener('loadedmetadata', ()=>done(true), {once:true});
+      a.addEventListener('error', ()=>done(false), {once:true});
+      setTimeout(()=>done(!isNaN(a.duration) && a.duration>0), 4000);
+    });
+  }
+
+  async function tryPattern(){
+    // Autodiscover assets following trackN.mp3 (N=1..50)
+    const base = document.baseURI; const found=[];
+    for(let n=1;n<=50;n++){
+      const name=`track${n}.mp3`;
+      const url=new URL('assets/'+name, base).toString();
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await probeURL(url);
+      if(ok) found.push(name);
+    }
+    return found;
+  }
+
+  async function verifyAssets(){
+    for(let i=0;i<playlist.length;i++){
+      try { playlist[i].bad = !(await probeURL(playlist[i].url)); }
+      catch (error) { playlist[i].bad = true; }
+    }
+    setNowPlaying();
+  }
+
+  function findNextPlayable(from, dir){
+    if(!playlist.length) return -1;
+    for(let k=0;k<playlist.length;k++){
+      const i=(from + dir + k + playlist.length) % playlist.length;
+      if(!playlist[i].bad) return i;
+    }
+    return -1;
+  }
+
+  function setNowPlaying(){
+    const el=E('#nowPlaying'); if(!el) return;
+    const good = playlist.filter(p=>!p.bad).length;
+    if(idx>=0 && playlist[idx]){
+      const tr=playlist[idx];
+      el.textContent = `Now Playing: ${decodeURIComponent(tr.name)}${tr.bad?' [missing]':''} (${good}/${playlist.length} available)`;
+    } else {
+      el.textContent = good>0 ? `Ready (${good}/${playlist.length} available)` : 'No playable tracks found in assets/';
+    }
+  }
+  function playIndex(i){ if(!playlist.length) return; const ni=(i+playlist.length)%playlist.length; if(playlist[ni].bad){ const alt=findNextPlayable(ni,+1); if(alt===-1){ audio.pause(); setNowPlaying(); return; } return playIndex(alt); } idx=ni; audio.src=playlist[idx].url; audio.play().catch(()=>{}); setNowPlaying(); }
+  function nextTrack(){ if(!playlist.length) return; playIndex(idx+1); }
+  function prevTrack(){ if(!playlist.length) return; playIndex(idx-1); }
+  function shuffleTracks(){ if(!playlist.length) return; shuffled=!shuffled; if(shuffled){ playlist=playlist.slice().sort(()=>Math.random()-0.5); } else { playlist=ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false})); } setNowPlaying(); }
+  audio.addEventListener('ended', ()=>{ nextTrack(); });
+  audio.addEventListener('error', ()=>{ if(playlist[idx]) playlist[idx].bad=true; const ni=findNextPlayable(idx,+1); if(ni===-1){ audio.pause(); setNowPlaying(); return; } setTimeout(()=>playIndex(ni),300); });
+
+  buildPlaylist();
+
+  // ---------- Game objects ----------
+  const G = { running:false, time:0, score:0, pipeTimer:0 };
+  const world = { speed:S.speed, gravity:S.gravity, gap:S.gap, pipeW:S.pipeW };
+  let bird = { x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
+  let pipes=[]; let sparks=[]; let trail=[]; let popups=[]; let scoreFlash=0;
+
+  // ---------- Background generation ----------
+  function buildCity(){
+    const w=canvas.width; const base=[90,130,170];
+    for(let li=0; li<3; li++){
+      const arr=[]; for(let x=-BG.step; x<w+BG.step; x+=BG.step){ const bw=54+li*14+Math.floor(rand(-6,6)); const bh=base[li]+Math.floor(rand(-24,32)); arr.push({x,w:bw,h:bh}); }
+      BG.layers[li]=arr;
+    }
+  }
+
+  function fit(){
+    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
+    canvas.width = Math.floor(innerWidth * dpr); canvas.height = Math.floor(innerHeight * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    buildCity();
+    if(innerWidth < 900){ E('#panel')?.classList.add('hidden'); E('#btnFlap').style.display='block'; } else { E('#panel')?.classList.remove('hidden'); E('#btnFlap').style.display='none'; }
+  }
+  addEventListener('resize', fit, {passive:true});
+  fit();
+
+  // ---------- Bind initial UI values ----------
+  E('#theme').value=S.theme;
+  E('#diff').value=String(S.diff);
+  E('#gravity').value=S.gravity; E('#flap').value=S.flap; E('#speed').value=S.speed; E('#gap').value=S.gap; E('#pipeW').value=S.pipeW;
+  E('#scan').checked=S.scan; E('#vig').checked=S.vig; E('#pix').checked=S.pix; E('#particles').checked=S.particles; E('#trail').checked=S.trail;
+  E('#skin').value=S.skin; E('#autobal').checked=S.autobal; E('#mute').checked=S.mute; E('#bgSpeed').value=S.bgSpeed; E('#musicOn').checked=S.musicOn; E('#musicVol').value=S.musicVol;
+  E('#best').textContent=BEST;
+
+  // ---------- Gameplay helpers ----------
+  function reset(){ bird={ x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true }; pipes.length=0; sparks.length=0; trail.length=0; G.score=0; G.pipeTimer=0; world.speed=S.speed; world.gravity=S.gravity; world.gap=S.gap; world.pipeW=S.pipeW; E('#score').textContent=0; }
+
+  function spawnPipe(){ const h=canvas.height; const cy=rand(80+world.gap/2, h-80-world.gap/2); const x=canvas.width+world.pipeW; pipes.push({x,w:world.pipeW,top:cy-world.gap/2,bot:cy+world.gap/2,passed:false}); }
+
+  function addSpark(x,y,clr){ if(!S.particles) return; for(let i=0;i<4;i++){ sparks.push({x,y, vx:rand(-1,1), vy:rand(-1.6,-0.2), life:rand(0.25,0.6), t:0, c:clr}); } }
+
+  // ---------- Input ----------
+  function start(){
+    try { ensureAC(); ac && ac.resume && ac.resume(); }
+    catch (error) { /* ignore autoplay errors */ }
+    G.running = true;
+    if(!S.musicOn) return;
+    // If already playing, do not restart the track
+    if(audio.src && !audio.paused) return;
+    if(playlist.length){
+      // If we have a valid idx, just continue (play if paused). Otherwise pick first playable
+      if(idx>=0 && playlist[idx] && !playlist[idx].bad){ audio.play().catch(()=>{}); }
+      else { const first=findNextPlayable(-1,+1); if(first!==-1) playIndex(first); }
+    }
+  }
+
+  function flap(){ if(!G.running){ start(); return; } if(!bird.alive){ reset(); /* do not touch audio here */ G.running=true; return; } bird.vy=-S.flap; addSpark(bird.x-8,bird.y,'pri'); beep(660,0.06,'triangle'); }
+  addEventListener('keydown',e=>{ if(['Space','ArrowUp','KeyW'].includes(e.code)){ e.preventDefault(); flap(); } if(e.code==='KeyP'){ if(G.running) G.running=false; else start(); } });
+  addEventListener('pointerdown', flap);
+
+  E('#btnStart').onclick=()=>{ if(!G.running) start(); else flap(); };
+  E('#btnPause').onclick=()=>{ G.running=false; };
+  E('#btnReset').onclick=()=>{ reset(); drawFrame(0); };
+  E('#overlayStart').onclick=()=>{ start(); E('#overlayStart').style.display='none'; };
+  E('#btnFlap').addEventListener('pointerdown', (e)=>{ e.preventDefault(); flap(); });
+  E('#btnPanel').addEventListener('click', ()=>{ const p=E('#panel'); if(p){ p.classList.toggle('hidden'); } });
+
+  // ---------- Settings ----------
+  const bind=(sel,fn)=>E(sel).addEventListener('input',fn);
+  bind('#theme',e=>{ S.theme=e.target.value; applyTheme(); save(); });
+  bind('#diff',e=>{ S.diff=+e.target.value; if(S.diff===0){S.gravity=0.32;S.flap=7;S.speed=2.8;S.gap=180;S.pipeW=80;} if(S.diff===1){S.gravity=0.36;S.flap=6.2;S.speed=3.2;S.gap=150;S.pipeW=70;} if(S.diff===2){S.gravity=0.42;S.flap=6;S.speed=3.8;S.gap=130;S.pipeW=64;} world.gravity=S.gravity;world.speed=S.speed;world.gap=S.gap;world.pipeW=S.pipeW; E('#gravity').value=S.gravity;E('#flap').value=S.flap;E('#speed').value=S.speed;E('#gap').value=S.gap;E('#pipeW').value=S.pipeW; save(); });
+  bind('#gravity',e=>{ S.gravity=+e.target.value; world.gravity=S.gravity; save(); });
+  bind('#flap',e=>{ S.flap=+e.target.value; save(); });
+  bind('#speed',e=>{ S.speed=+e.target.value; world.speed=S.speed; save(); });
+  bind('#gap',e=>{ S.gap=+e.target.value; world.gap=S.gap; save(); });
+  bind('#pipeW',e=>{ S.pipeW=+e.target.value; world.pipeW=S.pipeW; save(); });
+  bind('#scan',e=>{ S.scan=e.target.checked; hud.classList.toggle('scanlines',S.scan); save(); });
+  bind('#vig',e=>{ S.vig=e.target.checked; hud.classList.toggle('vignette',S.vig); save(); });
+  bind('#pix',e=>{ S.pix=e.target.checked; canvas.classList.toggle('pixelate',S.pix); save(); });
+  bind('#particles',e=>{ S.particles=e.target.checked; save(); });
+  bind('#trail',e=>{ S.trail=e.target.checked; if(!S.trail) trail.length=0; save(); });
+  bind('#skin',e=>{ S.skin=e.target.value; save(); });
+  bind('#autobal',e=>{ S.autobal=e.target.checked; save(); });
+  bind('#mute',e=>{ S.mute=e.target.checked; save(); });
+  bind('#bgSpeed',e=>{ S.bgSpeed=+e.target.value; save(); });
+  // Music controls
+  bind('#musicOn',e=>{ S.musicOn=e.target.checked; save(); if(S.musicOn && playlist.length){ const first=(idx<0)? findNextPlayable(-1,+1): idx; if(first!==-1) playIndex(first); } else { audio.pause(); } });
+  bind('#musicVol',e=>{ S.musicVol=+e.target.value; audio.volume=S.musicVol; save(); });
+  const _prev=E('#btnPrev'), _next=E('#btnNext'), _shuf=E('#btnShuffle'), _pp=E('#btnPlayMusic');
+  _prev && (_prev.onclick=prevTrack);
+  _next && (_next.onclick=nextTrack);
+  _shuf && (_shuf.onclick=shuffleTracks);
+  _pp && (_pp.onclick=()=>{ if(audio.paused){ if(!playlist.length){ buildPlaylist(); } const first=(idx<0)? findNextPlayable(-1,+1): idx; if(first!==-1) playIndex(first); } else { audio.pause(); } });
+
+  // ---------- Draw helpers ----------
+  function neonRect(x,y,w,h,clr){
+    ctx.save();
+    ctx.fillStyle=clr;
+    ctx.globalAlpha=0.85;
+    ctx.fillRect(x,y,w,h);
+    ctx.shadowColor=clr;
+    ctx.shadowBlur=10;
+    ctx.strokeStyle=clr;
+    ctx.lineWidth=1.5;
+    ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+    ctx.shadowBlur=0;
+    ctx.restore();
+  }
+  function neonCircle(x,y,r,clr){
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=clr;
+    ctx.shadowColor=clr;
+    ctx.shadowBlur=18;
+    ctx.fill();
+    ctx.shadowBlur=0;
+  }
+
+  // Checkpoint-style background
+  function drawCity(t){
+    const w = canvas.width;
+    const h = canvas.height;
+    const pri = getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
+    const sec = getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
+
+    // Deep black-green base
+    ctx.fillStyle = '#020706';
+    ctx.fillRect(0, 0, w, h);
+
+    // Radial green glow, slightly off-center – like a CRT / Checkpoint hero glow
+    const cx = w * 0.3;
+    const cy = h * 0.5;
+    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 1.1);
+    rg.addColorStop(0.0, 'rgba(84,255,121,0.35)');
+    rg.addColorStop(0.35,'rgba(84,255,121,0.10)');
+    rg.addColorStop(1.0,'rgba(0,0,0,1)');
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Vertical "scan grid" lines that drift slowly – gives that holo-UI feeling
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = pri;
+    ctx.lineWidth = 1;
+    const step = 42;
+    const offset = (t * 20) % step;
+    for(let x = -step; x < w + step; x += step){
       ctx.beginPath();
-      ctx.moveTo(shirtX, bodyTop + shirtH*0.02);
-      ctx.lineTo(shirtX - shirtW*0.22, bodyTop + shirtH*0.18);
-      ctx.lineTo(shirtX, bodyTop + shirtH*0.30);
+      ctx.moveTo(x + offset, 0);
+      ctx.lineTo(x + offset, h);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Tiny sparkling pixels, like Checkpoint's animated dots
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = sec;
+    const count = 90;
+    for(let i = 0; i < count; i++){
+      const px = (i * 73 + (t * 160 | 0)) % w;
+      const py = (i * 37 + (t * 110 | 0)) % h;
+      ctx.fillRect(px, py, 1, 1);
+    }
+    ctx.restore();
+  }
+
+  function drawPipes(){
+    const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
+    const sec=getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
+    for(const p of pipes){
+      neonRect(p.x,0,p.w,p.top,sec);
+      neonRect(p.x,p.bot,p.w,canvas.height-p.bot,sec);
+      ctx.fillStyle=pri;
+      ctx.globalAlpha=0.25;
+      ctx.fillRect(p.x-4,p.top-6,p.w+8,4);
+      ctx.fillRect(p.x-4,p.bot+2,p.w+8,4);
+      ctx.globalAlpha=1;
+    }
+  }
+
+  function drawBird(){
+    const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
+    const sec=getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
+    if(S.trail){
+      trail.push({x:bird.x,y:bird.y});
+      if(trail.length>50) trail.shift();
+      for(let i=0;i<trail.length;i++){
+        const p=trail[i];
+        const a=1-i/trail.length;
+        ctx.globalAlpha=a*0.22;
+        neonCircle(p.x,p.y,3,sec);
+      }
+      ctx.globalAlpha=1;
+    }
+    ctx.save();
+    ctx.translate(bird.x,bird.y);
+    ctx.rotate(clamp(bird.vy,-8,8)*0.035);
+    if(S.skin==='triangle'){
+      ctx.beginPath();
+      ctx.moveTo(12,0);
+      ctx.lineTo(-10,-8);
+      ctx.lineTo(-10,8);
       ctx.closePath();
+      ctx.fillStyle=pri;
+      ctx.shadowColor=pri;
+      ctx.shadowBlur=14;
       ctx.fill();
-      ctx.stroke();
-
+      ctx.shadowBlur=0;
+    }
+    else if(S.skin==='disk'){ neonCircle(0,0,12,pri); }
+    else if(S.skin==='cube'){ neonRect(-10,-10,20,20,pri); }
+    else if(S.skin==='ring'){
+      ctx.strokeStyle=pri;
+      ctx.lineWidth=5;
+      ctx.shadowColor=pri;
+      ctx.shadowBlur=14;
       ctx.beginPath();
-      ctx.moveTo(shirtX+shirtW, bodyTop + shirtH*0.02);
-      ctx.lineTo(shirtX+shirtW+shirtW*0.22, bodyTop + shirtH*0.18);
-      ctx.lineTo(shirtX+shirtW, bodyTop + shirtH*0.30);
-      ctx.closePath();
-      ctx.fill();
+      ctx.arc(0,0,12,0,Math.PI*2);
       ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    ctx.restore();
+  }
 
-      // Neck line
-      ctx.beginPath();
-      ctx.arc(size/2, shirtY + shirtH*0.15, shirtW*0.16, Math.PI*1.05, Math.PI*1.95);
-      ctx.lineWidth = size*0.01;
-      ctx.strokeStyle = 'rgba(15,23,42,0.25)';
-      ctx.stroke();
+  function drawSparks(dt){
+    const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
+    for(let i=sparks.length-1;i>=0;i--){
+      const s=sparks[i];
+      s.t+=dt;
+      s.x+=s.vx*60*dt;
+      s.y+=s.vy*60*dt;
+      s.vy+=world.gravity*0.4*dt*60;
+      const a=1-s.t/s.life;
+      if(a<=0){sparks.splice(i,1); continue;}
+      ctx.globalAlpha=a*0.8;
+      neonCircle(s.x,s.y,2, s.c==='pri'?pri:'#00f0ff');
+      ctx.globalAlpha=1;
+    }
+  }
 
-      // highlight
-      ctx.globalAlpha = 0.18;
-      const grad = ctx.createLinearGradient(shirtX, shirtY, shirtX+shirtW, shirtY+shirtH);
-      grad.addColorStop(0,'#ffffff');
-      grad.addColorStop(1,'transparent');
-      ctx.fillStyle = grad;
-      ctx.fillRect(shirtX, shirtY, shirtW, shirtH);
-      ctx.restore();
+  // ---------- Loop ----------
+  reset();
+  let last=0;
+  function loop(ts){
+    const t=ts/1000;
+    const dt=Math.min(0.033, last? t-last:0.016);
+    last=t;
+    if(G.running) update(dt);
+    drawFrame(dt,t);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 
-      // Draw design image
-      const img = new Image();
-      img.onload = () => {
-        ctx.save();
-        ctx.globalAlpha = designState.opacity;
-
-        const shirtRect = canvasShirt.getBoundingClientRect();
-        const shirtWidthDom = shirtRect.width || 1;
-        const shirtHeightDom = shirtRect.height || 1;
-
-        const offsetX_exp = designState.offsetX * (shirtW / shirtWidthDom);
-        const offsetY_exp = designState.offsetY * (shirtH / shirtHeightDom);
-
-        const centerX = size/2 + offsetX_exp;
-        const centerY = bodyTop + shirtH*0.28 + offsetY_exp;
-
-        const aspect = img.naturalHeight / img.naturalWidth || 1;
-        const baseWidth = shirtW * 0.6 * designState.scale;
-        const drawW = baseWidth;
-        const drawH = baseWidth * aspect;
-
-        ctx.translate(centerX, centerY);
-        ctx.rotate(designState.rotation * Math.PI / 180);
-        ctx.drawImage(img, -drawW/2, -drawH/2, drawW, drawH);
-        ctx.restore();
-
-        if(format === 'png'){
-          resolve(canvas.toDataURL('image/png'));
-        } else {
-          resolve(canvas.toDataURL('image/jpeg',0.92));
+  function update(dt){
+    G.time+=dt;
+    G.pipeTimer+=dt;
+    const spawnEvery=clamp(1.4-(S.diff*0.08),1.1,1.6);
+    if(G.pipeTimer>spawnEvery){ G.pipeTimer=0; spawnPipe(); }
+    for(let i=pipes.length-1;i>=0;i--){
+      const p=pipes[i];
+      p.x-=world.speed*60*dt;
+      if(p.x+p.w<0) pipes.splice(i,1);
+    }
+    bird.vy = clamp(bird.vy + world.gravity*60*dt, -12, 12);
+    bird.y += bird.vy;
+    // Trail drift left to simulate world scrolling
+    if(S.trail){
+      for(let i=0;i<trail.length;i++){
+        trail[i].x -= world.speed*60*dt;
+      }
+      while(trail.length>80) trail.shift();
+    }
+    for(let li=0; li<3; li++){
+      const arr=BG.layers[li];
+      const vx=(BG.speeds[li]* (0.8 + S.bgSpeed)) * dt;
+      for(let i=0;i<arr.length;i++){
+        arr[i].x -= vx;
+        if(arr[i].x < -BG.step) arr[i].x += BG.step * arr.length;
+      }
+    }
+    const bx=bird.x, by=bird.y, r=bird.r;
+    for(const p of pipes){
+      if(!p.passed && p.x+p.w<bx-r){
+        p.passed=true;
+        G.score++;
+        E('#score').textContent=G.score;
+        scoreFlash=0.6;
+        popups.push({t:0,txt:String(G.score)});
+        addSpark(bx,by,'pri');
+        beep(880,0.05,'square');
+        if(G.score>BEST){
+          BEST=G.score;
+          localStorage.setItem('lofi-flappy-best',BEST);
+          E('#best').textContent=BEST;
         }
-      };
-      img.onerror = () => reject('Could not load design image');
-      img.crossOrigin = 'anonymous';
-      img.src = designImg.src;
-    });
+      }
+      if(bx+r>p.x && bx-r<p.x+p.w && (by-r<p.top || by+r>p.bot)) die();
+    }
+    if(by-r<0 || by+r>canvas.height) die();
+    if(S.autobal){
+      const target=6+S.diff*5;
+      const rate=G.time>0? (G.score/(G.time/60)):0;
+      const adj=clamp((rate-target)/target,-0.4,0.4);
+      world.speed=clamp(S.speed*(1+adj*0.18),1.8,5.2);
+      world.gap=clamp(S.gap*(1-adj*0.16),120,240);
+      world.pipeW=clamp(S.pipeW*(1-adj*0.12),52,96);
+    }
   }
 
-  const exportSize = document.getElementById('exportSize');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const copyBtn = document.getElementById('copyBtn');
+  function die(){ if(!bird.alive) return; bird.alive=false; G.running=false; addSpark(bird.x,bird.y,'pri'); addSpark(bird.x+6,bird.y-4,'pri'); beep(160,0.18,'sawtooth'); }
 
-  downloadBtn.addEventListener('click', async ()=>{
-    const size = parseInt(exportSize.value,10) || 1080;
-    const format = document.querySelector('input[name="format"]:checked').value;
-    try{
-      const dataUrl = await renderMockup(size, format);
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = 'tshirt-mockup.' + format;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast('Mockup downloaded');
-    }catch(err){
-      console.error(err);
-      showToast('Failed to render mockup');
+  function drawFrame(dt,t){
+    drawCity(t||0);
+    drawPipes();
+    drawBird();
+    drawSparks(dt||0.016);
+    // Top-center score flash and popups
+    const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
+    if(scoreFlash>0){
+      scoreFlash=Math.max(0, scoreFlash-(dt||0.016));
+      const s=1+scoreFlash*0.4;
+      ctx.save();
+      ctx.translate(canvas.width/2, 84);
+      ctx.scale(s,s);
+      ctx.font='800 28px Inter, Segoe UI, system-ui, sans-serif';
+      ctx.fillStyle=pri;
+      ctx.shadowColor=pri;
+      ctx.shadowBlur=18;
+      ctx.textAlign='center';
+      ctx.fillText(String(G.score),0,0);
+      ctx.restore();
+      ctx.shadowBlur=0;
     }
-  });
+    // score popups animate up and fade
+    for(let i=popups.length-1;i>=0;i--){
+      const p=popups[i];
+      p.t+=(dt||0.016);
+      const a=Math.max(0,1-p.t/0.8);
+      if(a<=0){ popups.splice(i,1); continue; }
+      ctx.globalAlpha=a;
+      ctx.fillStyle='white';
+      ctx.font='700 18px Inter, system-ui';
+      ctx.textAlign='center';
+      ctx.fillText(p.txt, canvas.width/2, 106 - p.t*30);
+      ctx.globalAlpha=1;
+    }
 
-  copyBtn.addEventListener('click', async ()=>{
-    if(!navigator.clipboard || !window.ClipboardItem){
-      showToast('Clipboard not supported in this browser');
-      return;
+    if(!G.running){
+      const obtn=E('#overlayStart');
+      if(obtn) obtn.style.display='block';
+      const pri2=pri;
+      ctx.textAlign='center';
+      ctx.font='700 42px Inter, Segoe UI, system-ui, sans-serif';
+      ctx.fillStyle=pri2;
+      ctx.shadowColor=pri2;
+      ctx.shadowBlur=18;
+      ctx.fillText('Tap / Space to FLAP', canvas.width/2, canvas.height*0.33);
+      ctx.shadowBlur=0;
+      ctx.font='400 16px Inter, Segoe UI, system-ui, sans-serif';
+      ctx.fillStyle='rgba(255,255,255,.7)';
+      ctx.fillText('Avoid neon vents. Pass through gaps to score. Customize on the right.', canvas.width/2, canvas.height*0.33+28);
+    } else {
+      const obtn=E('#overlayStart');
+      if(obtn) obtn.style.display='none';
     }
-    try{
-      const dataUrl = await renderMockup(1080,'png');
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
-      showToast('Preview copied to clipboard');
-    }catch(err){
-      console.error(err);
-      showToast('Could not copy image');
-    }
-  });
+  }
+
+  addEventListener('visibilitychange',()=>{ if(document.hidden) G.running=false; });
+
+  // ---------- Self-Tests (console) ----------
+  (function runTests(){ let pass=0, fail=0; const test=(name,fn)=>{ try{ fn(); console.log('%cPASS','color:#6f6',name); pass++; }catch(e){ console.error('FAIL',name,e); fail++; } };
+    test('clamp()',()=>{ if(clamp(5,0,4)!==4) throw 'upper'; if(clamp(-1,0,4)!==0) throw 'lower'; if(clamp(2,0,4)!==2) throw 'mid'; });
+    test('spawnPipe gap bounds',()=>{ const old=pipes.length; spawnPipe(); const p=pipes[pipes.length-1]; const gap=p.bot-p.top; if(Math.abs(gap-world.gap)>0.001) throw 'gap mismatch'; if(p.top<0||p.bot>canvas.height) throw 'oob'; pipes.length=old; });
+    test('BG builds per layer',()=>{ buildCity(); if(!(BG.layers[0].length>0 && BG.layers[1].length>0 && BG.layers[2].length>0)) throw 'bg empty'; });
+    test('BG drift monotonic',()=>{ const x0=BG.layers[0][0].x; for(let k=0;k<10;k++){ for(let li=0;li<3;li++){ const arr=BG.layers[li]; for(let i=0;i<arr.length;i++){ arr[i].x -= BG.speeds[li]*0.016; } } } const x1=BG.layers[0][0].x; if(!(x1<x0)) throw 'bg not moving left'; });
+    test('trail drifts left with world',()=>{ reset(); S.trail=true; trail.length=0; world.speed=3; const startX=bird.x; trail.push({x:startX,y:bird.y}); update(0.1); if(!(trail[0].x < startX)) throw 'trail not moving left'; });
+    test('music playlist from assets',()=>{ if(!(ASSET_TRACKS.length>0)) throw 'no assets'; buildPlaylist(); if(!(playlist.length===ASSET_TRACKS.length)) throw 'playlist build mismatch'; });
+    test('music next wraps',()=>{ playlist=[{name:'track1.mp3',bad:false},{name:'track2.mp3',bad:false}]; idx=playlist.length-1; nextTrack(); if(!(idx===0)) throw 'next did not wrap'; });
+    test('start does not restart playing track',()=>{ audio.src='x'; Object.defineProperty(audio,'paused',{get:()=>false}); const oldIdx=1; idx=oldIdx; start(); if(idx!==oldIdx) throw 'restarted index'; });
+    test('pattern finder exists',()=>{ if(typeof tryPattern!=='function') throw 'missing'; });
+    test('parseTxtList handles CRLF & comments',()=>{ const arr=parseTxtList('a.mp3\r\n# c\r\nb.ogg\n\n c.wav '); if(arr.length!==3||arr[0]!=='a.mp3'||arr[1]!=='b.ogg'||arr[2]!=='c.wav') throw 'parse failed'; });
+    console.log(`Self-tests: ${pass} passed, ${fail} failed`); })();
+
 })();
 </script>
 </body>
