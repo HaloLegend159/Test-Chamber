@@ -7,15 +7,14 @@
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
-    /* Amber Checkpoint-style defaults; JS themes will override */
     --bg1:#120a02;
     --bg2:#050301;
     --ink:#fff6d5;
     --muted:#c7b27a;
     --panel:#110b03;
     --line:#3a2a10;
-    --pri:#ffd94a;   /* neon-ish gold */
-    --sec:#fff8b0;   /* softer yellow */
+    --pri:#ffd94a;
+    --sec:#fff8b0;
     --acc:#ffd94a;
     --warn:#ffb000;
   }
@@ -239,7 +238,7 @@
   const defaults = {
     theme:'checkpoint', diff:1, gravity:0.36, flap:6.2, speed:3.2, gap:150, pipeW:70,
     scan:true, vig:true, pix:false, particles:true, trail:true, skin:'triangle', autobal:true,
-    mute:true, // default: SFX muted
+    mute:true,
     bgSpeed:0.5,
     musicOn:true, musicVol:0.35
   };
@@ -255,7 +254,7 @@
   }
   function save(){
     try { localStorage.setItem('lofi-flappy-settings', JSON.stringify(S)); }
-    catch (error) { /* ignore quota */ }
+    catch (error) {}
   }
   function loadBest(){ const v=parseInt(localStorage.getItem('lofi-flappy-best')||'0',10); return Number.isFinite(v)?v:0; }
 
@@ -267,15 +266,19 @@
   const canvas = E('#game');
   const ctx = canvas.getContext('2d');
 
-  // ---------- Halftone background data ----------
-  const BG = { spacing:12, dots:[] };
-
-  // small hash-based pseudo-noise
-  function hash2(i,j){
-    let s = i*374761393 + j*668265263;
-    s = (s ^ (s>>13)) >>> 0;
-    return (s & 0xfffffff)/0xfffffff;
-  }
+  // Ordered dither params (like the sample image)
+  const DITHER = { spacing:8, size:3.5 };
+  const BAYER8 = [
+    [0,32,8,40,2,34,10,42],
+    [48,16,56,24,50,18,58,26],
+    [12,44,4,36,14,46,6,38],
+    [60,28,52,20,62,30,54,22],
+    [3,35,11,43,1,33,9,41],
+    [51,19,59,27,49,17,57,25],
+    [15,47,7,39,13,45,5,37],
+    [63,31,55,23,61,29,53,21]
+  ];
+  const BAYER_MAX = 64;
 
   // ---------- Apply theme ----------
   function applyTheme(){
@@ -289,7 +292,19 @@
   // ---------- Audio (SFX + Music) ----------
   let ac, masterGain;
   const ensureAC = ()=>{ if(!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); masterGain = ac.createGain(); masterGain.gain.value=0.12; masterGain.connect(ac.destination);} };
-  const beep=(f=440,t=0.08,type='sine')=>{ if(S.mute) return; ensureAC(); const o=ac.createOscillator(); const g=ac.createGain(); o.type=type; o.frequency.value=f; o.connect(g); g.connect(masterGain); const n=ac.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.exponentialRampToValueAtTime(1,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+t); o.start(n); o.stop(n+t+0.01); };
+  const beep=(f=440,t=0.08,type='sine')=>{
+    if(S.mute) return;
+    ensureAC();
+    const o=ac.createOscillator();
+    const g=ac.createGain();
+    o.type=type; o.frequency.value=f;
+    o.connect(g); g.connect(masterGain);
+    const n=ac.currentTime;
+    g.gain.setValueAtTime(0.0001,n);
+    g.gain.exponentialRampToValueAtTime(1,n+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,n+t);
+    o.start(n); o.stop(n+t+0.01);
+  };
 
   const ASSET_TRACKS = [
     'cutie-japan-lofi-402355.mp3',
@@ -318,6 +333,37 @@
              return parseTxtList(txt); }
         catch(error){ return null; }
       }
+      async function probeURL(url){
+        return new Promise((resolve)=>{
+          const a=new Audio(); a.preload='metadata'; a.src=url;
+          const done=(ok)=>{ a.src=''; resolve(!!ok); };
+          a.addEventListener('loadedmetadata', ()=>done(true), {once:true});
+          a.addEventListener('error', ()=>done(false), {once:true});
+          setTimeout(()=>done(!isNaN(a.duration) && a.duration>0), 4000);
+        });
+      }
+      async function tryPattern(){
+        const base = document.baseURI; const found=[];
+        for(let n=1;n<=50;n++){
+          const name=`track${n}.mp3`;
+          const url=new URL('assets/'+name, base).toString();
+          const ok = await probeURL(url);
+          if(ok) found.push(name);
+        }
+        return found;
+      }
+      async function verifyAssets(){
+        for(let i=0;i<playlist.length;i++){
+          try {
+            const ok = await probeURL(playlist[i].url);
+            playlist[i].bad = !ok;
+          } catch (e) {
+            playlist[i].bad = true;
+          }
+        }
+        setNowPlaying();
+      }
+
       let names = await tryJson();
       if(!names) names = await tryTxt();
       if(!names) names = await tryPattern();
@@ -325,41 +371,15 @@
         const before = (idx>=0 && playlist[idx]) ? playlist[idx].name : null;
         ASSET_TRACKS.splice(0, ASSET_TRACKS.length, ...names);
         playlist = ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false}));
-        if(before){ const j = playlist.findIndex(p=>p.name===before); if(j!==-1) idx=j; else idx=-1; }
+        if(before){
+          const j = playlist.findIndex(p=>p.name===before);
+          if(j!==-1) idx=j; else idx=-1;
+        }
         setNowPlaying();
       }
       await verifyAssets();
-      if(wasPlaying && !audio.paused){ /* keep playing */ }
+      if(wasPlaying && !audio.paused){ /* keep going */ }
     })();
-  }
-
-  async function probeURL(url){
-    return new Promise((resolve)=>{
-      const a=new Audio(); a.preload='metadata'; a.src=url;
-      const done=(ok)=>{ a.src=''; resolve(!!ok); };
-      a.addEventListener('loadedmetadata', ()=>done(true), {once:true});
-      a.addEventListener('error', ()=>done(false), {once:true});
-      setTimeout(()=>done(!isNaN(a.duration) && a.duration>0), 4000);
-    });
-  }
-
-  async function tryPattern(){
-    const base = document.baseURI; const found=[];
-    for(let n=1;n<=50;n++){
-      const name=`track${n}.mp3`;
-      const url=new URL('assets/'+name, base).toString();
-      const ok = await probeURL(url);
-      if(ok) found.push(name);
-    }
-    return found;
-  }
-
-  async function verifyAssets(){
-    for(let i=0;i<playlist.length;i++){
-      try { playlist[i].bad = !(await probeURL(playlist[i].url)); }
-      catch (error) { playlist[i].bad = true; }
-    }
-    setNowPlaying();
   }
 
   function findNextPlayable(from, dir){
@@ -422,50 +442,18 @@
   let bird = { x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
   let pipes=[]; let sparks=[]; let trail=[]; let popups=[]; let scoreFlash=0;
 
-  // ---------- Halftone generation ----------
-  function buildCity(){
-    const s = BG.spacing;
-    BG.dots.length = 0;
-    const w = canvas.width;
-    const h = canvas.height;
-    const cols = Math.ceil(w / s) + 2;
-    const rows = Math.ceil(h / s) + 2;
-    for(let j=0;j<rows;j++){
-      for(let i=0;i<cols;i++){
-        const x = i*s;
-        const y = j*s;
-        const nx = x / w;
-        const ny = y / h;
-
-        // broad directional gradient (brighter left/mid, darker right/bottom)
-        const gradY = 1 - ny;
-        const gradX = 1 - Math.abs(nx-0.45)*1.4;
-        const band = Math.exp(-Math.pow((ny-0.30)*2.2,2)); // bright band around center
-
-        let base = 0.25*gradY + 0.35*gradX + 0.6*band;
-
-        const noise = hash2(i,j); // 0..1
-
-        let strength = clamp(base + (noise-0.5)*0.30, 0, 1);
-        // smoothstep curve to avoid harsh speckle
-        strength = strength*strength*(3 - 2*strength);
-
-        BG.dots.push({
-          x, y,
-          strength,
-          jitter: hash2(i+11,j+7)*Math.PI*2
-        });
-      }
-    }
-  }
-
   function fit(){
     const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
     canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
     canvas.width = Math.floor(innerWidth * dpr); canvas.height = Math.floor(innerHeight * dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    buildCity();
-    if(innerWidth < 900){ E('#panel')?.classList.add('hidden'); E('#btnFlap').style.display='block'; } else { E('#panel')?.classList.remove('hidden'); E('#btnFlap').style.display='none'; }
+    if(innerWidth < 900){
+      E('#panel')?.classList.add('hidden');
+      E('#btnFlap').style.display='block';
+    } else {
+      E('#panel')?.classList.remove('hidden');
+      E('#btnFlap').style.display='none';
+    }
   }
   addEventListener('resize', fit, {passive:true});
   fit();
@@ -504,13 +492,16 @@
   // ---------- Input ----------
   function start(){
     try { ensureAC(); ac && ac.resume && ac.resume(); }
-    catch (error) { /* ignore autoplay errors */ }
+    catch (error) {}
     G.running = true;
     if(!S.musicOn) return;
     if(audio.src && !audio.paused) return;
     if(playlist.length){
       if(idx>=0 && playlist[idx] && !playlist[idx].bad){ audio.play().catch(()=>{}); }
-      else { const first=findNextPlayable(-1,+1); if(first!==-1) playIndex(first); }
+      else {
+        const first=findNextPlayable(-1,+1);
+        if(first!==-1) playIndex(first);
+      }
     }
   }
 
@@ -591,7 +582,7 @@
     ctx.shadowBlur=0;
   }
 
-  // Ordered-dither / halftone background
+  // -------- Ordered-dither background (Bayer 8x8) --------
   function drawCity(t){
     const w = canvas.width;
     const h = canvas.height;
@@ -603,21 +594,29 @@
     ctx.save();
     ctx.fillStyle = pri;
 
-    // slower, gentle shimmer
-    const speed = 0.8 + S.bgSpeed*0.35;
+    const s = DITHER.spacing;
+    const size = DITHER.size;
+    const baseSpeed = 0.04 + S.bgSpeed*0.06;
+    // Move gradient slowly over time
+    const offset = (t * baseSpeed) % 1;
 
-    for(const d of BG.dots){
-      const anim = 0.9 + 0.1*Math.sin(t*speed + d.jitter);
-      let alpha = d.strength * anim;
+    for(let y=0, jy=0; y<h+s; y+=s, jy++){
+      const ny = y / h;
+      for(let x=0, ix=0; x<w+s; x+=s, ix++){
+        // Horizontal gradient that loops, darker on left
+        let gx = 1 - ((x / w) + offset);
+        gx = gx - Math.floor(gx); // wrap to 0..1
 
-      if(alpha < 0.08) continue;
-      if(alpha > 0.9) alpha = 0.9;
+        // Mix in slight vertical shaping so it's not perfectly flat
+        const gradient = clamp(gx*0.75 + (1-ny)*0.25, 0, 1);
 
-      ctx.globalAlpha = alpha;
+        const threshold = (BAYER8[jy & 7][ix & 7] + 0.5) / BAYER_MAX;
 
-      // bigger dots: ~3.8px square on grid
-      const size = 3.8;
-      ctx.fillRect(d.x - size/2, d.y - size/2, size, size);
+        if(gradient > threshold){
+          ctx.globalAlpha = 0.95;
+          ctx.fillRect(x - size/2, y - size/2, size, size);
+        }
+      }
     }
 
     ctx.restore();
@@ -825,10 +824,9 @@
 
   addEventListener('visibilitychange',()=>{ if(document.hidden) G.running=false; });
 
-  // ---------- Minimal sanity tests (console) ----------
+  // ---------- Tiny sanity tests ----------
   (function runTests(){ let pass=0, fail=0; const test=(name,fn)=>{ try{ fn(); console.log('%cPASS','color:#6f6',name); pass++; }catch(e){ console.error('FAIL',name,e); fail++; } };
     test('clamp()',()=>{ if(clamp(5,0,4)!==4) throw 'upper'; if(clamp(-1,0,4)!==0) throw 'lower'; if(clamp(2,0,4)!==2) throw 'mid'; });
-    test('halftone builds dots',()=>{ buildCity(); if(!(BG.dots.length>0)) throw 'no dots'; });
     test('spawnPipe gap bounds',()=>{ const old=pipes.length; spawnPipe(); const p=pipes[pipes.length-1]; const gap=p.bot-p.top; if(Math.abs(gap-world.gap)>0.001) throw 'gap mismatch'; pipes.length=old; });
     console.log(`Self-tests: ${pass} passed, ${fail} failed`); })();
 
