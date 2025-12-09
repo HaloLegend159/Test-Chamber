@@ -1,1231 +1,1142 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Checkpoint Flappy</title>
-<meta name="color-scheme" content="dark light" />
-<style>
-  :root{
-    /* Base values – JS will override pri/sec/bg with the active theme */
-    --bg1:#050301;
-    --bg2:#140c06;
-    --ink:#fff6d2;
-    --muted:#b7aa82;
-    --panel:#110b05;
-    --line:#24180b;
-    --pri:#ffd34a; /* amber */
-    --sec:#4fd0ff; /* cyan */
-    --acc:#ff9f1c;
-    --warn:#ffb000;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    background:radial-gradient(1200px 60% at 50% 110%, var(--bg2), var(--bg1));
-    color:var(--ink);
-    font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Inter",sans-serif;
-    overflow:hidden;
-    touch-action:none;
-    -webkit-user-select:none;
-    user-select:none;
-    -webkit-touch-callout:none;
-    -webkit-tap-highlight-color:transparent;
-    padding-bottom:env(safe-area-inset-bottom);
-  }
+  <meta charset="UTF-8" />
+  <title>Dither Machine — System Design</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Full system design and feature description for the Dither Machine — a modern, high-performance, interactive dithering engine for the web." />
+  <style>
+    :root {
+      --bg: #050712;
+      --bg-elevated: #0b0f1f;
+      --bg-elevated-soft: #101425;
+      --accent: #7b6dff;
+      --accent-soft: rgba(123, 109, 255, 0.12);
+      --accent-strong: #a495ff;
+      --accent-gradient: radial-gradient(circle at top left, #7b6dff, #3c8bff 45%, #111827 75%);
+      --text-main: #e5e7f5;
+      --text-soft: #a4aec7;
+      --text-mute: #6b7280;
+      --border-subtle: rgba(148, 163, 184, 0.18);
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.65);
+      --shadow-subtle: 0 10px 25px rgba(15, 23, 42, 0.7);
+      --max-width: 1120px;
+    }
 
-  canvas{
-    display:block;
-    position:fixed;
-    inset:0;
-    touch-action:none;
-    z-index:1; /* background/game layer */
-  }
+    * {
+      box-sizing: border-box;
+    }
 
-  .hud{
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:2; /* always above canvas */
-  }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Inter", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #15192f 0, #050712 55%, #020308 100%);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
 
-  .topbar{
-    position:absolute;
-    left:0;right:0;top:0;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    justify-content:space-between;
-    padding:10px 14px;
-    background:linear-gradient(180deg,#000a,#0000);
-    backdrop-filter:blur(8px);
-  }
+    /* Simple animated “soft noise” overlay to hint at dither without eye-strain */
+    .noise-layer {
+      pointer-events: none;
+      position: fixed;
+      inset: -50px;
+      opacity: 0.09;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3CradialGradient id='g' cx='0' cy='0' r='1'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.7'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/ radialGradient%3E%3C/defs%3E%3Cg fill='url(%23g)'%3E%3Ccircle cx='10' cy='20' r='1.1'/%3E%3Ccircle cx='45' cy='30' r='0.9'/%3E%3Ccircle cx='80' cy='15' r='1.2'/%3E%3Ccircle cx='120' cy='35' r='1.1'/%3E%3Ccircle cx='30' cy='70' r='1'/%3E%3Ccircle cx='90' cy='90' r='1.3'/%3E%3Ccircle cx='130' cy='110' r='1.1'/%3E%3Ccircle cx='60' cy='120' r='0.9'/%3E%3C/g%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+      animation: noiseDrift 18s ease-in-out infinite alternate;
+      z-index: 0;
+    }
 
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 10px;
-    border:1px solid var(--line);
-    border-radius:999px;
-    background:#090503d0;
-    pointer-events:auto;
-  }
+    @keyframes noiseDrift {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      50% {
+        transform: translate3d(-15px, 10px, 0) scale(1.03);
+      }
+      100% {
+        transform: translate3d(10px, -20px, 0) scale(1.05);
+      }
+    }
 
-  .score{font-weight:700;letter-spacing:1px}
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: linear-gradient(
+        to bottom,
+        rgba(10, 12, 25, 0.92),
+        rgba(10, 12, 25, 0.85),
+        transparent
+      );
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
 
-  .btn{
-    pointer-events:auto;
-    appearance:none;
-    border:1px solid var(--line);
-    background:#0a0604;
-    color:var(--ink);
-    padding:8px 12px;
-    border-radius:10px;
-    cursor:pointer;
-    transition:transform .06s ease, box-shadow .1s ease, background .1s ease;
-    font-weight:600;
-    box-shadow:0 0 0 rgba(0,0,0,0);
-  }
-  .btn:hover{
-    transform:translateY(-1px);
-    background:#140a05;
-    box-shadow:0 6px 18px rgba(0,0,0,.45);
-  }
-  .btn:active{
-    transform:translateY(0);
-    box-shadow:0 0 0 rgba(0,0,0,0);
-  }
+    .nav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0.6rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
 
-  .panel{
-    position:absolute;
-    right:10px;
-    top:58px;
-    width:min(460px,calc(100vw - 20px));
-    max-height:calc(100vh - 78px);
-    overflow:auto;
-    pointer-events:auto;
-    background:#090503f0;
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:12px;
-    box-shadow:0 14px 40px #000b;
-    backdrop-filter:blur(10px);
-  }
-  .panel h3{margin:4px 0 6px;color:var(--pri);text-shadow:0 0 14px var(--pri);}
-  .panel h4{margin:10px 0 6px;color:var(--sec);}
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
 
-  .row{
-    display:grid;
-    grid-template-columns:auto 1fr;
-    gap:10px;
-    align-items:center;
-    margin:10px 0;
-  }
-  .row label{color:var(--muted)}
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background-image: conic-gradient(
+        from 220deg,
+        #7b6dff,
+        #3c8bff,
+        #22c1c3,
+        #7b6dff
+      );
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.65);
+      position: relative;
+      overflow: hidden;
+    }
 
-  select,input[type="range"],input[type="checkbox"],input[type="number"]{
-    width:100%;
-  }
-  select,input[type="range"]{
-    background:#120905;
-    border-radius:6px;
-    border:1px solid var(--line);
-    color:var(--ink);
-  }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 38%;
+      border-radius: inherit;
+      background: radial-gradient(circle, #020617 0, transparent 60%);
+      opacity: 0.9;
+    }
 
-  .grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
 
-  .sub{font-size:12px;color:var(--muted);margin-top:-2px}
-  .pill{
-    display:inline-flex;
-    gap:6px;
-    border:1px dashed var(--line);
-    padding:6px 9px;
-    border-radius:999px;
-    color:var(--muted);
-    background:#090503bf;
-  }
+    .brand-title {
+      font-size: 0.98rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent-strong);
+    }
 
-  .footer{
-    position:absolute;
-    left:10px;
-    bottom:10px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    pointer-events:auto;
-  }
-  .key{
-    border:1px solid var(--line);
-    padding:4px 8px;
-    border-radius:8px;
-    background:#090503d0;
-  }
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-mute);
+    }
 
-  .panel.hidden{display:none}
-  .mobile-only{display:none}
-  @media (max-width:900px){ .mobile-only{display:block} }
+    nav {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-size: 0.78rem;
+    }
 
-  /* Scanlines & vignette on HUD only */
-  .scanlines::after{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    background:repeating-linear-gradient(
-      to bottom,
-      #0000 0px, #0000 2px,
-      #0002 3px, #0000 4px
-    );
-  }
-  .vignette::before{
-    content:"";
-    position:fixed;
-    inset:-2%;
-    pointer-events:none;
-    border-radius:2px;
-    box-shadow:inset 0 0 180px 40px #000a;
-  }
-  .pixelate{image-rendering:pixelated}
-</style>
+    nav a {
+      text-decoration: none;
+      color: var(--text-soft);
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+        transform 0.12s ease;
+      white-space: nowrap;
+    }
+
+    nav a:hover {
+      background: rgba(15, 23, 42, 0.9);
+      border-color: rgba(148, 163, 184, 0.55);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    nav a.active {
+      background: var(--accent-soft);
+      border-color: rgba(129, 140, 248, 0.9);
+      color: var(--accent-strong);
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      max-width: var(--max-width);
+      margin: 1.8rem auto 1.5rem;
+      padding: 1.5rem 1.2rem 0.75rem;
+    }
+
+    .hero-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 2rem;
+      align-items: center;
+    }
+
+    @media (max-width: 880px) {
+      .hero-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hero-heading {
+      font-size: clamp(2rem, 3vw, 2.5rem);
+      line-height: 1.05;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .hero-heading span {
+      display: block;
+      font-size: 0.76rem;
+      letter-spacing: 0.26em;
+      color: var(--accent-strong);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-soft);
+      max-width: 32rem;
+    }
+
+    .hero-tags {
+      margin-top: 1.1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .chip {
+      font-size: 0.72rem;
+      padding: 0.3rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--text-soft);
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    .chip.accent {
+      border-color: rgba(129, 140, 248, 0.95);
+      background: rgba(30, 64, 175, 0.55);
+      color: #e0e7ff;
+    }
+
+    .chip.soft {
+      border-color: rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .hero-card {
+      border-radius: var(--radius-xl);
+      padding: 1.1rem 1.2rem 1.2rem;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(15, 23, 42, 0.97),
+          rgba(15, 23, 42, 0.98),
+          rgba(15, 23, 42, 0.98)
+        ),
+        var(--accent-gradient);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: -60%;
+      background: radial-gradient(
+        circle at top right,
+        rgba(129, 140, 248, 0.22),
+        transparent 60%
+      );
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .hero-card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      color: var(--text-soft);
+      margin-bottom: 0.7rem;
+    }
+
+    .hero-pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.24);
+    }
+
+    .hero-metric {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+      margin-bottom: 1rem;
+    }
+
+    .hero-metric strong {
+      color: var(--text-main);
+    }
+
+    .hero-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--text-soft);
+    }
+
+    .hero-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .hero-list li span.bullet {
+      margin-top: 0.3rem;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(129, 140, 248, 0.9);
+      flex-shrink: 0;
+    }
+
+    .hero-footer-note {
+      margin-top: 0.8rem;
+      font-size: 0.72rem;
+      color: var(--text-mute);
+      border-top: 1px dashed rgba(148, 163, 184, 0.35);
+      padding-top: 0.7rem;
+    }
+
+    .layout {
+      max-width: var(--max-width);
+      margin: 0 auto 3rem;
+      padding: 0 1.2rem 2rem;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 1.75rem;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .side-panel {
+      position: sticky;
+      top: 4.4rem;
+      border-radius: var(--radius-lg);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border-subtle);
+      padding: 0.85rem 0.9rem;
+      box-shadow: var(--shadow-subtle);
+      font-size: 0.8rem;
+    }
+
+    .side-panel h2 {
+      margin: 0 0 0.5rem;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+    }
+
+    .side-panel ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.15rem;
+    }
+
+    .side-panel a {
+      display: block;
+      padding: 0.25rem 0.35rem;
+      border-radius: 0.45rem;
+      text-decoration: none;
+      color: var(--text-soft);
+      border: 1px solid transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .side-panel a:hover {
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-main);
+      border-color: rgba(148, 163, 184, 0.55);
+    }
+
+    .side-panel a.sp-active {
+      background: rgba(79, 70, 229, 0.35);
+      color: var(--accent-strong);
+      border-color: rgba(129, 140, 248, 0.9);
+    }
+
+    .side-panel-footer {
+      margin-top: 0.65rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid rgba(31, 41, 55, 0.85);
+      font-size: 0.72rem;
+      color: var(--text-mute);
+    }
+
+    .content {
+      display: grid;
+      gap: 1.2rem;
+    }
+
+    section {
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1rem 1.2rem;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-subtle);
+    }
+
+    section:nth-child(odd) {
+      background: rgba(13, 16, 33, 0.98);
+    }
+
+    section header {
+      position: static;
+      backdrop-filter: none;
+      background: none;
+      border-bottom: none;
+      margin: 0 0 0.6rem;
+      padding: 0;
+    }
+
+    section h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    section h2 span.badge {
+      font-size: 0.7rem;
+      padding: 0.08rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-mute);
+      text-transform: uppercase;
+    }
+
+    section p {
+      margin: 0.4rem 0 0.3rem;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--text-soft);
+    }
+
+    section ul,
+    section ol {
+      margin: 0.35rem 0 0.3rem 1.05rem;
+      padding: 0;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: var(--text-soft);
+    }
+
+    section ul ul,
+    section ol ul {
+      margin-top: 0.2rem;
+    }
+
+    section li + li {
+      margin-top: 0.15rem;
+    }
+
+    .subheading {
+      margin-top: 0.6rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+    }
+
+    .pill {
+      font-size: 0.72rem;
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-soft);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .pill.alt {
+      border-color: rgba(129, 140, 248, 0.85);
+      color: var(--accent-strong);
+      background: rgba(30, 64, 175, 0.4);
+    }
+
+    .recap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.65rem;
+      margin-top: 0.5rem;
+    }
+
+    .recap-card {
+      border-radius: 0.8rem;
+      padding: 0.6rem 0.7rem;
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      font-size: 0.8rem;
+      color: var(--text-soft);
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    .recap-card strong {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.2rem;
+      color: var(--accent-strong);
+    }
+
+    .codeish {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.78rem;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 0.6rem;
+      padding: 0.35rem 0.45rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--text-soft);
+      margin-top: 0.3rem;
+    }
+
+    .codeish span {
+      opacity: 0.7;
+    }
+
+    footer {
+      max-width: var(--max-width);
+      margin: 0 auto 2.3rem;
+      padding: 0 1.2rem;
+      font-size: 0.78rem;
+      color: var(--text-mute);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    footer a {
+      color: var(--accent-strong);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+  <div class="noise-layer"></div>
 
-<button id="overlayStart"
-        class="btn"
-        style="position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);
-               padding:14px 24px;font-size:16px;z-index:5;pointer-events:auto">
-  START CHECKPOINT
-</button>
-
-<div class="hud scanlines vignette" id="hud" data-mobile="1">
-  <div class="topbar">
-    <div class="badge">
-      <span style="width:10px;height:10px;border-radius:50%;background:var(--pri);
-                   box-shadow:0 0 14px var(--pri)"></span>
-      <span style="opacity:.9;font-weight:700;letter-spacing:.05em;font-size:12px">
-        CHECKPOINT FLAPPY
-      </span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn mobile-only" id="btnPanel" title="Toggle Panel">Panel</button>
-      <div class="badge">
-        <span class="score">Score: <span id="score">0</span></span>
-      </div>
-      <div class="badge">Best: <span id="best">0</span></div>
-      <button class="btn" id="btnStart">Start</button>
-      <button class="btn" id="btnPause">Pause</button>
-      <button class="btn" id="btnReset">Reset</button>
-    </div>
-  </div>
-
-  <div class="panel" id="panel">
-    <h3>Customization</h3>
-    <div class="grid">
-      <div>
-        <div class="row"><label>Theme</label>
-          <select id="theme">
-            <option value="checkpoint" selected>Checkpoint Amber</option>
-            <option value="magenta">Neon Magenta</option>
-            <option value="cyan">Electric Cyan</option>
-            <option value="lime">Toxic Lime</option>
-            <option value="amber">Soft Amber</option>
-          </select>
-        </div>
-        <div class="row"><label>Difficulty</label>
-          <select id="diff">
-            <option value="0">Easy</option>
-            <option value="1" selected>Normal</option>
-            <option value="2">Hard</option>
-          </select>
-        </div>
-        <div class="row"><label>Gravity</label>
-          <input id="gravity" type="range" min="0.1" max="1.0" step="0.02" value="0.36" />
-        </div>
-        <div class="row"><label>Flap Power</label>
-          <input id="flap" type="range" min="3" max="10" step="0.1" value="6.2" />
-        </div>
-        <div class="row"><label>World Speed</label>
-          <input id="speed" type="range" min="1.5" max="6" step="0.1" value="3.2" />
-        </div>
-        <div class="row"><label>Gap Size</label>
-          <input id="gap" type="range" min="100" max="240" step="2" value="150" />
-        </div>
-        <div class="row"><label>Pipe Width</label>
-          <input id="pipeW" type="range" min="40" max="120" step="2" value="70" />
+  <header>
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text">
+          <div class="brand-title">Dither Machine</div>
+          <div class="brand-sub">Web-based dithering engine spec</div>
         </div>
       </div>
+      <nav>
+        <a href="#core-purpose" class="nav-link active">Overview</a>
+        <a href="#rendering-pipeline" class="nav-link">Rendering</a>
+        <a href="#dither-modes" class="nav-link">Dither Modes</a>
+        <a href="#color-engine" class="nav-link">Color Engine</a>
+        <a href="#controls" class="nav-link">Controls/API</a>
+        <a href="#integration" class="nav-link">Integration</a>
+        <a href="#performance" class="nav-link">Performance</a>
+        <a href="#debug-tools" class="nav-link">Dev Tools</a>
+        <a href="#special-effects" class="nav-link">FX</a>
+        <a href="#requirements" class="nav-link">Key Requirements</a>
+      </nav>
+    </div>
+  </header>
 
-      <div>
-        <div class="row"><label>Scanlines</label><input id="scan" type="checkbox" checked></div>
-        <div class="row"><label>Vignette</label><input id="vig" type="checkbox" checked></div>
-        <div class="row"><label>Pixelate</label><input id="pix" type="checkbox"></div>
-        <div class="row"><label>Particles</label><input id="particles" type="checkbox" checked></div>
-        <div class="row"><label>Trail</label><input id="trail" type="checkbox" checked></div>
-        <div class="row"><label>Bird Skin</label>
-          <select id="skin">
-            <option value="triangle">Triangle</option>
-            <option value="disk">Disk</option>
-            <option value="cube">Cube</option>
-            <option value="ring">Ring</option>
-          </select>
+  <main>
+    <section class="hero" id="core-purpose">
+      <div class="hero-layout">
+        <div>
+          <h1 class="hero-heading">
+            <span>🌌 Dither Machine</span>
+            Full System Design &amp; Feature Spec
+          </h1>
+          <p class="hero-subtitle">
+            A modern, high-performance, interactive dithering engine built entirely for the web.
+            It transforms images, videos, UI layers, and game scenes into dynamic dithered visuals
+            with Discord-style clarity and retro-inspired aesthetics.
+          </p>
+          <div class="hero-tags">
+            <div class="chip accent">WebGL / WebGPU ready</div>
+            <div class="chip soft">Real-time animation</div>
+            <div class="chip soft">GPU-accelerated dithering</div>
+            <div class="chip soft">Game-ready integration</div>
+          </div>
         </div>
-        <div class="row"><label>Auto-Balance</label><input id="autobal" type="checkbox" checked></div>
-        <div class="row"><label>Mute SFX</label><input id="mute" type="checkbox"></div>
-        <div class="row"><label>Background Speed</label>
-          <input id="bgSpeed" type="range" min="0" max="1.5" step="0.05" value="0.5" />
+        <aside class="hero-card">
+          <div class="hero-card-inner">
+            <div class="hero-pill">
+              <div class="hero-pill-dot"></div>
+              <span>Design target:</span> Smooth, clean, background-only dither
+            </div>
+            <p class="hero-metric">
+              <strong>Core Purpose:</strong> Real-time stylization engine that applies dynamic
+              dithering to backgrounds, scenes, and effect layers while keeping foreground UI
+              perfectly readable and low-cost on performance.
+            </p>
+            <ul class="hero-list">
+              <li>
+                <span class="bullet"></span>
+                <span>Must run fully in browser (GitHub Pages-friendly): HTML, CSS, JS, WebGL/WebGPU.</span>
+              </li>
+              <li>
+                <span class="bullet"></span>
+                <span>Focus on animated, seam-free background dithers similar to Discord.</span>
+              </li>
+              <li>
+                <span class="bullet"></span>
+                <span>Integrate as a background engine behind any interactive web game or UI layer.</span>
+              </li>
+            </ul>
+            <div class="hero-footer-note">
+              Think of this as a <strong>plug-in dither renderer</strong> that lives behind your game/UI,
+              not a full game engine. It should be reusable, configurable, and safe for everyday viewing.
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="side-panel">
+        <h2>Spec Map</h2>
+        <ul>
+          <li><a href="#core-purpose" class="sp-link sp-active">1. Core Purpose</a></li>
+          <li><a href="#rendering-pipeline" class="sp-link">2. Rendering Pipeline</a></li>
+          <li><a href="#dither-modes" class="sp-link">3. Dither Modes &amp; Algorithms</a></li>
+          <li><a href="#color-engine" class="sp-link">4. Color Engine</a></li>
+          <li><a href="#controls" class="sp-link">5. User / API Controls</a></li>
+          <li><a href="#integration" class="sp-link">6. Integration Features</a></li>
+          <li><a href="#performance" class="sp-link">7. Performance Architecture</a></li>
+          <li><a href="#debug-tools" class="sp-link">8. Developer Debug Tools</a></li>
+          <li><a href="#special-effects" class="sp-link">9. Special Effects</a></li>
+          <li><a href="#developer-goals" class="sp-link">10. Developer Goals</a></li>
+          <li><a href="#requirements" class="sp-link">11. Key Requirements Recap</a></li>
+        </ul>
+        <div class="side-panel-footer">
+          Give this page to the dev team as the <strong>source of truth</strong> when implementing the web-based Dither Machine.
         </div>
+      </aside>
+
+      <div class="content">
+        <!-- 2. Rendering Pipeline -->
+        <section id="rendering-pipeline">
+          <header>
+            <h2>2. Rendering Pipeline <span class="badge">Three-layer system</span></h2>
+          </header>
+          <p>
+            The Dither Machine uses a three-layer rendering system so that background dither, active gameplay,
+            and optional effects all remain cleanly separated and composable.
+          </p>
+
+          <div class="subheading">2.1 Background Dither Layer (Type A Animated Dither)</div>
+          <p>Full-screen canvas positioned behind all game/UI elements.</p>
+          <ul>
+            <li>Animated dithering pattern with smooth, flowing gradient movement (noise-based drift; no linear sliding).</li>
+            <li>Adjustable parameters:
+              <ul>
+                <li>Dot size, density, and blend softness</li>
+                <li>Contrast and color palettes</li>
+                <li>Movement speed and motion style</li>
+              </ul>
+            </li>
+            <li>No visual seams or tiling lines — pattern must internally wrap and noise-blend.</li>
+            <li>Multi-resolution support that scales cleanly from 1080p up to 4K.</li>
+          </ul>
+
+          <div class="subheading">2.2 Scene Layer (Normal Game Rendering)</div>
+          <ul>
+            <li>Foreground game and UI elements are rendered normally and remain crisp and non-dithered by default.</li>
+            <li>Separation ensures icons, text, and UI remain readable (similar to Discord’s clean icons over dithered backgrounds).</li>
+            <li>Optional “depth-aware” dithering:
+              <ul>
+                <li>Foreground can smoothly fade into background dither as elements move further away.</li>
+                <li>Depth simulation can be based on Z-index, parallax layers, or game-defined depth values.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">2.3 Optional Effect Layers</div>
+          <ul>
+            <li>Light rays, bloom, shadows, or gradient fields that can apply <em>localized</em> dithering distortions.</li>
+            <li>Animated masks (radial bursts, wave pulses, etc.) that interact with the underlying dither pattern.</li>
+          </ul>
+        </section>
+
+        <!-- 3. Dither Modes & Algorithms -->
+        <section id="dither-modes">
+          <header>
+            <h2>3. Dither Modes &amp; Algorithms <span class="badge">Switchable &amp; layerable</span></h2>
+          </header>
+          <p>
+            The Dither Machine supports multiple dithering modes that can be swapped at runtime or layered to
+            achieve different visual styles.
+          </p>
+
+          <div class="subheading">3.1 Ordered Dithering</div>
+          <ul>
+            <li>Support for Bayer matrices:
+              <ul>
+                <li>2×2, 4×4, and 8×8 threshold maps.</li>
+              </ul>
+            </li>
+            <li>Pixel-precise control over:
+              <ul>
+                <li>Threshold map scaling</li>
+                <li>Pattern rotation</li>
+                <li>Pattern scrolling / offset</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">3.2 Error Diffusion Dithering</div>
+          <ul>
+            <li>Algorithms:
+              <ul>
+                <li>Floyd–Steinberg</li>
+                <li>JJJN</li>
+                <li>Atkinson</li>
+                <li>Stucki</li>
+              </ul>
+            </li>
+            <li>Real-time, GPU-accelerated diffusion computation (implemented via shaders rather than CPU loops).</li>
+          </ul>
+
+          <div class="subheading">3.3 Hybrid Dither Mode</div>
+          <ul>
+            <li>Supports combining:
+              <ul>
+                <li>Ordered + noise map</li>
+                <li>Ordered + animated gradient</li>
+                <li>Diffusion + pixel cell clustering</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">3.4 Animated Gradient Dither (Type A)</div>
+          <p>This is how you get the Discord-style smooth, flowing motion:</p>
+          <ul>
+            <li>Multilayer animated gradient mapped into a dither threshold.</li>
+            <li>Movement characteristics:
+              <ul>
+                <li>Slow (no harsh or jittery motion).</li>
+                <li>Organic noise-driven drift (Perlin/Simplex noise field).</li>
+                <li>Curved, drifting flow rather than straight linear scrolling.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">3.5 Posterization Controls</div>
+          <ul>
+            <li>Color banding / bit-depth control.</li>
+            <li>2–32 color levels.</li>
+            <li>Ability to lock the color palette to:
+              <ul>
+                <li>Monochrome</li>
+                <li>Duotone</li>
+                <li>Neon (soft, non-clashing)</li>
+                <li>Pastel (soft, harmonious)</li>
+                <li>Retro pixel palettes</li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. Color Engine -->
+        <section id="color-engine">
+          <header>
+            <h2>4. Color Engine <span class="badge">Palette &amp; harmony</span></h2>
+          </header>
+
+          <div class="subheading">4.1 Palette Manager</div>
+          <p>Built-in curated palette sets, including:</p>
+          <ul>
+            <li>Soft gradient blends (Discord-style).</li>
+            <li>CRT purples &amp; blues.</li>
+            <li>Pastel minimalistic sets.</li>
+            <li>Grayscale with accent tones.</li>
+            <li>Night-mode cyberpunk.</li>
+          </ul>
+
+          <div class="subheading">4.2 Dynamic Palette Switching</div>
+          <ul>
+            <li>Live palette swaps without visible flicker.</li>
+            <li>Smooth interpolated transitions between palettes.</li>
+          </ul>
+
+          <div class="subheading">4.3 Palette Harmonization System</div>
+          <ul>
+            <li>Automatically ensures the dither:
+              <ul>
+                <li>Never clashes with UI.</li>
+                <li>Never oversaturates icons or foreground elements.</li>
+                <li>Always stays “background-appropriate.”</li>
+              </ul>
+            </li>
+            <li>Can auto-dim or soften colors based on UI contrast detection.</li>
+          </ul>
+        </section>
+
+        <!-- 5. User Controls / API -->
+        <section id="controls">
+          <header>
+            <h2>5. User Controls / API Controls <span class="badge">Developer-facing knobs</span></h2>
+          </header>
+          <p>
+            The dev team can expose sliders, toggles, or programmatic options on top of the core engine.
+            These can be wired to UI or configured via JSON / JS API.
+          </p>
+
+          <div class="subheading">5.1 Dot Controls</div>
+          <ul>
+            <li>Dot size: <strong>1–20 px</strong>.</li>
+            <li>Dot hardness: sharp → soft fade.</li>
+            <li>Dot density: sparse → dense.</li>
+            <li>Dot uniformity vs. irregularity (pattern randomness).</li>
+          </ul>
+
+          <div class="subheading">5.2 Animation Controls</div>
+          <ul>
+            <li>Speed: <strong>0%–200%</strong> of baseline animation.</li>
+            <li>Flow types:
+              <ul>
+                <li>Noise drift.</li>
+                <li>Waterflow.</li>
+                <li>Swirl vortex.</li>
+                <li>Pulse waves.</li>
+              </ul>
+            </li>
+            <li>Loop vs. infinite noise (looped pattern vs. continually evolving noise field).</li>
+          </ul>
+
+          <div class="subheading">5.3 Rendering Controls</div>
+          <ul>
+            <li>Contrast.</li>
+            <li>Exposure.</li>
+            <li>Posterization levels.</li>
+            <li>Blend mode:
+              <ul>
+                <li>Screen</li>
+                <li>Multiply</li>
+                <li>Overlay</li>
+                <li>Soft light</li>
+                <li>Normal</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">5.4 Performance Modes</div>
+          <ul>
+            <li>Auto-scaling based on device GPU capabilities.</li>
+            <li>Canvas-only fallback mode if WebGL/WebGPU are unavailable.</li>
+            <li>Mobile-optimized LOD (lower dot counts and resolution for phones/tablets).</li>
+          </ul>
+        </section>
+
+        <!-- 6. Integration Features -->
+        <section id="integration">
+          <header>
+            <h2>6. Integration Features <span class="badge">Game / UI ready</span></h2>
+          </header>
+
+          <div class="subheading">6.1 Foreground Priority System</div>
+          <ul>
+            <li>Guarantees UI is always readable on top of the dither.</li>
+            <li>Smart luminance detection:
+              <ul>
+                <li>Dither stays darker behind light UI.</li>
+                <li>Dither stays lighter behind dark UI.</li>
+              </ul>
+            </li>
+            <li>Automatic <strong>10–30% contrast buffer</strong> around icon and text edges.</li>
+          </ul>
+
+          <div class="subheading">6.2 Parallax Dither Motion</div>
+          <ul>
+            <li>Background dither gently shifts based on:
+              <ul>
+                <li>Mouse movement.</li>
+                <li>Player movement.</li>
+                <li>Camera movement.</li>
+              </ul>
+            </li>
+            <li>Effect is subtle and optional, but adds a premium, “alive” feel to the background.</li>
+          </ul>
+
+          <div class="subheading">6.3 Blend-Over Gameplay</div>
+          <p>Engine can target specific render paths:</p>
+          <ul>
+            <li>Entire game scene.</li>
+            <li>Only background.</li>
+            <li>Only shadows.</li>
+            <li>Only lighting.</li>
+          </ul>
+          <p>Each can be toggled independently.</p>
+        </section>
+
+        <!-- 7. Performance Architecture -->
+        <section id="performance">
+          <header>
+            <h2>7. Performance Architecture <span class="badge">Keep it fast</span></h2>
+          </header>
+
+          <div class="subheading">7.1 GPU Acceleration</div>
+          <ul>
+            <li>Use <strong>WebGL2 or WebGPU</strong> for shading pipeline.</li>
+            <li>OffscreenCanvas for multi-threaded rendering where supported.</li>
+            <li>Shader-based dithering and threshold evaluation (avoid heavy CPU loops).</li>
+          </ul>
+
+          <div class="subheading">7.2 Dynamic Resolution Scaling</div>
+          <ul>
+            <li>If framerate drops:
+              <ul>
+                <li>Reduce dither canvas resolution first.</li>
+                <li>Keep primary game/foreground layers crisp.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">7.3 Zero-Seam Rendering</div>
+          <ul>
+            <li>Procedural patterns tile at the shader level.</li>
+            <li>No artifact lines or edge seams as the pattern scrolls/moves.</li>
+          </ul>
+        </section>
+
+        <!-- 8. Developer Debug Tools -->
+        <section id="debug-tools">
+          <header>
+            <h2>8. Developer Debug Tools <span class="badge">Build-time helpers</span></h2>
+          </header>
+
+          <div class="subheading">8.1 Live Pattern Preview</div>
+          <p>Debug UI or overlay that can show:</p>
+          <ul>
+            <li>Threshold map.</li>
+            <li>Gradient layers.</li>
+            <li>Dot map generation.</li>
+          </ul>
+
+          <div class="subheading">8.2 Stress Test Mode</div>
+          <ul>
+            <li>Automatically:
+              <ul>
+                <li>Spawns multiple dithering layers.</li>
+                <li>Logs FPS and frame time.</li>
+                <li>Suggests optimal settings based on measured performance.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="subheading">8.3 Visual Heatmap</div>
+          <ul>
+            <li>Heatmap overlay showing which areas are most affected by dithering.</li>
+            <li>Helps tune intensity, density, and palette usage.</li>
+          </ul>
+        </section>
+
+        <!-- 9. Special Effects -->
+        <section id="special-effects">
+          <header>
+            <h2>9. Special Effects (Optional) <span class="badge">Bonus features</span></h2>
+          </header>
+
+          <div class="subheading">9.1 Ripple Distortion Dither</div>
+          <ul>
+            <li>Dither pattern warps like water ripples, driven by noise or specific events.</li>
+          </ul>
+
+          <div class="subheading">9.2 Light-Reactive Dithering</div>
+          <ul>
+            <li>Bright areas have finer, more subtle dithering.</li>
+            <li>Dark areas use chunkier, more pronounced dither blocks.</li>
+          </ul>
+
+          <div class="subheading">9.3 Audio-Reactive Dither</div>
+          <ul>
+            <li>Dots pulse or shift based on music bass or sound amplitude.</li>
+          </ul>
+
+          <div class="subheading">9.4 Particle-Dither Interaction</div>
+          <ul>
+            <li>Particles temporarily disturb or displace the dither field behind them.</li>
+          </ul>
+        </section>
+
+        <!-- 10. Developer Goals -->
+        <section id="developer-goals">
+          <header>
+            <h2>10. Developer Goals <span class="badge">Visual &amp; UX targets</span></h2>
+          </header>
+          <ul>
+            <li>Look clean, professional, and easy to view for long sessions.</li>
+            <li>Mimic the visual clarity of Discord’s animated dither backgrounds.</li>
+            <li>Avoid eye-strain from overly dense or high-contrast patterns.</li>
+            <li>Keep all foreground icons, UI, and characters perfectly readable.</li>
+            <li>Support fully dynamic animation that is smooth and elegant — not jittery or sharp.</li>
+          </ul>
+        </section>
+
+        <!-- 11. Key Requirements Recap -->
+        <section id="requirements">
+          <header>
+            <h2>11. Key Requirements Recap <span class="badge">Hand-off section</span></h2>
+          </header>
+          <p>Give this section <strong>directly to devs</strong> as the condensed implementation checklist.</p>
+
+          <div class="recap-grid">
+            <div class="recap-card">
+              <strong>Background Priority</strong>
+              The dither must always live in the background — it should never cover or overpower UI,
+              text, or important gameplay information.
+            </div>
+            <div class="recap-card">
+              <strong>Smooth Animation</strong>
+              Animation must be smooth and flowing, with soft gradients and organic motion.
+              No harsh strobing, jitter, or distracting linear scrolling.
+            </div>
+            <div class="recap-card">
+              <strong>GPU-Accelerated &amp; Seamless</strong>
+              Implement dithering using GPU (WebGL2/WebGPU shaders) with zero visible seams or tile lines,
+              even when gradients drift over time.
+            </div>
+            <div class="recap-card">
+              <strong>Full Customization</strong>
+              Engine must expose controls for dot size, color palette, movement style, density, contrast,
+              and posterization levels.
+            </div>
+            <div class="recap-card">
+              <strong>Cross-Platform</strong>
+              Must run on both mobile and desktop browsers. Provide graceful fallback to Canvas when WebGL/WebGPU
+              aren’t available.
+            </div>
+            <div class="recap-card">
+              <strong>Visual Quality</strong>
+              The final look should be beautiful, readable, and modern — no chaotic noise, no color clashing,
+              and no UI readability issues.
+            </div>
+          </div>
+
+          <div class="codeish">
+            <span>// Implementation note</span>
+            <span>All of this must work from a static HTML/JS build (e.g. GitHub Pages deploy).</span>
+          </div>
+        </section>
       </div>
     </div>
+  </main>
 
-    <h4>Lofi Music</h4>
-    <div class="row"><label>Enable Music</label><input id="musicOn" type="checkbox"></div>
-    <div class="row"><label>Volume</label><input id="musicVol" type="range" min="0" max="1" step="0.01" value="0.35"></div>
-    <div class="row" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
-      <button class="btn" id="btnPrev">⟲ Prev</button>
-      <button class="btn" id="btnPlayMusic">▶︎/⏸</button>
-      <button class="btn" id="btnNext">⟲ Next</button>
-      <button class="btn" id="btnShuffle">🔀</button>
-    </div>
-    <div class="sub" id="nowPlaying">No tracks</div>
+  <footer>
+    <div>📌 This document describes the <strong>Dither Machine</strong> web engine and can be used as a dev spec.</div>
+    <div>Ready for static hosting (e.g. GitHub Pages) — just save as <strong>index.html</strong>.</div>
+  </footer>
 
-    <div class="sub">
-      Changes apply immediately. Your best score &amp; settings are saved locally.
-      Music files are loaded from <code>assets/</code>.
-    </div>
-  </div>
-
-  <div class="footer">
-    <span class="pill">
-      Controls:
-      <span class="key">SPACE</span> /
-      <span class="key">↑</span> /
-      <span class="key">Click</span> /
-      <span class="key">Tap</span>
-    </span>
-  </div>
-</div>
-
-<!-- Mobile flap button -->
-<button id="btnFlap"
-        class="btn"
-        style="position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
-               transform:translateX(-50%);padding:18px 30px;font-size:18px;
-               border-radius:999px;z-index:6;pointer-events:auto;display:none">
-  FLAP
-</button>
-
-<script>
-(function(){
-  'use strict';
-
-  // ---------- Helpers ----------
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const rand = (a,b)=>a+Math.random()*(b-a);
-  const E = sel => document.querySelector(sel);
-
-  // ---------- Themes ----------
-  const THEMES = {
-    checkpoint:{ // Discord-like amber
-      pri:'#ffd34a',          // text / bird / UI
-      sec:'#4fd0ff',          // pipes / accents
-      bg1:'#050301',
-      bg2:'#19110a'
-    },
-    magenta:{pri:'#ff2ea6',sec:'#00f0ff',bg1:'#0a0f1a',bg2:'#0b0018'},
-    cyan:{pri:'#00e5ff',sec:'#9fb0ff',bg1:'#06141f',bg2:'#001018'},
-    lime:{pri:'#aaff00',sec:'#ff00e0',bg1:'#0b1110',bg2:'#001400'},
-    amber:{pri:'#ffc857',sec:'#ffdca0',bg1:'#120a03',bg2:'#221307'}
-  };
-
-  const defaults = {
-    theme:'checkpoint',
-    diff:1, gravity:0.36, flap:6.2, speed:3.2, gap:150, pipeW:70,
-    scan:true, vig:true, pix:false, particles:true, trail:true, skin:'triangle',
-    autobal:true,
-    mute:true,          // default: SFX muted
-    bgSpeed:0.5,
-    musicOn:true, musicVol:0.35
-  };
-
-  // ---------- Settings & persistence ----------
-  function loadSettings(){
-    try {
-      const raw = localStorage.getItem('lofi-flappy-settings');
-      return raw ? {...defaults, ...JSON.parse(raw)} : {...defaults};
-    } catch {
-      return {...defaults};
-    }
-  }
-  function save(){
-    try { localStorage.setItem('lofi-flappy-settings', JSON.stringify(S)); }
-    catch {}
-  }
-  function loadBest(){
-    const v = parseInt(localStorage.getItem('lofi-flappy-best')||'0',10);
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  const S = loadSettings();
-  let BEST = loadBest();
-
-  // ---------- DOM ----------
-  const hud = E('#hud');
-  const canvas = E('#game');
-  const ctx = canvas.getContext('2d');
-
-  // ---------- Background controller ----------
-  const BG = { step:160, speeds:[1.2,2.4,4.2], layers:[[],[],[]] };
-
-  // Ordered dither constants
-  const DITHER = {
-    spacing: 9,    // distance between dots
-    size: 4.2      // dot square size
-  };
-
-  const BAYER8 = [
-    [ 0,48,12,60, 3,51,15,63],
-    [32,16,44,28,35,19,47,31],
-    [ 8,56, 4,52,11,59, 7,55],
-    [40,24,36,20,43,27,39,23],
-    [ 2,50,14,62, 1,49,13,61],
-    [34,18,46,30,33,17,45,29],
-    [10,58, 6,54, 9,57, 5,53],
-    [42,26,38,22,41,25,37,21]
-  ];
-  const BAYER_MAX = 63;
-
-  // ---------- Apply theme ----------
-  function applyTheme(){
-    const t = THEMES[S.theme] || THEMES.checkpoint;
-    const root = document.documentElement.style;
-    root.setProperty('--pri', t.pri);
-    root.setProperty('--sec', t.sec);
-    document.body.style.background =
-      `radial-gradient(1200px 60% at 50% 110%, ${t.bg2}, ${t.bg1})`;
-  }
-  applyTheme();
-
-  // ---------- Audio (SFX + Music) ----------
-  let ac, masterGain;
-  const ensureAC = ()=>{
-    if(!ac){
-      ac = new (window.AudioContext||window.webkitAudioContext)();
-      masterGain = ac.createGain();
-      masterGain.gain.value = 0.12;
-      masterGain.connect(ac.destination);
-    }
-  };
-
-  const beep = (f=440,t=0.08,type='sine')=>{
-    if(S.mute) return;
-    ensureAC();
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = type;
-    o.frequency.value = f;
-    o.connect(g);
-    g.connect(masterGain);
-    const n = ac.currentTime;
-    g.gain.setValueAtTime(0.0001,n);
-    g.gain.exponentialRampToValueAtTime(1,n+0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001,n+t);
-    o.start(n);
-    o.stop(n+t+0.01);
-  };
-
-  // Initial asset list (will be replaced by manifest if present)
-  const ASSET_TRACKS = [
-    'cutie-japan-lofi-402355.mp3',
-    'lofi-study-calm-peaceful-chill-hop-112191.mp3',
-    'good-night-lofi-cozy-chill-music-160166.mp3'
-  ];
-  const audio = new Audio();
-  audio.loop = false;
-  audio.preload = 'metadata';
-  audio.volume = S.musicVol;
-
-  let playlist = [];
-  let idx = -1;
-  let shuffled = false;
-
-  function parseTxtList(txt){
-    return txt
-      .split(/[\r\n]+/)
-      .map(s=>s.replace(/#.*/, '').trim())
-      .filter(Boolean);
-  }
-
-  function buildPlaylist(){
-    const prevName = (idx>=0 && playlist[idx]) ? playlist[idx].name : null;
-    const wasPlaying = !audio.paused && !!audio.src;
-    playlist = ASSET_TRACKS.map((name,i)=>({
-      name,
-      url:new URL('assets/'+name, document.baseURI).toString(),
-      added:i,
-      bad:false
-    }));
-    if(prevName){
-      const j = playlist.findIndex(p=>p.name===prevName);
-      if(j!==-1) idx=j;
-    }
-    setNowPlaying();
-
-    (async()=>{
-      async function tryJson(){
-        try{
-          const res = await fetch(new URL('assets/playlist.json', document.baseURI));
-          if(!res.ok) return null;
-          const arr = await res.json();
-          return Array.isArray(arr)? arr : null;
-        }catch{ return null; }
-      }
-      async function tryTxt(){
-        try{
-          const res = await fetch(new URL('assets/playlist.txt', document.baseURI));
-          if(!res.ok) return null;
-          const txt = await res.text();
-          return parseTxtList(txt);
-        }catch{ return null; }
-      }
-      let names = await tryJson();
-      if(!names) names = await tryTxt();
-      if(!names) names = await tryPattern();
-      if(names && names.length){
-        const before = (idx>=0 && playlist[idx]) ? playlist[idx].name : null;
-        ASSET_TRACKS.splice(0, ASSET_TRACKS.length, ...names);
-        playlist = ASSET_TRACKS.map((name,i)=>({
-          name,
-          url:new URL('assets/'+name, document.baseURI).toString(),
-          added:i,
-          bad:false
-        }));
-        if(before){
-          const j = playlist.findIndex(p=>p.name===before);
-          idx = (j!==-1) ? j : -1;
+  <script>
+    // Smooth scroll (for nicer navigation on GitHub Pages too)
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener("click", function (e) {
+        const targetId = this.getAttribute("href");
+        const target = document.querySelector(targetId);
+        if (target) {
+          e.preventDefault();
+          const y = target.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: y, behavior: "smooth" });
         }
-        setNowPlaying();
-      }
-      await verifyAssets();
-      if(wasPlaying && !audio.paused){
-        // keep current track
-      }
-    })();
-  }
-
-  async function probeURL(url){
-    return new Promise((resolve)=>{
-      const a = new Audio();
-      a.preload = 'metadata';
-      a.src = url;
-      const done = ok=>{ a.src=''; resolve(!!ok); };
-      a.addEventListener('loadedmetadata', ()=>done(true), {once:true});
-      a.addEventListener('error', ()=>done(false), {once:true});
-      setTimeout(()=>done(!isNaN(a.duration) && a.duration>0), 4000);
-    });
-  }
-
-  async function tryPattern(){
-    const base = document.baseURI;
-    const found = [];
-    for(let n=1;n<=50;n++){
-      const name = `track${n}.mp3`;
-      const url = new URL('assets/'+name, base).toString();
-      // eslint-disable-next-line no-await-in-loop
-      const ok = await probeURL(url);
-      if(ok) found.push(name);
-    }
-    return found;
-  }
-
-  async function verifyAssets(){
-    for(let i=0;i<playlist.length;i++){
-      try {
-        playlist[i].bad = !(await probeURL(playlist[i].url));
-      } catch {
-        playlist[i].bad = true;
-      }
-    }
-    setNowPlaying();
-  }
-
-  function findNextPlayable(from, dir){
-    if(!playlist.length) return -1;
-    for(let k=0;k<playlist.length;k++){
-      const i = (from + dir + k + playlist.length) % playlist.length;
-      if(!playlist[i].bad) return i;
-    }
-    return -1;
-  }
-
-  function setNowPlaying(){
-    const el = E('#nowPlaying');
-    if(!el) return;
-    const good = playlist.filter(p=>!p.bad).length;
-    if(idx>=0 && playlist[idx]){
-      const tr = playlist[idx];
-      el.textContent =
-        `Now Playing: ${decodeURIComponent(tr.name)}${tr.bad?' [missing]':''} (${good}/${playlist.length} available)`;
-    }else{
-      el.textContent =
-        good>0 ? `Ready (${good}/${playlist.length} available)` :
-                 'No playable tracks found in assets/';
-    }
-  }
-
-  function playIndex(i){
-    if(!playlist.length) return;
-    const ni = (i+playlist.length)%playlist.length;
-    if(playlist[ni].bad){
-      const alt = findNextPlayable(ni,+1);
-      if(alt===-1){
-        audio.pause();
-        setNowPlaying();
-        return;
-      }
-      return playIndex(alt);
-    }
-    idx = ni;
-    audio.src = playlist[idx].url;
-    audio.play().catch(()=>{});
-    setNowPlaying();
-  }
-  function nextTrack(){ if(!playlist.length) return; playIndex(idx+1); }
-  function prevTrack(){ if(!playlist.length) return; playIndex(idx-1); }
-  function shuffleTracks(){
-    if(!playlist.length) return;
-    shuffled = !shuffled;
-    if(shuffled){
-      playlist = playlist.slice().sort(()=>Math.random()-0.5);
-    }else{
-      playlist = ASSET_TRACKS.map((name,i)=>({
-        name,
-        url:new URL('assets/'+name, document.baseURI).toString(),
-        added:i,
-        bad:false
-      }));
-    }
-    setNowPlaying();
-  }
-
-  audio.addEventListener('ended', ()=>{ nextTrack(); });
-  audio.addEventListener('error', ()=>{
-    if(playlist[idx]) playlist[idx].bad = true;
-    const ni = findNextPlayable(idx,+1);
-    if(ni===-1){
-      audio.pause();
-      setNowPlaying();
-      return;
-    }
-    setTimeout(()=>playIndex(ni),300);
-  });
-
-  buildPlaylist();
-
-  // ---------- Game objects ----------
-  const G = { running:false, time:0, score:0, pipeTimer:0 };
-  const world = { speed:S.speed, gravity:S.gravity, gap:S.gap, pipeW:S.pipeW };
-  let bird = { x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
-  let pipes = [];
-  let sparks = [];
-  let trail = [];
-  let popups = [];
-  let scoreFlash = 0;
-
-  // ---------- Background generation ----------
-  function buildCity(){
-    const w = canvas.width;
-    const base = [90,130,170];
-    for(let li=0; li<3; li++){
-      const arr=[];
-      for(let x=-BG.step;x<w+BG.step;x+=BG.step){
-        const bw=54+li*14+Math.floor(rand(-6,6));
-        const bh=base[li]+Math.floor(rand(-24,32));
-        arr.push({x,w:bw,h:bh});
-      }
-      BG.layers[li] = arr;
-    }
-  }
-
-  function fit(){
-    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-    canvas.style.width = innerWidth + 'px';
-    canvas.style.height = innerHeight + 'px';
-    canvas.width = Math.floor(innerWidth * dpr);
-    canvas.height = Math.floor(innerHeight * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    buildCity();
-    if(innerWidth < 900){
-      E('#panel')?.classList.add('hidden');
-      E('#btnFlap').style.display='block';
-    }else{
-      E('#panel')?.classList.remove('hidden');
-      E('#btnFlap').style.display='none';
-    }
-  }
-  addEventListener('resize', fit, {passive:true});
-  fit();
-
-  // ---------- Bind initial UI values ----------
-  E('#theme').value = S.theme;
-  E('#diff').value = String(S.diff);
-  E('#gravity').value = S.gravity;
-  E('#flap').value = S.flap;
-  E('#speed').value = S.speed;
-  E('#gap').value = S.gap;
-  E('#pipeW').value = S.pipeW;
-  E('#scan').checked = S.scan;
-  E('#vig').checked = S.vig;
-  E('#pix').checked = S.pix;
-  E('#particles').checked = S.particles;
-  E('#trail').checked = S.trail;
-  E('#skin').value = S.skin;
-  E('#autobal').checked = S.autobal;
-  E('#mute').checked = S.mute;
-  E('#bgSpeed').value = S.bgSpeed;
-  E('#musicOn').checked = S.musicOn;
-  E('#musicVol').value = S.musicVol;
-  E('#best').textContent = BEST;
-
-  // ---------- Gameplay helpers ----------
-  function reset(){
-    bird = { x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
-    pipes.length = 0;
-    sparks.length = 0;
-    trail.length = 0;
-    G.score = 0;
-    G.pipeTimer = 0;
-    world.speed = S.speed;
-    world.gravity = S.gravity;
-    world.gap = S.gap;
-    world.pipeW = S.pipeW;
-    E('#score').textContent = 0;
-  }
-
-  function spawnPipe(){
-    const h = canvas.height;
-    const cy = rand(80+world.gap/2, h-80-world.gap/2);
-    const x = canvas.width + world.pipeW;
-    pipes.push({
-      x,
-      w:world.pipeW,
-      top:cy-world.gap/2,
-      bot:cy+world.gap/2,
-      passed:false
-    });
-  }
-
-  function addSpark(x,y,clr){
-    if(!S.particles) return;
-    for(let i=0;i<4;i++){
-      sparks.push({
-        x,y,
-        vx:rand(-1,1),
-        vy:rand(-1.6,-0.2),
-        life:rand(0.25,0.6),
-        t:0,
-        c:clr
       });
+    });
+
+    // Highlight nav items based on scroll position
+    const sections = Array.from(document.querySelectorAll("main section[id]"));
+    const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+    const sideLinks = Array.from(document.querySelectorAll(".sp-link"));
+
+    function setActiveLink(id) {
+      navLinks.forEach((a) =>
+        a.classList.toggle("active", a.getAttribute("href") === "#" + id)
+      );
+      sideLinks.forEach((a) =>
+        a.classList.toggle("sp-active", a.getAttribute("href") === "#" + id)
+      );
     }
-  }
 
-  // ---------- Input ----------
-  function start(){
-    try{
-      ensureAC();
-      ac && ac.resume && ac.resume();
-    }catch{}
-    G.running = true;
-    if(!S.musicOn) return;
-    if(audio.src && !audio.paused) return;
-    if(playlist.length){
-      if(idx>=0 && playlist[idx] && !playlist[idx].bad){
-        audio.play().catch(()=>{});
-      }else{
-        const first = findNextPlayable(-1,+1);
-        if(first!==-1) playIndex(first);
-      }
-    }
-  }
-
-  function flap(){
-    if(!G.running){ start(); return; }
-    if(!bird.alive){
-      reset();
-      G.running = true;
-      return;
-    }
-    bird.vy = -S.flap;
-    addSpark(bird.x-8,bird.y,'pri');
-    beep(660,0.06,'triangle');
-  }
-
-  addEventListener('keydown', e=>{
-    if(['Space','ArrowUp','KeyW'].includes(e.code)){
-      e.preventDefault();
-      flap();
-    }
-    if(e.code==='KeyP'){
-      if(G.running) G.running=false;
-      else start();
-    }
-  });
-  addEventListener('pointerdown', flap);
-
-  E('#btnStart').onclick = ()=>{ if(!G.running) start(); else flap(); };
-  E('#btnPause').onclick = ()=>{ G.running=false; };
-  E('#btnReset').onclick = ()=>{ reset(); drawFrame(0); };
-  E('#overlayStart').onclick = ()=>{
-    start();
-    E('#overlayStart').style.display='none';
-  };
-  E('#btnFlap').addEventListener('pointerdown', e=>{
-    e.preventDefault();
-    flap();
-  });
-  E('#btnPanel').addEventListener('click', ()=>{
-    const p = E('#panel');
-    if(p){ p.classList.toggle('hidden'); }
-  });
-
-  // ---------- Settings bindings ----------
-  const bind = (sel,fn)=>E(sel).addEventListener('input',fn);
-
-  bind('#theme', e=>{
-    S.theme = e.target.value;
-    applyTheme();
-    save();
-  });
-
-  bind('#diff', e=>{
-    S.diff = +e.target.value;
-    if(S.diff===0){S.gravity=0.32;S.flap=7;S.speed=2.8;S.gap=180;S.pipeW=80;}
-    if(S.diff===1){S.gravity=0.36;S.flap=6.2;S.speed=3.2;S.gap=150;S.pipeW=70;}
-    if(S.diff===2){S.gravity=0.42;S.flap=6;S.speed=3.8;S.gap=130;S.pipeW=64;}
-    world.gravity=S.gravity;
-    world.speed=S.speed;
-    world.gap=S.gap;
-    world.pipeW=S.pipeW;
-    E('#gravity').value=S.gravity;
-    E('#flap').value=S.flap;
-    E('#speed').value=S.speed;
-    E('#gap').value=S.gap;
-    E('#pipeW').value=S.pipeW;
-    save();
-  });
-
-  bind('#gravity', e=>{ S.gravity=+e.target.value; world.gravity=S.gravity; save(); });
-  bind('#flap', e=>{ S.flap=+e.target.value; save(); });
-  bind('#speed', e=>{ S.speed=+e.target.value; world.speed=S.speed; save(); });
-  bind('#gap', e=>{ S.gap=+e.target.value; world.gap=S.gap; save(); });
-  bind('#pipeW', e=>{ S.pipeW=+e.target.value; world.pipeW=S.pipeW; save(); });
-
-  bind('#scan', e=>{
-    S.scan=e.target.checked;
-    hud.classList.toggle('scanlines', S.scan);
-    save();
-  });
-  bind('#vig', e=>{
-    S.vig=e.target.checked;
-    hud.classList.toggle('vignette', S.vig);
-    save();
-  });
-  bind('#pix', e=>{
-    S.pix=e.target.checked;
-    canvas.classList.toggle('pixelate', S.pix);
-    save();
-  });
-  bind('#particles', e=>{ S.particles=e.target.checked; save(); });
-  bind('#trail', e=>{
-    S.trail=e.target.checked;
-    if(!S.trail) trail.length=0;
-    save();
-  });
-  bind('#skin', e=>{ S.skin=e.target.value; save(); });
-  bind('#autobal', e=>{ S.autobal=e.target.checked; save(); });
-  bind('#mute', e=>{ S.mute=e.target.checked; save(); });
-  bind('#bgSpeed', e=>{ S.bgSpeed=+e.target.value; save(); });
-
-  // Music controls
-  bind('#musicOn', e=>{
-    S.musicOn=e.target.checked;
-    save();
-    if(S.musicOn && playlist.length){
-      const first = (idx<0)? findNextPlayable(-1,+1) : idx;
-      if(first!==-1) playIndex(first);
-    }else{
-      audio.pause();
-    }
-  });
-  bind('#musicVol', e=>{
-    S.musicVol=+e.target.value;
-    audio.volume=S.musicVol;
-    save();
-  });
-
-  const _prev=E('#btnPrev'),
-        _next=E('#btnNext'),
-        _shuf=E('#btnShuffle'),
-        _pp=E('#btnPlayMusic');
-
-  _prev && (_prev.onclick=prevTrack);
-  _next && (_next.onclick=nextTrack);
-  _shuf && (_shuf.onclick=shuffleTracks);
-  _pp && (_pp.onclick=()=>{
-    if(audio.paused){
-      if(!playlist.length) buildPlaylist();
-      const first = (idx<0)? findNextPlayable(-1,+1) : idx;
-      if(first!==-1) playIndex(first);
-    }else{
-      audio.pause();
-    }
-  });
-
-  // ---------- Draw helpers ----------
-  function neonRect(x,y,w,h,clr){
-    ctx.save();
-    ctx.fillStyle = clr;
-    ctx.globalAlpha = 0.9;
-    ctx.fillRect(x,y,w,h);
-    ctx.shadowColor = clr;
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = clr;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
-    ctx.shadowBlur = 0;
-    ctx.restore();
-  }
-
-  function neonCircle(x,y,r,clr){
-    ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle=clr;
-    ctx.shadowColor=clr;
-    ctx.shadowBlur=18;
-    ctx.fill();
-    ctx.shadowBlur=0;
-  }
-
-  // -------- Ordered-dither background (flowy, with calm center) --------
-  function drawCity(t){
-    const w = canvas.width;
-    const h = canvas.height;
-    const pri = getComputedStyle(document.documentElement)
-                  .getPropertyValue('--pri').trim();
-
-    ctx.fillStyle = '#050301';
-    ctx.fillRect(0,0,w,h);
-
-    ctx.save();
-    ctx.fillStyle = pri;
-
-    const s = DITHER.spacing;
-    const size = DITHER.size;
-    const tSlow = t * 0.35;
-
-    const cx = w * 0.5;
-    const cy = h * 0.45;
-
-    for(let y=0, jy=0; y<h+s; y+=s, jy++){
-      const ny = y / h;
-      for(let x=0, ix=0; x<w+s; x+=s, ix++){
-        const nx = x / w;
-
-        // base: left brighter, right darker
-        const base = clamp(1 - nx, 0, 1);
-
-        // soft waves
-        const waveX = 0.18 * Math.sin(nx * 5 - tSlow);
-        const waveY = 0.12 * Math.sin(ny * 6 + tSlow * 0.8);
-
-        let gradient = clamp(base + waveX + waveY, 0, 1);
-
-        // falloff to calm the center area
-        const dx = (x - cx) / w;
-        const dy = (y - cy) / h;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const falloff = clamp((dist - 0.10) / 0.70, 0.25, 1.0);
-        gradient *= falloff;
-
-        const threshold = (BAYER8[jy & 7][ix & 7] + 0.5) / BAYER_MAX;
-
-        if(gradient > threshold){
-          const jitterX = ((ix*13 + jy*7) & 1) ? 0.35 : -0.35;
-          const jitterY = ((ix*5 + jy*11) & 1) ? 0.35 : -0.35;
-
-          ctx.globalAlpha = 0.18 + 0.16 * gradient;
-
-          ctx.fillRect(
-            x - size/2 + jitterX,
-            y - size/2 + jitterY,
-            size, size
-          );
+    function onScroll() {
+      const buffer = 120;
+      let currentId = sections[0]?.id;
+      for (const sec of sections) {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= buffer && rect.bottom > buffer) {
+          currentId = sec.id;
+          break;
         }
       }
-    }
-    ctx.restore();
-
-    // soft radial fog like Checkpoint
-    ctx.save();
-    const g = ctx.createRadialGradient(
-      cx, cy, 0,
-      cx, cy, Math.max(w,h) * 0.7
-    );
-    g.addColorStop(0.0, 'rgba(0,0,0,0.45)');
-    g.addColorStop(0.55,'rgba(0,0,0,0.10)');
-    g.addColorStop(1.0, 'rgba(0,0,0,0.40)');
-    ctx.fillStyle = g;
-    ctx.globalAlpha = 1;
-    ctx.fillRect(0,0,w,h);
-    ctx.restore();
-  }
-
-  function drawPipes(){
-    const pri=getComputedStyle(document.documentElement)
-                .getPropertyValue('--pri').trim();
-    const sec=getComputedStyle(document.documentElement)
-                .getPropertyValue('--sec').trim();
-    for(const p of pipes){
-      neonRect(p.x,0,p.w,p.top,sec);
-      neonRect(p.x,p.bot,p.w,canvas.height-p.bot,sec);
-      ctx.fillStyle=pri;
-      ctx.globalAlpha=0.25;
-      ctx.fillRect(p.x-4,p.top-6,p.w+8,4);
-      ctx.fillRect(p.x-4,p.bot+2,p.w+8,4);
-      ctx.globalAlpha=1;
-    }
-  }
-
-  function drawBird(){
-    const pri=getComputedStyle(document.documentElement)
-                .getPropertyValue('--pri').trim();
-    const sec=getComputedStyle(document.documentElement)
-                .getPropertyValue('--sec').trim();
-
-    if(S.trail){
-      trail.push({x:bird.x,y:bird.y});
-      if(trail.length>50) trail.shift();
-      for(let i=0;i<trail.length;i++){
-        const p=trail[i];
-        const a=1-i/trail.length;
-        ctx.globalAlpha=a*0.22;
-        neonCircle(p.x,p.y,3,sec);
-      }
-      ctx.globalAlpha=1;
+      if (currentId) setActiveLink(currentId);
     }
 
-    ctx.save();
-    ctx.translate(bird.x,bird.y);
-    ctx.rotate(clamp(bird.vy,-8,8)*0.035);
-
-    if(S.skin==='triangle'){
-      ctx.beginPath();
-      ctx.moveTo(12,0);
-      ctx.lineTo(-10,-8);
-      ctx.lineTo(-10,8);
-      ctx.closePath();
-      ctx.fillStyle=pri;
-      ctx.shadowColor=pri;
-      ctx.shadowBlur=14;
-      ctx.fill();
-      ctx.shadowBlur=0;
-    }else if(S.skin==='disk'){
-      neonCircle(0,0,12,pri);
-    }else if(S.skin==='cube'){
-      neonRect(-10,-10,20,20,pri);
-    }else if(S.skin==='ring'){
-      ctx.strokeStyle=pri;
-      ctx.lineWidth=5;
-      ctx.shadowColor=pri;
-      ctx.shadowBlur=14;
-      ctx.beginPath();
-      ctx.arc(0,0,12,0,Math.PI*2);
-      ctx.stroke();
-      ctx.shadowBlur=0;
-    }
-    ctx.restore();
-  }
-
-  function drawSparks(dt){
-    const pri=getComputedStyle(document.documentElement)
-                .getPropertyValue('--pri').trim();
-    for(let i=sparks.length-1;i>=0;i--){
-      const s=sparks[i];
-      s.t+=dt;
-      s.x+=s.vx*60*dt;
-      s.y+=s.vy*60*dt;
-      s.vy+=world.gravity*0.4*dt*60;
-      const a=1-s.t/s.life;
-      if(a<=0){
-        sparks.splice(i,1);
-        continue;
-      }
-      ctx.globalAlpha=a*0.8;
-      neonCircle(s.x,s.y,2, s.c==='pri'?pri:'#00f0ff');
-      ctx.globalAlpha=1;
-    }
-  }
-
-  // ---------- Loop ----------
-  reset();
-  let last=0;
-  function loop(ts){
-    const t=ts/1000;
-    const dt=Math.min(0.033, last? t-last:0.016);
-    last=t;
-    if(G.running) update(dt);
-    drawFrame(dt,t);
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
-
-  function update(dt){
-    G.time+=dt;
-    G.pipeTimer+=dt;
-    const spawnEvery=clamp(1.4-(S.diff*0.08),1.1,1.6);
-    if(G.pipeTimer>spawnEvery){
-      G.pipeTimer=0;
-      spawnPipe();
-    }
-    for(let i=pipes.length-1;i>=0;i--){
-      const p=pipes[i];
-      p.x-=world.speed*60*dt;
-      if(p.x+p.w<0) pipes.splice(i,1);
-    }
-    bird.vy = clamp(bird.vy + world.gravity*60*dt, -12, 12);
-    bird.y += bird.vy;
-
-    if(S.trail){
-      for(let i=0;i<trail.length;i++){
-        trail[i].x -= world.speed*60*dt;
-      }
-      while(trail.length>80) trail.shift();
-    }
-
-    for(let li=0; li<3; li++){
-      const arr=BG.layers[li];
-      const vx=(BG.speeds[li] * (0.8+S.bgSpeed)) * dt;
-      for(let i=0;i<arr.length;i++){
-        arr[i].x -= vx;
-        if(arr[i].x < -BG.step) arr[i].x += BG.step * arr.length;
-      }
-    }
-
-    const bx=bird.x, by=bird.y, r=bird.r;
-    for(const p of pipes){
-      if(!p.passed && p.x+p.w<bx-r){
-        p.passed=true;
-        G.score++;
-        E('#score').textContent=G.score;
-        scoreFlash=0.6;
-        popups.push({t:0,txt:String(G.score)});
-        addSpark(bx,by,'pri');
-        beep(880,0.05,'square');
-        if(G.score>BEST){
-          BEST=G.score;
-          localStorage.setItem('lofi-flappy-best',BEST);
-          E('#best').textContent=BEST;
-        }
-      }
-      if(bx+r>p.x && bx-r<p.x+p.w && (by-r<p.top || by+r>p.bot)) die();
-    }
-    if(by-r<0 || by+r>canvas.height) die();
-
-    if(S.autobal){
-      const target=6+S.diff*5;
-      const rate=G.time>0? (G.score/(G.time/60)):0;
-      const adj=clamp((rate-target)/target,-0.4,0.4);
-      world.speed=clamp(S.speed*(1+adj*0.18),1.8,5.2);
-      world.gap  =clamp(S.gap *(1-adj*0.16),120,240);
-      world.pipeW=clamp(S.pipeW*(1-adj*0.12),52,96);
-    }
-  }
-
-  function die(){
-    if(!bird.alive) return;
-    bird.alive=false;
-    G.running=false;
-    addSpark(bird.x,bird.y,'pri');
-    addSpark(bird.x+6,bird.y-4,'pri');
-    beep(160,0.18,'sawtooth');
-  }
-
-  function drawFrame(dt,t){
-    drawCity(t||0);
-    drawPipes();
-    drawBird();
-    drawSparks(dt||0.016);
-
-    const pri=getComputedStyle(document.documentElement)
-                .getPropertyValue('--pri').trim();
-
-    if(scoreFlash>0){
-      scoreFlash=Math.max(0, scoreFlash-(dt||0.016));
-      const s=1+scoreFlash*0.4;
-      ctx.save();
-      ctx.translate(canvas.width/2, 84);
-      ctx.scale(s,s);
-      ctx.font='800 28px Inter, Segoe UI, system-ui, sans-serif';
-      ctx.fillStyle=pri;
-      ctx.shadowColor=pri;
-      ctx.shadowBlur=18;
-      ctx.textAlign='center';
-      ctx.fillText(String(G.score),0,0);
-      ctx.restore();
-      ctx.shadowBlur=0;
-    }
-
-    for(let i=popups.length-1;i>=0;i--){
-      const p=popups[i];
-      p.t+=(dt||0.016);
-      const a=Math.max(0,1-p.t/0.8);
-      if(a<=0){
-        popups.splice(i,1);
-        continue;
-      }
-      ctx.globalAlpha=a;
-      ctx.fillStyle='white';
-      ctx.font='700 18px Inter, system-ui';
-      ctx.textAlign='center';
-      ctx.fillText(p.txt, canvas.width/2, 106 - p.t*30);
-      ctx.globalAlpha=1;
-    }
-
-    if(!G.running){
-      const obtn=E('#overlayStart');
-      if(obtn) obtn.style.display='block';
-
-      const pri2=pri;
-      ctx.textAlign='center';
-      ctx.font='700 42px Inter, Segoe UI, system-ui, sans-serif';
-      ctx.fillStyle=pri2;
-      ctx.shadowColor=pri2;
-      ctx.shadowBlur=18;
-      ctx.fillText('Tap / Space to FLAP', canvas.width/2, canvas.height*0.33);
-      ctx.shadowBlur=0;
-      ctx.font='400 16px Inter, Segoe UI, system-ui, sans-serif';
-      ctx.fillStyle='rgba(255,245,220,.75)';
-      ctx.fillText('Avoid neon vents. Pass through gaps to score. Customize on the right.',
-                   canvas.width/2, canvas.height*0.33+28);
-    }else{
-      const obtn=E('#overlayStart');
-      if(obtn) obtn.style.display='none';
-    }
-  }
-
-  addEventListener('visibilitychange', ()=>{
-    if(document.hidden) G.running=false;
-  });
-
-})();
-</script>
+    window.addEventListener("scroll", onScroll);
+    window.addEventListener("load", onScroll);
+  </script>
 </body>
 </html>
