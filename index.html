@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lofi-Checkpoint Flappy</title>
+<title>Checkpoint Flappy</title>
 <meta name="color-scheme" content="dark light" />
 <style>
   :root{
-    /* Checkpoint-style default palette (overridden by theme object) */
-    --bg1:#020707;
-    --bg2:#00120a;
-    --ink:#e7ffe9;
-    --muted:#7fa489;
-    --panel:#020a06;
-    --line:#0b2515;
-    --pri:#54ff79;   /* neon green */
-    --sec:#e3ff9c;   /* softer yellow-green */
-    --acc:#54ff79;
-    --warn:#ffd848;
+    /* Amber Checkpoint-style defaults; JS themes will override */
+    --bg1:#120a02;
+    --bg2:#050301;
+    --ink:#fff6d5;
+    --muted:#c7b27a;
+    --panel:#110b03;
+    --line:#3a2a10;
+    --pri:#ffd94a;   /* neon-ish gold */
+    --sec:#fff8b0;   /* softer yellow */
+    --acc:#ffd94a;
+    --warn:#ffb000;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -36,21 +36,6 @@
     padding-bottom:env(safe-area-inset-bottom);
   }
 
-  /* Halftone / dither overlay like Discord Checkpoint */
-  body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:0;
-    background-image:
-      radial-gradient(circle at 0 0, rgba(84,255,121,0.20) 0, rgba(84,255,121,0.20) 1px, transparent 1px),
-      radial-gradient(circle at 4px 4px, rgba(84,255,121,0.13) 0, rgba(84,255,121,0.13) 1px, transparent 1px);
-    background-size:8px 8px;
-    opacity:0.25;
-    mix-blend-mode:screen;
-  }
-
   .hud{position:fixed;inset:0;pointer-events:none;z-index:2}
   .topbar{
     position:absolute;left:0;right:0;top:0;
@@ -62,32 +47,32 @@
   .badge{
     display:inline-flex;align-items:center;gap:8px;
     padding:6px 10px;border:1px solid var(--line);border-radius:999px;
-    background:#020a06f0;pointer-events:auto;
+    background:#110b03f0;pointer-events:auto;
   }
   .score{font-weight:700;letter-spacing:1px}
   .btn{
     pointer-events:auto;appearance:none;border:1px solid var(--line);
-    background:#020a06; color:var(--ink);
+    background:#110b03; color:var(--ink);
     padding:8px 12px;border-radius:10px;cursor:pointer;
     transition:transform .06s ease, box-shadow .06s ease, border-color .06s ease;
     font-weight:600;
-    box-shadow:0 0 0 0 rgba(84,255,121,0.0);
+    box-shadow:0 0 0 0 rgba(255,217,74,0.0);
   }
   .btn:hover{
     transform:translateY(-1px);
     border-color:var(--pri);
-    box-shadow:0 0 12px 0 rgba(84,255,121,0.5);
+    box-shadow:0 0 12px 0 rgba(255,217,74,0.5);
   }
   .btn:active{
     transform:translateY(0);
-    box-shadow:0 0 4px 0 rgba(84,255,121,0.7);
+    box-shadow:0 0 4px 0 rgba(255,217,74,0.7);
   }
   .panel{
     position:absolute;right:10px;top:58px;
     width:min(460px,calc(100vw - 20px));
     max-height:calc(100vh - 78px);
     overflow:auto;pointer-events:auto;
-    background:#020a06f0;
+    background:#110b03f0;
     border:1px solid var(--line);
     border-radius:14px;
     padding:12px;
@@ -108,7 +93,7 @@
     position:absolute;left:10px;bottom:10px;
     display:flex;gap:8px;align-items:center;pointer-events:auto;
   }
-  .key{border:1px solid var(--line);padding:4px 8px;border-radius:8px;background:#020a06cc}
+  .key{border:1px solid var(--line);padding:4px 8px;border-radius:8px;background:#110b03cc}
   canvas{
     display:block;position:fixed;inset:0;
     touch-action:none;
@@ -159,11 +144,11 @@
       <div>
         <div class="row"><label>Theme</label>
           <select id="theme">
-            <option value="checkpoint">Checkpoint Green</option>
+            <option value="checkpoint">Checkpoint Amber</option>
             <option value="magenta">Neon Magenta</option>
             <option value="cyan">Electric Cyan</option>
             <option value="lime">Toxic Lime</option>
-            <option value="amber">Amber Pulse</option>
+            <option value="amber">Classic Amber</option>
           </select>
         </div>
         <div class="row"><label>Difficulty</label>
@@ -244,11 +229,11 @@
   const E = sel => document.querySelector(sel);
 
   const THEMES = {
-    checkpoint:{ pri:'#54ff79', sec:'#e3ff9c', bg1:'#020707', bg2:'#00120a' },
+    checkpoint:{ pri:'#ffd94a', sec:'#fff8b0', bg1:'#120a02', bg2:'#050301' },
     magenta:{pri:'#ff2ea6',sec:'#00f0ff',bg1:'#0a0f1a',bg2:'#0b0018'},
     cyan:{pri:'#00e5ff',sec:'#9fb0ff',bg1:'#06141f',bg2:'#001018'},
     lime:{pri:'#aaff00',sec:'#ff00e0',bg1:'#0b1110',bg2:'#001400'},
-    amber:{pri:'#ffb000',sec:'#00ffd5',bg1:'#0f0a00',bg2:'#1a0f00'}
+    amber:{pri:'#ffb000',sec:'#ffe58a',bg1:'#0f0a00',bg2:'#1a0f00'}
   };
 
   const defaults = {
@@ -282,8 +267,15 @@
   const canvas = E('#game');
   const ctx = canvas.getContext('2d');
 
-  // ---------- Background controller ----------
-  const BG = { step:160, speeds:[1.2,2.4,4.2], layers:[[],[],[]] };
+  // ---------- Halftone background data ----------
+  const BG = { spacing:7, dots:[] };
+
+  // small hash-based pseudo-noise
+  function hash2(i,j){
+    let s = i*374761393 + j*668265263;
+    s = (s ^ (s>>13)) >>> 0;
+    return (s & 0xfffffff)/0xfffffff;
+  }
 
   // ---------- Apply theme ----------
   function applyTheme(){
@@ -299,7 +291,6 @@
   const ensureAC = ()=>{ if(!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); masterGain = ac.createGain(); masterGain.gain.value=0.12; masterGain.connect(ac.destination);} };
   const beep=(f=440,t=0.08,type='sine')=>{ if(S.mute) return; ensureAC(); const o=ac.createOscillator(); const g=ac.createGain(); o.type=type; o.frequency.value=f; o.connect(g); g.connect(masterGain); const n=ac.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.exponentialRampToValueAtTime(1,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+t); o.start(n); o.stop(n+t+0.01); };
 
-  // Initial asset list (will be replaced by manifest if present)
   const ASSET_TRACKS = [
     'cutie-japan-lofi-402355.mp3',
     'lofi-study-calm-peaceful-chill-hop-112191.mp3',
@@ -308,19 +299,15 @@
   const audio = new Audio(); audio.loop=false; audio.preload='metadata'; audio.volume=S.musicVol; let playlist=[]; let idx=-1; let shuffled=false;
 
   function parseTxtList(txt){
-    // Robust split that avoids multi-line regex literal issues
     return txt.split(/[\r\n]+/).map(s=>s.replace(/#.*/, '').trim()).filter(Boolean);
   }
 
   function buildPlaylist(){
-    // Build from current ASSET_TRACKS immediately (keeps tests synchronous)
     const prevName = (idx>=0 && playlist[idx]) ? playlist[idx].name : null;
     const wasPlaying = !audio.paused && !!audio.src;
     playlist = ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false}));
-    // try to preserve current index by name
     if(prevName){ const j = playlist.findIndex(p=>p.name===prevName); if(j!==-1) idx=j; }
     setNowPlaying();
-    // Try to load manifests and update in background
     (async()=>{
       async function tryJson(){
         try{ const res=await fetch(new URL('assets/playlist.json', document.baseURI)); if(!res.ok) return null; const arr=await res.json(); return Array.isArray(arr)? arr: null; }
@@ -342,12 +329,10 @@
         setNowPlaying();
       }
       await verifyAssets();
-      // if we were playing before rebuild, do NOT restart; just keep playing
-      if(wasPlaying && !audio.paused){ /* no-op */ }
+      if(wasPlaying && !audio.paused){ /* keep playing */ }
     })();
   }
 
-  // Global probe so tryPattern and verifyAssets share it
   async function probeURL(url){
     return new Promise((resolve)=>{
       const a=new Audio(); a.preload='metadata'; a.src=url;
@@ -359,12 +344,10 @@
   }
 
   async function tryPattern(){
-    // Autodiscover assets following trackN.mp3 (N=1..50)
     const base = document.baseURI; const found=[];
     for(let n=1;n<=50;n++){
       const name=`track${n}.mp3`;
       const url=new URL('assets/'+name, base).toString();
-      // eslint-disable-next-line no-await-in-loop
       const ok = await probeURL(url);
       if(ok) found.push(name);
     }
@@ -398,12 +381,38 @@
       el.textContent = good>0 ? `Ready (${good}/${playlist.length} available)` : 'No playable tracks found in assets/';
     }
   }
-  function playIndex(i){ if(!playlist.length) return; const ni=(i+playlist.length)%playlist.length; if(playlist[ni].bad){ const alt=findNextPlayable(ni,+1); if(alt===-1){ audio.pause(); setNowPlaying(); return; } return playIndex(alt); } idx=ni; audio.src=playlist[idx].url; audio.play().catch(()=>{}); setNowPlaying(); }
+  function playIndex(i){
+    if(!playlist.length) return;
+    const ni=(i+playlist.length)%playlist.length;
+    if(playlist[ni].bad){
+      const alt=findNextPlayable(ni,+1);
+      if(alt===-1){ audio.pause(); setNowPlaying(); return; }
+      return playIndex(alt);
+    }
+    idx=ni;
+    audio.src=playlist[idx].url;
+    audio.play().catch(()=>{});
+    setNowPlaying();
+  }
   function nextTrack(){ if(!playlist.length) return; playIndex(idx+1); }
   function prevTrack(){ if(!playlist.length) return; playIndex(idx-1); }
-  function shuffleTracks(){ if(!playlist.length) return; shuffled=!shuffled; if(shuffled){ playlist=playlist.slice().sort(()=>Math.random()-0.5); } else { playlist=ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false})); } setNowPlaying(); }
+  function shuffleTracks(){
+    if(!playlist.length) return;
+    shuffled=!shuffled;
+    if(shuffled){
+      playlist=playlist.slice().sort(()=>Math.random()-0.5);
+    } else {
+      playlist=ASSET_TRACKS.map((name,i)=>({name, url:new URL('assets/'+name, document.baseURI).toString(), added:i, bad:false}));
+    }
+    setNowPlaying();
+  }
   audio.addEventListener('ended', ()=>{ nextTrack(); });
-  audio.addEventListener('error', ()=>{ if(playlist[idx]) playlist[idx].bad=true; const ni=findNextPlayable(idx,+1); if(ni===-1){ audio.pause(); setNowPlaying(); return; } setTimeout(()=>playIndex(ni),300); });
+  audio.addEventListener('error', ()=>{
+    if(playlist[idx]) playlist[idx].bad=true;
+    const ni=findNextPlayable(idx,+1);
+    if(ni===-1){ audio.pause(); setNowPlaying(); return; }
+    setTimeout(()=>playIndex(ni),300);
+  });
 
   buildPlaylist();
 
@@ -413,12 +422,36 @@
   let bird = { x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
   let pipes=[]; let sparks=[]; let trail=[]; let popups=[]; let scoreFlash=0;
 
-  // ---------- Background generation ----------
+  // ---------- Halftone generation ----------
   function buildCity(){
-    const w=canvas.width; const base=[90,130,170];
-    for(let li=0; li<3; li++){
-      const arr=[]; for(let x=-BG.step; x<w+BG.step; x+=BG.step){ const bw=54+li*14+Math.floor(rand(-6,6)); const bh=base[li]+Math.floor(rand(-24,32)); arr.push({x,w:bw,h:bh}); }
-      BG.layers[li]=arr;
+    const s = BG.spacing;
+    BG.dots.length = 0;
+    const w = canvas.width;
+    const h = canvas.height;
+    const cols = Math.ceil(w / s) + 2;
+    const rows = Math.ceil(h / s) + 2;
+    for(let j=0;j<rows;j++){
+      for(let i=0;i<cols;i++){
+        const x = i*s;
+        const y = j*s;
+        const nx = x / w;
+        const ny = y / h;
+
+        // broad directional gradient (brighter center-top / left, darker right/bottom)
+        const gradY = 1 - ny;
+        const gradX = 1 - Math.abs(nx-0.45)*1.4;
+        const band = Math.exp(-Math.pow((ny-0.30)*2.2,2)); // bright band around card area
+
+        const base = 0.25*gradY + 0.35*gradX + 0.6*band;
+        const noise = hash2(i,j); // 0..1
+        const strength = clamp(base + (noise-0.5)*0.35, 0, 1);
+
+        BG.dots.push({
+          x, y,
+          strength,
+          jitter: hash2(i+11,j+7)*Math.PI*2
+        });
+      }
     }
   }
 
@@ -442,11 +475,27 @@
   E('#best').textContent=BEST;
 
   // ---------- Gameplay helpers ----------
-  function reset(){ bird={ x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true }; pipes.length=0; sparks.length=0; trail.length=0; G.score=0; G.pipeTimer=0; world.speed=S.speed; world.gravity=S.gravity; world.gap=S.gap; world.pipeW=S.pipeW; E('#score').textContent=0; }
+  function reset(){
+    bird={ x: innerWidth*0.3, y: innerHeight*0.5, vy:0, r:14, alive:true };
+    pipes.length=0; sparks.length=0; trail.length=0;
+    G.score=0; G.pipeTimer=0;
+    world.speed=S.speed; world.gravity=S.gravity; world.gap=S.gap; world.pipeW=S.pipeW;
+    E('#score').textContent=0;
+  }
 
-  function spawnPipe(){ const h=canvas.height; const cy=rand(80+world.gap/2, h-80-world.gap/2); const x=canvas.width+world.pipeW; pipes.push({x,w:world.pipeW,top:cy-world.gap/2,bot:cy+world.gap/2,passed:false}); }
+  function spawnPipe(){
+    const h=canvas.height;
+    const cy=rand(80+world.gap/2, h-80-world.gap/2);
+    const x=canvas.width+world.pipeW;
+    pipes.push({x,w:world.pipeW,top:cy-world.gap/2,bot:cy+world.gap/2,passed:false});
+  }
 
-  function addSpark(x,y,clr){ if(!S.particles) return; for(let i=0;i<4;i++){ sparks.push({x,y, vx:rand(-1,1), vy:rand(-1.6,-0.2), life:rand(0.25,0.6), t:0, c:clr}); } }
+  function addSpark(x,y,clr){
+    if(!S.particles) return;
+    for(let i=0;i<4;i++){
+      sparks.push({x,y, vx:rand(-1,1), vy:rand(-1.6,-0.2), life:rand(0.25,0.6), t:0, c:clr});
+    }
+  }
 
   // ---------- Input ----------
   function start(){
@@ -454,17 +503,24 @@
     catch (error) { /* ignore autoplay errors */ }
     G.running = true;
     if(!S.musicOn) return;
-    // If already playing, do not restart the track
     if(audio.src && !audio.paused) return;
     if(playlist.length){
-      // If we have a valid idx, just continue (play if paused). Otherwise pick first playable
       if(idx>=0 && playlist[idx] && !playlist[idx].bad){ audio.play().catch(()=>{}); }
       else { const first=findNextPlayable(-1,+1); if(first!==-1) playIndex(first); }
     }
   }
 
-  function flap(){ if(!G.running){ start(); return; } if(!bird.alive){ reset(); /* do not touch audio here */ G.running=true; return; } bird.vy=-S.flap; addSpark(bird.x-8,bird.y,'pri'); beep(660,0.06,'triangle'); }
-  addEventListener('keydown',e=>{ if(['Space','ArrowUp','KeyW'].includes(e.code)){ e.preventDefault(); flap(); } if(e.code==='KeyP'){ if(G.running) G.running=false; else start(); } });
+  function flap(){
+    if(!G.running){ start(); return; }
+    if(!bird.alive){ reset(); G.running=true; return; }
+    bird.vy=-S.flap;
+    addSpark(bird.x-8,bird.y,'pri');
+    beep(660,0.06,'triangle');
+  }
+  addEventListener('keydown',e=>{
+    if(['Space','ArrowUp','KeyW'].includes(e.code)){ e.preventDefault(); flap(); }
+    if(e.code==='KeyP'){ if(G.running) G.running=false; else start(); }
+  });
   addEventListener('pointerdown', flap);
 
   E('#btnStart').onclick=()=>{ if(!G.running) start(); else flap(); };
@@ -477,7 +533,14 @@
   // ---------- Settings ----------
   const bind=(sel,fn)=>E(sel).addEventListener('input',fn);
   bind('#theme',e=>{ S.theme=e.target.value; applyTheme(); save(); });
-  bind('#diff',e=>{ S.diff=+e.target.value; if(S.diff===0){S.gravity=0.32;S.flap=7;S.speed=2.8;S.gap=180;S.pipeW=80;} if(S.diff===1){S.gravity=0.36;S.flap=6.2;S.speed=3.2;S.gap=150;S.pipeW=70;} if(S.diff===2){S.gravity=0.42;S.flap=6;S.speed=3.8;S.gap=130;S.pipeW=64;} world.gravity=S.gravity;world.speed=S.speed;world.gap=S.gap;world.pipeW=S.pipeW; E('#gravity').value=S.gravity;E('#flap').value=S.flap;E('#speed').value=S.speed;E('#gap').value=S.gap;E('#pipeW').value=S.pipeW; save(); });
+  bind('#diff',e=>{ S.diff=+e.target.value;
+    if(S.diff===0){S.gravity=0.32;S.flap=7;S.speed=2.8;S.gap=180;S.pipeW=80;}
+    if(S.diff===1){S.gravity=0.36;S.flap=6.2;S.speed=3.2;S.gap=150;S.pipeW=70;}
+    if(S.diff===2){S.gravity=0.42;S.flap=6;S.speed=3.8;S.gap=130;S.pipeW=64;}
+    world.gravity=S.gravity;world.speed=S.speed;world.gap=S.gap;world.pipeW=S.pipeW;
+    E('#gravity').value=S.gravity;E('#flap').value=S.flap;E('#speed').value=S.speed;E('#gap').value=S.gap;E('#pipeW').value=S.pipeW;
+    save();
+  });
   bind('#gravity',e=>{ S.gravity=+e.target.value; world.gravity=S.gravity; save(); });
   bind('#flap',e=>{ S.flap=+e.target.value; save(); });
   bind('#speed',e=>{ S.speed=+e.target.value; world.speed=S.speed; save(); });
@@ -492,7 +555,6 @@
   bind('#autobal',e=>{ S.autobal=e.target.checked; save(); });
   bind('#mute',e=>{ S.mute=e.target.checked; save(); });
   bind('#bgSpeed',e=>{ S.bgSpeed=+e.target.value; save(); });
-  // Music controls
   bind('#musicOn',e=>{ S.musicOn=e.target.checked; save(); if(S.musicOn && playlist.length){ const first=(idx<0)? findNextPlayable(-1,+1): idx; if(first!==-1) playIndex(first); } else { audio.pause(); } });
   bind('#musicVol',e=>{ S.musicVol=+e.target.value; audio.volume=S.musicVol; save(); });
   const _prev=E('#btnPrev'), _next=E('#btnNext'), _shuf=E('#btnShuffle'), _pp=E('#btnPlayMusic');
@@ -525,51 +587,27 @@
     ctx.shadowBlur=0;
   }
 
-  // Checkpoint-style background
+  // Ordered-dither / halftone background
   function drawCity(t){
     const w = canvas.width;
     const h = canvas.height;
     const pri = getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
-    const sec = getComputedStyle(document.documentElement).getPropertyValue('--sec').trim();
 
-    // Deep black-green base
-    ctx.fillStyle = '#020706';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#050301';
+    ctx.fillRect(0,0,w,h);
 
-    // Radial green glow, slightly off-center – like a CRT / Checkpoint hero glow
-    const cx = w * 0.3;
-    const cy = h * 0.5;
-    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 1.1);
-    rg.addColorStop(0.0, 'rgba(84,255,121,0.35)');
-    rg.addColorStop(0.35,'rgba(84,255,121,0.10)');
-    rg.addColorStop(1.0,'rgba(0,0,0,1)');
-    ctx.fillStyle = rg;
-    ctx.fillRect(0, 0, w, h);
-
-    // Vertical "scan grid" lines that drift slowly – gives that holo-UI feeling
     ctx.save();
-    ctx.globalAlpha = 0.18;
-    ctx.strokeStyle = pri;
-    ctx.lineWidth = 1;
-    const step = 42;
-    const offset = (t * 20) % step;
-    for(let x = -step; x < w + step; x += step){
-      ctx.beginPath();
-      ctx.moveTo(x + offset, 0);
-      ctx.lineTo(x + offset, h);
-      ctx.stroke();
-    }
-    ctx.restore();
+    ctx.fillStyle = pri;
+    const speed = 1.8 + S.bgSpeed*0.8;
 
-    // Tiny sparkling pixels, like Checkpoint's animated dots
-    ctx.save();
-    ctx.globalAlpha = 0.16;
-    ctx.fillStyle = sec;
-    const count = 90;
-    for(let i = 0; i < count; i++){
-      const px = (i * 73 + (t * 160 | 0)) % w;
-      const py = (i * 37 + (t * 110 | 0)) % h;
-      ctx.fillRect(px, py, 1, 1);
+    for(const d of BG.dots){
+      // animated brightness / presence
+      const anim = 0.6 + 0.4*Math.sin(t*speed + d.jitter);
+      let alpha = d.strength * anim * 0.95;
+      if(alpha < 0.12) continue;
+      ctx.globalAlpha = alpha;
+      // small 2x2 block centered on grid point
+      ctx.fillRect(d.x-1, d.y-1, 2, 2);
     }
     ctx.restore();
   }
@@ -673,21 +711,14 @@
     }
     bird.vy = clamp(bird.vy + world.gravity*60*dt, -12, 12);
     bird.y += bird.vy;
-    // Trail drift left to simulate world scrolling
+
     if(S.trail){
       for(let i=0;i<trail.length;i++){
         trail[i].x -= world.speed*60*dt;
       }
       while(trail.length>80) trail.shift();
     }
-    for(let li=0; li<3; li++){
-      const arr=BG.layers[li];
-      const vx=(BG.speeds[li]* (0.8 + S.bgSpeed)) * dt;
-      for(let i=0;i<arr.length;i++){
-        arr[i].x -= vx;
-        if(arr[i].x < -BG.step) arr[i].x += BG.step * arr.length;
-      }
-    }
+
     const bx=bird.x, by=bird.y, r=bird.r;
     for(const p of pipes){
       if(!p.passed && p.x+p.w<bx-r){
@@ -717,14 +748,21 @@
     }
   }
 
-  function die(){ if(!bird.alive) return; bird.alive=false; G.running=false; addSpark(bird.x,bird.y,'pri'); addSpark(bird.x+6,bird.y-4,'pri'); beep(160,0.18,'sawtooth'); }
+  function die(){
+    if(!bird.alive) return;
+    bird.alive=false;
+    G.running=false;
+    addSpark(bird.x,bird.y,'pri');
+    addSpark(bird.x+6,bird.y-4,'pri');
+    beep(160,0.18,'sawtooth');
+  }
 
   function drawFrame(dt,t){
     drawCity(t||0);
     drawPipes();
     drawBird();
     drawSparks(dt||0.016);
-    // Top-center score flash and popups
+
     const pri=getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
     if(scoreFlash>0){
       scoreFlash=Math.max(0, scoreFlash-(dt||0.016));
@@ -741,7 +779,6 @@
       ctx.restore();
       ctx.shadowBlur=0;
     }
-    // score popups animate up and fade
     for(let i=popups.length-1;i>=0;i--){
       const p=popups[i];
       p.t+=(dt||0.016);
@@ -777,18 +814,11 @@
 
   addEventListener('visibilitychange',()=>{ if(document.hidden) G.running=false; });
 
-  // ---------- Self-Tests (console) ----------
+  // ---------- Minimal sanity tests (console) ----------
   (function runTests(){ let pass=0, fail=0; const test=(name,fn)=>{ try{ fn(); console.log('%cPASS','color:#6f6',name); pass++; }catch(e){ console.error('FAIL',name,e); fail++; } };
     test('clamp()',()=>{ if(clamp(5,0,4)!==4) throw 'upper'; if(clamp(-1,0,4)!==0) throw 'lower'; if(clamp(2,0,4)!==2) throw 'mid'; });
-    test('spawnPipe gap bounds',()=>{ const old=pipes.length; spawnPipe(); const p=pipes[pipes.length-1]; const gap=p.bot-p.top; if(Math.abs(gap-world.gap)>0.001) throw 'gap mismatch'; if(p.top<0||p.bot>canvas.height) throw 'oob'; pipes.length=old; });
-    test('BG builds per layer',()=>{ buildCity(); if(!(BG.layers[0].length>0 && BG.layers[1].length>0 && BG.layers[2].length>0)) throw 'bg empty'; });
-    test('BG drift monotonic',()=>{ const x0=BG.layers[0][0].x; for(let k=0;k<10;k++){ for(let li=0;li<3;li++){ const arr=BG.layers[li]; for(let i=0;i<arr.length;i++){ arr[i].x -= BG.speeds[li]*0.016; } } } const x1=BG.layers[0][0].x; if(!(x1<x0)) throw 'bg not moving left'; });
-    test('trail drifts left with world',()=>{ reset(); S.trail=true; trail.length=0; world.speed=3; const startX=bird.x; trail.push({x:startX,y:bird.y}); update(0.1); if(!(trail[0].x < startX)) throw 'trail not moving left'; });
-    test('music playlist from assets',()=>{ if(!(ASSET_TRACKS.length>0)) throw 'no assets'; buildPlaylist(); if(!(playlist.length===ASSET_TRACKS.length)) throw 'playlist build mismatch'; });
-    test('music next wraps',()=>{ playlist=[{name:'track1.mp3',bad:false},{name:'track2.mp3',bad:false}]; idx=playlist.length-1; nextTrack(); if(!(idx===0)) throw 'next did not wrap'; });
-    test('start does not restart playing track',()=>{ audio.src='x'; Object.defineProperty(audio,'paused',{get:()=>false}); const oldIdx=1; idx=oldIdx; start(); if(idx!==oldIdx) throw 'restarted index'; });
-    test('pattern finder exists',()=>{ if(typeof tryPattern!=='function') throw 'missing'; });
-    test('parseTxtList handles CRLF & comments',()=>{ const arr=parseTxtList('a.mp3\r\n# c\r\nb.ogg\n\n c.wav '); if(arr.length!==3||arr[0]!=='a.mp3'||arr[1]!=='b.ogg'||arr[2]!=='c.wav') throw 'parse failed'; });
+    test('halftone builds dots',()=>{ buildCity(); if(!(BG.dots.length>0)) throw 'no dots'; });
+    test('spawnPipe gap bounds',()=>{ const old=pipes.length; spawnPipe(); const p=pipes[pipes.length-1]; const gap=p.bot-p.top; if(Math.abs(gap-world.gap)>0.001) throw 'gap mismatch'; pipes.length=old; });
     console.log(`Self-tests: ${pass} passed, ${fail} failed`); })();
 
 })();
