@@ -268,7 +268,7 @@
   const ctx = canvas.getContext('2d');
 
   // ---------- Halftone background data ----------
-  const BG = { spacing:7, dots:[] };
+  const BG = { spacing:12, dots:[] };
 
   // small hash-based pseudo-noise
   function hash2(i,j){
@@ -437,14 +437,18 @@
         const nx = x / w;
         const ny = y / h;
 
-        // broad directional gradient (brighter center-top / left, darker right/bottom)
+        // broad directional gradient (brighter left/mid, darker right/bottom)
         const gradY = 1 - ny;
         const gradX = 1 - Math.abs(nx-0.45)*1.4;
-        const band = Math.exp(-Math.pow((ny-0.30)*2.2,2)); // bright band around card area
+        const band = Math.exp(-Math.pow((ny-0.30)*2.2,2)); // bright band around center
 
-        const base = 0.25*gradY + 0.35*gradX + 0.6*band;
+        let base = 0.25*gradY + 0.35*gradX + 0.6*band;
+
         const noise = hash2(i,j); // 0..1
-        const strength = clamp(base + (noise-0.5)*0.35, 0, 1);
+
+        let strength = clamp(base + (noise-0.5)*0.30, 0, 1);
+        // smoothstep curve to avoid harsh speckle
+        strength = strength*strength*(3 - 2*strength);
 
         BG.dots.push({
           x, y,
@@ -598,17 +602,24 @@
 
     ctx.save();
     ctx.fillStyle = pri;
-    const speed = 1.8 + S.bgSpeed*0.8;
+
+    // slower, gentle shimmer
+    const speed = 0.8 + S.bgSpeed*0.35;
 
     for(const d of BG.dots){
-      // animated brightness / presence
-      const anim = 0.6 + 0.4*Math.sin(t*speed + d.jitter);
-      let alpha = d.strength * anim * 0.95;
-      if(alpha < 0.12) continue;
+      const anim = 0.9 + 0.1*Math.sin(t*speed + d.jitter);
+      let alpha = d.strength * anim;
+
+      if(alpha < 0.08) continue;
+      if(alpha > 0.9) alpha = 0.9;
+
       ctx.globalAlpha = alpha;
-      // small 2x2 block centered on grid point
-      ctx.fillRect(d.x-1, d.y-1, 2, 2);
+
+      // bigger dots: ~3.8px square on grid
+      const size = 3.8;
+      ctx.fillRect(d.x - size/2, d.y - size/2, size, size);
     }
+
     ctx.restore();
   }
 
