@@ -2,1141 +2,653 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dither Machine — System Design</title>
+  <title>Dither Machine — Live Background Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Full system design and feature description for the Dither Machine — a modern, high-performance, interactive dithering engine for the web." />
   <style>
     :root {
       --bg: #050712;
-      --bg-elevated: #0b0f1f;
-      --bg-elevated-soft: #101425;
-      --accent: #7b6dff;
-      --accent-soft: rgba(123, 109, 255, 0.12);
-      --accent-strong: #a495ff;
-      --accent-gradient: radial-gradient(circle at top left, #7b6dff, #3c8bff 45%, #111827 75%);
-      --text-main: #e5e7f5;
-      --text-soft: #a4aec7;
+      --fg-card: rgba(15, 23, 42, 0.96);
+      --fg-border: rgba(148, 163, 184, 0.4);
+      --accent: #818cf8;
+      --accent-soft: rgba(129, 140, 248, 0.12);
+      --text: #e5e7eb;
+      --text-soft: #9ca3af;
       --text-mute: #6b7280;
-      --border-subtle: rgba(148, 163, 184, 0.18);
       --radius-lg: 18px;
-      --radius-xl: 24px;
-      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.65);
-      --shadow-subtle: 0 10px 25px rgba(15, 23, 42, 0.7);
-      --max-width: 1120px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.6);
     }
 
     * {
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
         "Inter", "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top left, #15192f 0, #050712 55%, #020308 100%);
-      color: var(--text-main);
-      -webkit-font-smoothing: antialiased;
+      background: var(--bg);
+      color: var(--text);
     }
 
-    /* Simple animated “soft noise” overlay to hint at dither without eye-strain */
-    .noise-layer {
-      pointer-events: none;
+    /* Dither canvas: ALWAYS behind everything */
+    #dither-canvas {
       position: fixed;
-      inset: -50px;
-      opacity: 0.09;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3CradialGradient id='g' cx='0' cy='0' r='1'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.7'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/ radialGradient%3E%3C/defs%3E%3Cg fill='url(%23g)'%3E%3Ccircle cx='10' cy='20' r='1.1'/%3E%3Ccircle cx='45' cy='30' r='0.9'/%3E%3Ccircle cx='80' cy='15' r='1.2'/%3E%3Ccircle cx='120' cy='35' r='1.1'/%3E%3Ccircle cx='30' cy='70' r='1'/%3E%3Ccircle cx='90' cy='90' r='1.3'/%3E%3Ccircle cx='130' cy='110' r='1.1'/%3E%3Ccircle cx='60' cy='120' r='0.9'/%3E%3C/g%3E%3C/svg%3E");
-      mix-blend-mode: screen;
-      animation: noiseDrift 18s ease-in-out infinite alternate;
+      inset: 0;
       z-index: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
-    @keyframes noiseDrift {
-      0% {
-        transform: translate3d(0, 0, 0) scale(1);
-      }
-      50% {
-        transform: translate3d(-15px, 10px, 0) scale(1.03);
-      }
-      100% {
-        transform: translate3d(10px, -20px, 0) scale(1.05);
+    /* Foreground UI container */
+    .ui-root {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      pointer-events: none; /* let children decide if they receive events */
+    }
+
+    .ui-shell {
+      pointer-events: auto;
+      max-width: 960px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 800px) {
+      .ui-shell {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(18px);
-      background: linear-gradient(
-        to bottom,
-        rgba(10, 12, 25, 0.92),
-        rgba(10, 12, 25, 0.85),
-        transparent
-      );
-      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    .panel {
+      background: var(--fg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--fg-border);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 18px 18px;
+      backdrop-filter: blur(16px);
     }
 
-    .nav-inner {
-      max-width: var(--max-width);
-      margin: 0 auto;
-      padding: 0.6rem 1.2rem;
+    .panel-main-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 12px;
+      margin-bottom: 10px;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .brand-mark {
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      background-image: conic-gradient(
-        from 220deg,
-        #7b6dff,
-        #3c8bff,
-        #22c1c3,
-        #7b6dff
-      );
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.65);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .brand-mark::after {
-      content: "";
-      position: absolute;
-      inset: 38%;
-      border-radius: inherit;
-      background: radial-gradient(circle, #020617 0, transparent 60%);
-      opacity: 0.9;
-    }
-
-    .brand-text {
+    .title-block {
       display: flex;
       flex-direction: column;
-      line-height: 1.1;
+      gap: 4px;
     }
 
-    .brand-title {
-      font-size: 0.98rem;
-      letter-spacing: 0.08em;
+    .title-label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--accent-strong);
-    }
-
-    .brand-sub {
-      font-size: 0.75rem;
       color: var(--text-mute);
     }
 
-    nav {
-      display: flex;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      font-size: 0.78rem;
-    }
-
-    nav a {
-      text-decoration: none;
-      color: var(--text-soft);
-      padding: 0.35rem 0.65rem;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
-        transform 0.12s ease;
-      white-space: nowrap;
-    }
-
-    nav a:hover {
-      background: rgba(15, 23, 42, 0.9);
-      border-color: rgba(148, 163, 184, 0.55);
-      color: var(--text-main);
-      transform: translateY(-1px);
-    }
-
-    nav a.active {
-      background: var(--accent-soft);
-      border-color: rgba(129, 140, 248, 0.9);
-      color: var(--accent-strong);
-    }
-
-    main {
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero {
-      max-width: var(--max-width);
-      margin: 1.8rem auto 1.5rem;
-      padding: 1.5rem 1.2rem 0.75rem;
-    }
-
-    .hero-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-      gap: 2rem;
-      align-items: center;
-    }
-
-    @media (max-width: 880px) {
-      .hero-layout {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    .hero-heading {
-      font-size: clamp(2rem, 3vw, 2.5rem);
-      line-height: 1.05;
-      letter-spacing: 0.03em;
+    .title-main {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      margin-bottom: 0.75rem;
     }
 
-    .hero-heading span {
-      display: block;
-      font-size: 0.76rem;
-      letter-spacing: 0.26em;
-      color: var(--accent-strong);
-      margin-bottom: 0.4rem;
+    .title-main span {
+      color: var(--accent);
     }
 
-    .hero-subtitle {
-      font-size: 0.95rem;
-      color: var(--text-soft);
-      max-width: 32rem;
-    }
-
-    .hero-tags {
-      margin-top: 1.1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .chip {
-      font-size: 0.72rem;
-      padding: 0.3rem 0.55rem;
+    .badge-soft {
+      font-size: 11px;
+      padding: 4px 8px;
       border-radius: 999px;
       border: 1px solid rgba(148, 163, 184, 0.6);
       color: var(--text-soft);
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.9);
+      white-space: nowrap;
     }
 
-    .chip.accent {
-      border-color: rgba(129, 140, 248, 0.95);
-      background: rgba(30, 64, 175, 0.55);
-      color: #e0e7ff;
+    .panel-main-body {
+      margin-top: 8px;
     }
 
-    .chip.soft {
-      border-color: rgba(148, 163, 184, 0.35);
-      background: rgba(15, 23, 42, 0.7);
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-bottom: 12px;
     }
 
-    .hero-card {
-      border-radius: var(--radius-xl);
-      padding: 1.1rem 1.2rem 1.2rem;
-      background:
-        linear-gradient(
-          145deg,
-          rgba(15, 23, 42, 0.97),
-          rgba(15, 23, 42, 0.98),
-          rgba(15, 23, 42, 0.98)
-        ),
-        var(--accent-gradient);
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      box-shadow: var(--shadow-soft);
-      position: relative;
-      overflow: hidden;
+    .icon-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
-    .hero-card::before {
-      content: "";
-      position: absolute;
-      inset: -60%;
-      background: radial-gradient(
-        circle at top right,
-        rgba(129, 140, 248, 0.22),
-        transparent 60%
-      );
-      opacity: 0.9;
-      pointer-events: none;
-    }
-
-    .hero-card-inner {
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-pill {
+    .icon-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 0.7rem;
-      padding: 0.2rem 0.6rem;
+      gap: 6px;
+      padding: 8px 10px;
       border-radius: 999px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.85);
+      font-size: 12px;
       color: var(--text-soft);
-      margin-bottom: 0.7rem;
     }
 
-    .hero-pill-dot {
-      width: 8px;
-      height: 8px;
+    .icon-dot {
+      width: 9px;
+      height: 9px;
       border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.24);
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
     }
 
-    .hero-metric {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-      margin-bottom: 1rem;
-    }
-
-    .hero-metric strong {
-      color: var(--text-main);
-    }
-
-    .hero-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .fake-grid {
+      margin-top: 10px;
       display: grid;
-      gap: 0.5rem;
-      font-size: 0.82rem;
-      color: var(--text-soft);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
     }
 
-    .hero-list li {
+    .fake-card {
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 8px;
+      min-height: 52px;
       display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
     }
 
-    .hero-list li span.bullet {
-      margin-top: 0.3rem;
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(129, 140, 248, 0.9);
-      flex-shrink: 0;
-    }
-
-    .hero-footer-note {
-      margin-top: 0.8rem;
-      font-size: 0.72rem;
+    .fake-card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
       color: var(--text-mute);
-      border-top: 1px dashed rgba(148, 163, 184, 0.35);
-      padding-top: 0.7rem;
     }
 
-    .layout {
-      max-width: var(--max-width);
-      margin: 0 auto 3rem;
-      padding: 0 1.2rem 2rem;
-      display: grid;
-      grid-template-columns: 220px minmax(0, 1fr);
-      gap: 1.75rem;
-      align-items: flex-start;
+    .fake-card-value {
+      font-size: 13px;
+      color: var(--text-soft);
     }
 
-    @media (max-width: 980px) {
-      .layout {
-        grid-template-columns: minmax(0, 1fr);
+    @media (max-width: 640px) {
+      .fake-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
-    .side-panel {
-      position: sticky;
-      top: 4.4rem;
-      border-radius: var(--radius-lg);
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid var(--border-subtle);
-      padding: 0.85rem 0.9rem;
-      box-shadow: var(--shadow-subtle);
-      font-size: 0.8rem;
-    }
-
-    .side-panel h2 {
-      margin: 0 0 0.5rem;
-      font-size: 0.8rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-mute);
-    }
-
-    .side-panel ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 0.15rem;
-    }
-
-    .side-panel a {
-      display: block;
-      padding: 0.25rem 0.35rem;
-      border-radius: 0.45rem;
-      text-decoration: none;
-      color: var(--text-soft);
-      border: 1px solid transparent;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-
-    .side-panel a:hover {
-      background: rgba(15, 23, 42, 0.95);
-      color: var(--text-main);
-      border-color: rgba(148, 163, 184, 0.55);
-    }
-
-    .side-panel a.sp-active {
-      background: rgba(79, 70, 229, 0.35);
-      color: var(--accent-strong);
-      border-color: rgba(129, 140, 248, 0.9);
-    }
-
-    .side-panel-footer {
-      margin-top: 0.65rem;
-      padding-top: 0.55rem;
-      border-top: 1px solid rgba(31, 41, 55, 0.85);
-      font-size: 0.72rem;
-      color: var(--text-mute);
-    }
-
-    .content {
-      display: grid;
-      gap: 1.2rem;
-    }
-
-    section {
-      border-radius: var(--radius-lg);
-      padding: 1.1rem 1rem 1.2rem;
-      background: rgba(15, 23, 42, 0.96);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-subtle);
-    }
-
-    section:nth-child(odd) {
-      background: rgba(13, 16, 33, 0.98);
-    }
-
-    section header {
-      position: static;
-      backdrop-filter: none;
-      background: none;
-      border-bottom: none;
-      margin: 0 0 0.6rem;
-      padding: 0;
-    }
-
-    section h2 {
-      margin: 0;
-      font-size: 1rem;
+    /* Control panel on the right */
+    .panel-controls h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text-soft);
+    }
+
+    .panel-controls p {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: var(--text-mute);
+    }
+
+    .control-group {
+      margin-bottom: 10px;
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
     }
 
-    section h2 span.badge {
-      font-size: 0.7rem;
-      padding: 0.08rem 0.45rem;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--text-soft);
+    }
+
+    .control-group label span.value {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .hint {
+      margin-top: 6px;
+      font-size: 11px;
       color: var(--text-mute);
-      text-transform: uppercase;
-    }
-
-    section p {
-      margin: 0.4rem 0 0.3rem;
-      font-size: 0.88rem;
-      line-height: 1.6;
-      color: var(--text-soft);
-    }
-
-    section ul,
-    section ol {
-      margin: 0.35rem 0 0.3rem 1.05rem;
-      padding: 0;
-      font-size: 0.86rem;
-      line-height: 1.6;
-      color: var(--text-soft);
-    }
-
-    section ul ul,
-    section ol ul {
-      margin-top: 0.2rem;
-    }
-
-    section li + li {
-      margin-top: 0.15rem;
-    }
-
-    .subheading {
-      margin-top: 0.6rem;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text-main);
     }
 
     .pill-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-top: 0.35rem;
+      gap: 6px;
+      margin-top: 8px;
     }
 
-    .pill {
-      font-size: 0.72rem;
-      padding: 0.12rem 0.5rem;
+    .pill-chip {
       border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      color: var(--text-soft);
+      border: 1px solid rgba(148, 163, 184, 0.4);
       background: rgba(15, 23, 42, 0.9);
-    }
-
-    .pill.alt {
-      border-color: rgba(129, 140, 248, 0.85);
-      color: var(--accent-strong);
-      background: rgba(30, 64, 175, 0.4);
-    }
-
-    .recap-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.65rem;
-      margin-top: 0.5rem;
-    }
-
-    .recap-card {
-      border-radius: 0.8rem;
-      padding: 0.6rem 0.7rem;
-      border: 1px dashed rgba(148, 163, 184, 0.5);
-      font-size: 0.8rem;
+      font-size: 11px;
+      padding: 4px 7px;
       color: var(--text-soft);
-      background: rgba(15, 23, 42, 0.85);
     }
 
-    .recap-card strong {
-      display: block;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.2rem;
-      color: var(--accent-strong);
+    .pill-chip.good {
+      border-color: rgba(52, 211, 153, 0.7);
+      color: #a7f3d0;
     }
 
-    .codeish {
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-        Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.78rem;
-      background: rgba(15, 23, 42, 0.95);
-      border-radius: 0.6rem;
-      padding: 0.35rem 0.45rem;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      display: inline-flex;
+    .no-webgl-message {
+      position: absolute;
+      inset: 0;
+      display: none;
       align-items: center;
-      gap: 0.3rem;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.95);
       color: var(--text-soft);
-      margin-top: 0.3rem;
+      font-size: 13px;
+      z-index: 2;
     }
 
-    .codeish span {
-      opacity: 0.7;
+    .no-webgl-message strong {
+      color: var(--accent);
     }
 
-    footer {
-      max-width: var(--max-width);
-      margin: 0 auto 2.3rem;
-      padding: 0 1.2rem;
-      font-size: 0.78rem;
-      color: var(--text-mute);
+    .no-webgl .no-webgl-message {
       display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    footer a {
-      color: var(--accent-strong);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="noise-layer"></div>
+  <canvas id="dither-canvas"></canvas>
 
-  <header>
-    <div class="nav-inner">
-      <div class="brand">
-        <div class="brand-mark"></div>
-        <div class="brand-text">
-          <div class="brand-title">Dither Machine</div>
-          <div class="brand-sub">Web-based dithering engine spec</div>
+  <div class="ui-root">
+    <div class="ui-shell panel-main">
+      <div class="panel">
+        <div class="panel-main-header">
+          <div class="title-block">
+            <div class="title-label">Background Engine</div>
+            <div class="title-main">
+              Dither <span>Machine</span>
+            </div>
+          </div>
+          <div class="badge-soft">Foreground stays clean</div>
+        </div>
+        <div class="panel-main-body">
+          <p class="subtitle">
+            This is the actual <strong>Type A animated dither</strong> running behind everything.
+            Notice how the foreground UI stays crisp and readable while the dots flow smoothly in the back.
+          </p>
+
+          <div class="icon-row">
+            <div class="icon-pill">
+              <div class="icon-dot"></div>
+              <span>GPU halftone / dither</span>
+            </div>
+            <div class="icon-pill">
+              <span>Soft pastel palette</span>
+            </div>
+            <div class="icon-pill">
+              <span>Organic gradient drift</span>
+            </div>
+          </div>
+
+          <div class="fake-grid">
+            <div class="fake-card">
+              <div class="fake-card-title">Mode</div>
+              <div class="fake-card-value">Animated halftone dots</div>
+            </div>
+            <div class="fake-card">
+              <div class="fake-card-title">Layer</div>
+              <div class="fake-card-value">Full-screen background</div>
+            </div>
+            <div class="fake-card">
+              <div class="fake-card-title">Brightness</div>
+              <div class="fake-card-value">Low &amp; easy on eyes</div>
+            </div>
+            <div class="fake-card">
+              <div class="fake-card-title">Seams</div>
+              <div class="fake-card-value">Procedural / seamless</div>
+            </div>
+          </div>
         </div>
       </div>
-      <nav>
-        <a href="#core-purpose" class="nav-link active">Overview</a>
-        <a href="#rendering-pipeline" class="nav-link">Rendering</a>
-        <a href="#dither-modes" class="nav-link">Dither Modes</a>
-        <a href="#color-engine" class="nav-link">Color Engine</a>
-        <a href="#controls" class="nav-link">Controls/API</a>
-        <a href="#integration" class="nav-link">Integration</a>
-        <a href="#performance" class="nav-link">Performance</a>
-        <a href="#debug-tools" class="nav-link">Dev Tools</a>
-        <a href="#special-effects" class="nav-link">FX</a>
-        <a href="#requirements" class="nav-link">Key Requirements</a>
-      </nav>
-    </div>
-  </header>
 
-  <main>
-    <section class="hero" id="core-purpose">
-      <div class="hero-layout">
-        <div>
-          <h1 class="hero-heading">
-            <span>🌌 Dither Machine</span>
-            Full System Design &amp; Feature Spec
-          </h1>
-          <p class="hero-subtitle">
-            A modern, high-performance, interactive dithering engine built entirely for the web.
-            It transforms images, videos, UI layers, and game scenes into dynamic dithered visuals
-            with Discord-style clarity and retro-inspired aesthetics.
-          </p>
-          <div class="hero-tags">
-            <div class="chip accent">WebGL / WebGPU ready</div>
-            <div class="chip soft">Real-time animation</div>
-            <div class="chip soft">GPU-accelerated dithering</div>
-            <div class="chip soft">Game-ready integration</div>
-          </div>
+      <div class="panel panel-controls">
+        <h3>Dither Controls</h3>
+        <p>
+          These sliders control the <strong>live shader</strong>.  
+          Try bigger dots + slow flow for a Discord-style background.
+        </p>
+
+        <div class="control-group">
+          <label>
+            Dot size
+            <span class="value" id="dotSizeVal"></span>
+          </label>
+          <input id="dotSize" type="range" min="35" max="140" value="80" />
         </div>
-        <aside class="hero-card">
-          <div class="hero-card-inner">
-            <div class="hero-pill">
-              <div class="hero-pill-dot"></div>
-              <span>Design target:</span> Smooth, clean, background-only dither
-            </div>
-            <p class="hero-metric">
-              <strong>Core Purpose:</strong> Real-time stylization engine that applies dynamic
-              dithering to backgrounds, scenes, and effect layers while keeping foreground UI
-              perfectly readable and low-cost on performance.
-            </p>
-            <ul class="hero-list">
-              <li>
-                <span class="bullet"></span>
-                <span>Must run fully in browser (GitHub Pages-friendly): HTML, CSS, JS, WebGL/WebGPU.</span>
-              </li>
-              <li>
-                <span class="bullet"></span>
-                <span>Focus on animated, seam-free background dithers similar to Discord.</span>
-              </li>
-              <li>
-                <span class="bullet"></span>
-                <span>Integrate as a background engine behind any interactive web game or UI layer.</span>
-              </li>
-            </ul>
-            <div class="hero-footer-note">
-              Think of this as a <strong>plug-in dither renderer</strong> that lives behind your game/UI,
-              not a full game engine. It should be reusable, configurable, and safe for everyday viewing.
-            </div>
-          </div>
-        </aside>
-      </div>
-    </section>
 
-    <div class="layout">
-      <aside class="side-panel">
-        <h2>Spec Map</h2>
-        <ul>
-          <li><a href="#core-purpose" class="sp-link sp-active">1. Core Purpose</a></li>
-          <li><a href="#rendering-pipeline" class="sp-link">2. Rendering Pipeline</a></li>
-          <li><a href="#dither-modes" class="sp-link">3. Dither Modes &amp; Algorithms</a></li>
-          <li><a href="#color-engine" class="sp-link">4. Color Engine</a></li>
-          <li><a href="#controls" class="sp-link">5. User / API Controls</a></li>
-          <li><a href="#integration" class="sp-link">6. Integration Features</a></li>
-          <li><a href="#performance" class="sp-link">7. Performance Architecture</a></li>
-          <li><a href="#debug-tools" class="sp-link">8. Developer Debug Tools</a></li>
-          <li><a href="#special-effects" class="sp-link">9. Special Effects</a></li>
-          <li><a href="#developer-goals" class="sp-link">10. Developer Goals</a></li>
-          <li><a href="#requirements" class="sp-link">11. Key Requirements Recap</a></li>
-        </ul>
-        <div class="side-panel-footer">
-          Give this page to the dev team as the <strong>source of truth</strong> when implementing the web-based Dither Machine.
+        <div class="control-group">
+          <label>
+            Dot density
+            <span class="value" id="dotDensityVal"></span>
+          </label>
+          <input id="dotDensity" type="range" min="20" max="60" value="40" />
         </div>
-      </aside>
 
-      <div class="content">
-        <!-- 2. Rendering Pipeline -->
-        <section id="rendering-pipeline">
-          <header>
-            <h2>2. Rendering Pipeline <span class="badge">Three-layer system</span></h2>
-          </header>
-          <p>
-            The Dither Machine uses a three-layer rendering system so that background dither, active gameplay,
-            and optional effects all remain cleanly separated and composable.
-          </p>
+        <div class="control-group">
+          <label>
+            Flow speed
+            <span class="value" id="flowSpeedVal"></span>
+          </label>
+          <input id="flowSpeed" type="range" min="10" max="60" value="25" />
+        </div>
 
-          <div class="subheading">2.1 Background Dither Layer (Type A Animated Dither)</div>
-          <p>Full-screen canvas positioned behind all game/UI elements.</p>
-          <ul>
-            <li>Animated dithering pattern with smooth, flowing gradient movement (noise-based drift; no linear sliding).</li>
-            <li>Adjustable parameters:
-              <ul>
-                <li>Dot size, density, and blend softness</li>
-                <li>Contrast and color palettes</li>
-                <li>Movement speed and motion style</li>
-              </ul>
-            </li>
-            <li>No visual seams or tiling lines — pattern must internally wrap and noise-blend.</li>
-            <li>Multi-resolution support that scales cleanly from 1080p up to 4K.</li>
-          </ul>
+        <div class="hint">
+          Foreground UI is not dithered at all — this is exactly the layering you’d use for a web game.
+        </div>
 
-          <div class="subheading">2.2 Scene Layer (Normal Game Rendering)</div>
-          <ul>
-            <li>Foreground game and UI elements are rendered normally and remain crisp and non-dithered by default.</li>
-            <li>Separation ensures icons, text, and UI remain readable (similar to Discord’s clean icons over dithered backgrounds).</li>
-            <li>Optional “depth-aware” dithering:
-              <ul>
-                <li>Foreground can smoothly fade into background dither as elements move further away.</li>
-                <li>Depth simulation can be based on Z-index, parallax layers, or game-defined depth values.</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">2.3 Optional Effect Layers</div>
-          <ul>
-            <li>Light rays, bloom, shadows, or gradient fields that can apply <em>localized</em> dithering distortions.</li>
-            <li>Animated masks (radial bursts, wave pulses, etc.) that interact with the underlying dither pattern.</li>
-          </ul>
-        </section>
-
-        <!-- 3. Dither Modes & Algorithms -->
-        <section id="dither-modes">
-          <header>
-            <h2>3. Dither Modes &amp; Algorithms <span class="badge">Switchable &amp; layerable</span></h2>
-          </header>
-          <p>
-            The Dither Machine supports multiple dithering modes that can be swapped at runtime or layered to
-            achieve different visual styles.
-          </p>
-
-          <div class="subheading">3.1 Ordered Dithering</div>
-          <ul>
-            <li>Support for Bayer matrices:
-              <ul>
-                <li>2×2, 4×4, and 8×8 threshold maps.</li>
-              </ul>
-            </li>
-            <li>Pixel-precise control over:
-              <ul>
-                <li>Threshold map scaling</li>
-                <li>Pattern rotation</li>
-                <li>Pattern scrolling / offset</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">3.2 Error Diffusion Dithering</div>
-          <ul>
-            <li>Algorithms:
-              <ul>
-                <li>Floyd–Steinberg</li>
-                <li>JJJN</li>
-                <li>Atkinson</li>
-                <li>Stucki</li>
-              </ul>
-            </li>
-            <li>Real-time, GPU-accelerated diffusion computation (implemented via shaders rather than CPU loops).</li>
-          </ul>
-
-          <div class="subheading">3.3 Hybrid Dither Mode</div>
-          <ul>
-            <li>Supports combining:
-              <ul>
-                <li>Ordered + noise map</li>
-                <li>Ordered + animated gradient</li>
-                <li>Diffusion + pixel cell clustering</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">3.4 Animated Gradient Dither (Type A)</div>
-          <p>This is how you get the Discord-style smooth, flowing motion:</p>
-          <ul>
-            <li>Multilayer animated gradient mapped into a dither threshold.</li>
-            <li>Movement characteristics:
-              <ul>
-                <li>Slow (no harsh or jittery motion).</li>
-                <li>Organic noise-driven drift (Perlin/Simplex noise field).</li>
-                <li>Curved, drifting flow rather than straight linear scrolling.</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">3.5 Posterization Controls</div>
-          <ul>
-            <li>Color banding / bit-depth control.</li>
-            <li>2–32 color levels.</li>
-            <li>Ability to lock the color palette to:
-              <ul>
-                <li>Monochrome</li>
-                <li>Duotone</li>
-                <li>Neon (soft, non-clashing)</li>
-                <li>Pastel (soft, harmonious)</li>
-                <li>Retro pixel palettes</li>
-              </ul>
-            </li>
-          </ul>
-        </section>
-
-        <!-- 4. Color Engine -->
-        <section id="color-engine">
-          <header>
-            <h2>4. Color Engine <span class="badge">Palette &amp; harmony</span></h2>
-          </header>
-
-          <div class="subheading">4.1 Palette Manager</div>
-          <p>Built-in curated palette sets, including:</p>
-          <ul>
-            <li>Soft gradient blends (Discord-style).</li>
-            <li>CRT purples &amp; blues.</li>
-            <li>Pastel minimalistic sets.</li>
-            <li>Grayscale with accent tones.</li>
-            <li>Night-mode cyberpunk.</li>
-          </ul>
-
-          <div class="subheading">4.2 Dynamic Palette Switching</div>
-          <ul>
-            <li>Live palette swaps without visible flicker.</li>
-            <li>Smooth interpolated transitions between palettes.</li>
-          </ul>
-
-          <div class="subheading">4.3 Palette Harmonization System</div>
-          <ul>
-            <li>Automatically ensures the dither:
-              <ul>
-                <li>Never clashes with UI.</li>
-                <li>Never oversaturates icons or foreground elements.</li>
-                <li>Always stays “background-appropriate.”</li>
-              </ul>
-            </li>
-            <li>Can auto-dim or soften colors based on UI contrast detection.</li>
-          </ul>
-        </section>
-
-        <!-- 5. User Controls / API -->
-        <section id="controls">
-          <header>
-            <h2>5. User Controls / API Controls <span class="badge">Developer-facing knobs</span></h2>
-          </header>
-          <p>
-            The dev team can expose sliders, toggles, or programmatic options on top of the core engine.
-            These can be wired to UI or configured via JSON / JS API.
-          </p>
-
-          <div class="subheading">5.1 Dot Controls</div>
-          <ul>
-            <li>Dot size: <strong>1–20 px</strong>.</li>
-            <li>Dot hardness: sharp → soft fade.</li>
-            <li>Dot density: sparse → dense.</li>
-            <li>Dot uniformity vs. irregularity (pattern randomness).</li>
-          </ul>
-
-          <div class="subheading">5.2 Animation Controls</div>
-          <ul>
-            <li>Speed: <strong>0%–200%</strong> of baseline animation.</li>
-            <li>Flow types:
-              <ul>
-                <li>Noise drift.</li>
-                <li>Waterflow.</li>
-                <li>Swirl vortex.</li>
-                <li>Pulse waves.</li>
-              </ul>
-            </li>
-            <li>Loop vs. infinite noise (looped pattern vs. continually evolving noise field).</li>
-          </ul>
-
-          <div class="subheading">5.3 Rendering Controls</div>
-          <ul>
-            <li>Contrast.</li>
-            <li>Exposure.</li>
-            <li>Posterization levels.</li>
-            <li>Blend mode:
-              <ul>
-                <li>Screen</li>
-                <li>Multiply</li>
-                <li>Overlay</li>
-                <li>Soft light</li>
-                <li>Normal</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">5.4 Performance Modes</div>
-          <ul>
-            <li>Auto-scaling based on device GPU capabilities.</li>
-            <li>Canvas-only fallback mode if WebGL/WebGPU are unavailable.</li>
-            <li>Mobile-optimized LOD (lower dot counts and resolution for phones/tablets).</li>
-          </ul>
-        </section>
-
-        <!-- 6. Integration Features -->
-        <section id="integration">
-          <header>
-            <h2>6. Integration Features <span class="badge">Game / UI ready</span></h2>
-          </header>
-
-          <div class="subheading">6.1 Foreground Priority System</div>
-          <ul>
-            <li>Guarantees UI is always readable on top of the dither.</li>
-            <li>Smart luminance detection:
-              <ul>
-                <li>Dither stays darker behind light UI.</li>
-                <li>Dither stays lighter behind dark UI.</li>
-              </ul>
-            </li>
-            <li>Automatic <strong>10–30% contrast buffer</strong> around icon and text edges.</li>
-          </ul>
-
-          <div class="subheading">6.2 Parallax Dither Motion</div>
-          <ul>
-            <li>Background dither gently shifts based on:
-              <ul>
-                <li>Mouse movement.</li>
-                <li>Player movement.</li>
-                <li>Camera movement.</li>
-              </ul>
-            </li>
-            <li>Effect is subtle and optional, but adds a premium, “alive” feel to the background.</li>
-          </ul>
-
-          <div class="subheading">6.3 Blend-Over Gameplay</div>
-          <p>Engine can target specific render paths:</p>
-          <ul>
-            <li>Entire game scene.</li>
-            <li>Only background.</li>
-            <li>Only shadows.</li>
-            <li>Only lighting.</li>
-          </ul>
-          <p>Each can be toggled independently.</p>
-        </section>
-
-        <!-- 7. Performance Architecture -->
-        <section id="performance">
-          <header>
-            <h2>7. Performance Architecture <span class="badge">Keep it fast</span></h2>
-          </header>
-
-          <div class="subheading">7.1 GPU Acceleration</div>
-          <ul>
-            <li>Use <strong>WebGL2 or WebGPU</strong> for shading pipeline.</li>
-            <li>OffscreenCanvas for multi-threaded rendering where supported.</li>
-            <li>Shader-based dithering and threshold evaluation (avoid heavy CPU loops).</li>
-          </ul>
-
-          <div class="subheading">7.2 Dynamic Resolution Scaling</div>
-          <ul>
-            <li>If framerate drops:
-              <ul>
-                <li>Reduce dither canvas resolution first.</li>
-                <li>Keep primary game/foreground layers crisp.</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">7.3 Zero-Seam Rendering</div>
-          <ul>
-            <li>Procedural patterns tile at the shader level.</li>
-            <li>No artifact lines or edge seams as the pattern scrolls/moves.</li>
-          </ul>
-        </section>
-
-        <!-- 8. Developer Debug Tools -->
-        <section id="debug-tools">
-          <header>
-            <h2>8. Developer Debug Tools <span class="badge">Build-time helpers</span></h2>
-          </header>
-
-          <div class="subheading">8.1 Live Pattern Preview</div>
-          <p>Debug UI or overlay that can show:</p>
-          <ul>
-            <li>Threshold map.</li>
-            <li>Gradient layers.</li>
-            <li>Dot map generation.</li>
-          </ul>
-
-          <div class="subheading">8.2 Stress Test Mode</div>
-          <ul>
-            <li>Automatically:
-              <ul>
-                <li>Spawns multiple dithering layers.</li>
-                <li>Logs FPS and frame time.</li>
-                <li>Suggests optimal settings based on measured performance.</li>
-              </ul>
-            </li>
-          </ul>
-
-          <div class="subheading">8.3 Visual Heatmap</div>
-          <ul>
-            <li>Heatmap overlay showing which areas are most affected by dithering.</li>
-            <li>Helps tune intensity, density, and palette usage.</li>
-          </ul>
-        </section>
-
-        <!-- 9. Special Effects -->
-        <section id="special-effects">
-          <header>
-            <h2>9. Special Effects (Optional) <span class="badge">Bonus features</span></h2>
-          </header>
-
-          <div class="subheading">9.1 Ripple Distortion Dither</div>
-          <ul>
-            <li>Dither pattern warps like water ripples, driven by noise or specific events.</li>
-          </ul>
-
-          <div class="subheading">9.2 Light-Reactive Dithering</div>
-          <ul>
-            <li>Bright areas have finer, more subtle dithering.</li>
-            <li>Dark areas use chunkier, more pronounced dither blocks.</li>
-          </ul>
-
-          <div class="subheading">9.3 Audio-Reactive Dither</div>
-          <ul>
-            <li>Dots pulse or shift based on music bass or sound amplitude.</li>
-          </ul>
-
-          <div class="subheading">9.4 Particle-Dither Interaction</div>
-          <ul>
-            <li>Particles temporarily disturb or displace the dither field behind them.</li>
-          </ul>
-        </section>
-
-        <!-- 10. Developer Goals -->
-        <section id="developer-goals">
-          <header>
-            <h2>10. Developer Goals <span class="badge">Visual &amp; UX targets</span></h2>
-          </header>
-          <ul>
-            <li>Look clean, professional, and easy to view for long sessions.</li>
-            <li>Mimic the visual clarity of Discord’s animated dither backgrounds.</li>
-            <li>Avoid eye-strain from overly dense or high-contrast patterns.</li>
-            <li>Keep all foreground icons, UI, and characters perfectly readable.</li>
-            <li>Support fully dynamic animation that is smooth and elegant — not jittery or sharp.</li>
-          </ul>
-        </section>
-
-        <!-- 11. Key Requirements Recap -->
-        <section id="requirements">
-          <header>
-            <h2>11. Key Requirements Recap <span class="badge">Hand-off section</span></h2>
-          </header>
-          <p>Give this section <strong>directly to devs</strong> as the condensed implementation checklist.</p>
-
-          <div class="recap-grid">
-            <div class="recap-card">
-              <strong>Background Priority</strong>
-              The dither must always live in the background — it should never cover or overpower UI,
-              text, or important gameplay information.
-            </div>
-            <div class="recap-card">
-              <strong>Smooth Animation</strong>
-              Animation must be smooth and flowing, with soft gradients and organic motion.
-              No harsh strobing, jitter, or distracting linear scrolling.
-            </div>
-            <div class="recap-card">
-              <strong>GPU-Accelerated &amp; Seamless</strong>
-              Implement dithering using GPU (WebGL2/WebGPU shaders) with zero visible seams or tile lines,
-              even when gradients drift over time.
-            </div>
-            <div class="recap-card">
-              <strong>Full Customization</strong>
-              Engine must expose controls for dot size, color palette, movement style, density, contrast,
-              and posterization levels.
-            </div>
-            <div class="recap-card">
-              <strong>Cross-Platform</strong>
-              Must run on both mobile and desktop browsers. Provide graceful fallback to Canvas when WebGL/WebGPU
-              aren’t available.
-            </div>
-            <div class="recap-card">
-              <strong>Visual Quality</strong>
-              The final look should be beautiful, readable, and modern — no chaotic noise, no color clashing,
-              and no UI readability issues.
-            </div>
-          </div>
-
-          <div class="codeish">
-            <span>// Implementation note</span>
-            <span>All of this must work from a static HTML/JS build (e.g. GitHub Pages deploy).</span>
-          </div>
-        </section>
+        <div class="pill-row">
+          <div class="pill-chip good">Background-only dither ✔</div>
+          <div class="pill-chip">Soft blues &amp; purples</div>
+          <div class="pill-chip">No harsh color clash</div>
+        </div>
       </div>
     </div>
-  </main>
 
-  <footer>
-    <div>📌 This document describes the <strong>Dither Machine</strong> web engine and can be used as a dev spec.</div>
-    <div>Ready for static hosting (e.g. GitHub Pages) — just save as <strong>index.html</strong>.</div>
-  </footer>
+    <div class="no-webgl-message">
+      <div>
+        <strong>WebGL not available.</strong><br />
+        The Dither Machine needs WebGL to run its animated background.  
+        Try another browser or enable hardware acceleration.
+      </div>
+    </div>
+  </div>
 
   <script>
-    // Smooth scroll (for nicer navigation on GitHub Pages too)
-    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
-      link.addEventListener("click", function (e) {
-        const targetId = this.getAttribute("href");
-        const target = document.querySelector(targetId);
-        if (target) {
-          e.preventDefault();
-          const y = target.getBoundingClientRect().top + window.scrollY - 80;
-          window.scrollTo({ top: y, behavior: "smooth" });
-        }
-      });
-    });
+    (function () {
+      const canvas = document.getElementById("dither-canvas");
+      const body = document.body;
 
-    // Highlight nav items based on scroll position
-    const sections = Array.from(document.querySelectorAll("main section[id]"));
-    const navLinks = Array.from(document.querySelectorAll(".nav-link"));
-    const sideLinks = Array.from(document.querySelectorAll(".sp-link"));
+      const dotSizeInput = document.getElementById("dotSize");
+      const dotDensityInput = document.getElementById("dotDensity");
+      const flowSpeedInput = document.getElementById("flowSpeed");
+      const dotSizeVal = document.getElementById("dotSizeVal");
+      const dotDensityVal = document.getElementById("dotDensityVal");
+      const flowSpeedVal = document.getElementById("flowSpeedVal");
 
-    function setActiveLink(id) {
-      navLinks.forEach((a) =>
-        a.classList.toggle("active", a.getAttribute("href") === "#" + id)
-      );
-      sideLinks.forEach((a) =>
-        a.classList.toggle("sp-active", a.getAttribute("href") === "#" + id)
-      );
-    }
+      // Initial UI readout
+      function updateLabels() {
+        dotSizeVal.textContent = dotSizeInput.value;
+        dotDensityVal.textContent = dotDensityInput.value;
+        flowSpeedVal.textContent = (flowSpeedInput.value / 10).toFixed(1);
+      }
+      updateLabels();
 
-    function onScroll() {
-      const buffer = 120;
-      let currentId = sections[0]?.id;
-      for (const sec of sections) {
-        const rect = sec.getBoundingClientRect();
-        if (rect.top <= buffer && rect.bottom > buffer) {
-          currentId = sec.id;
-          break;
+      let gl =
+        canvas.getContext("webgl", { antialias: false, depth: false }) ||
+        canvas.getContext("experimental-webgl", {
+          antialias: false,
+          depth: false,
+        });
+
+      if (!gl) {
+        body.classList.add("no-webgl");
+        return;
+      }
+
+      function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.floor(window.innerWidth * dpr * 0.85); // small perf win
+        const height = Math.floor(window.innerHeight * dpr * 0.85);
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
         }
       }
-      if (currentId) setActiveLink(currentId);
-    }
 
-    window.addEventListener("scroll", onScroll);
-    window.addEventListener("load", onScroll);
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      const vertexSrc = `
+        attribute vec2 a_position;
+        void main() {
+          gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+      `;
+
+      const fragmentSrc = `
+        precision highp float;
+        uniform vec2 u_resolution;
+        uniform float u_time;
+        uniform float u_dotScale;
+        uniform float u_density;
+        uniform float u_flowSpeed;
+
+        // Basic 2D value noise
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(a, b, u.x) +
+                 (c - a) * u.y * (1.0 - u.x) +
+                 (d - b) * u.x * u.y;
+        }
+
+        float fbm(vec2 p) {
+          float v = 0.0;
+          float a = 0.5;
+          for (int i = 0; i < 4; i++) {
+            v += a * noise(p);
+            p *= 2.1;
+            a *= 0.5;
+          }
+          return v;
+        }
+
+        void main() {
+          vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+          // keep aspect more square-ish
+          uv.x *= u_resolution.x / u_resolution.y;
+
+          float t = u_time * 0.001 * u_flowSpeed;
+
+          // Warp UV with low freq noise to create organic drift
+          vec2 warp = vec2(
+            fbm(uv * 1.6 + vec2(0.0, t * 0.15)),
+            fbm(uv * 1.4 - vec2(t * 0.12, 0.0))
+          );
+          vec2 p = uv + (warp - 0.5) * 0.18;
+
+          // Gradient driver
+          float g = 0.5 + 0.5 * sin(
+            t * 0.18 +
+            p.x * 2.0 +
+            fbm(p * 2.3 + vec2(0.0, t * 0.22)) * 2.2
+          );
+          g = smoothstep(0.15, 0.95, g);
+
+          // Soft pastel palette (Discordish but tame)
+          vec3 c1 = vec3(0.03, 0.04, 0.10);       // base dark
+          vec3 c2 = vec3(0.27, 0.35, 0.78);       // soft indigo
+          vec3 c3 = vec3(0.23, 0.79, 0.87);       // teal accent
+
+          vec3 grad = mix(c1, c2, g);
+          grad = mix(grad, c3, 0.26 * fbm(p * 1.5 - vec2(t * 0.08, 0.0)));
+
+          // Halftone-like dots: project onto grid
+          float scale = u_dotScale;  // how many cells across
+          vec2 gridUV = p * scale;
+
+          // optional subtle motion in the grid itself
+          gridUV += vec2(
+            fbm(p * 3.2 + vec2(t * 0.05, 0.0)),
+            fbm(p * 3.2 + vec2(0.0, t * 0.04))
+          ) * 0.5;
+
+          vec2 cell = floor(gridUV) + 0.5;
+          vec2 diff = gridUV - cell;
+          float dist = length(diff);
+
+          // Dot radius controlled by gradient + density
+          float minR = 0.10;
+          float maxR = clamp(0.55 - u_density * 0.004, 0.18, 0.55);
+          float radius = mix(minR, maxR, g);
+
+          // Smooth dot edge
+          float edgeSoft = 0.14;
+          float mask = smoothstep(radius, radius - edgeSoft, dist);
+
+          // Slight noise to break perfect circles
+          float n = fbm(gridUV * 1.5 + vec2(t * 0.12, 0.0));
+          mask *= 0.8 + 0.2 * n;
+
+          // Final color: dots over dark base
+          vec3 base = c1;
+          vec3 color = mix(base, grad, mask);
+
+          // Soft vignette so edges are darker / calmer
+          vec2 center = uv - 0.5;
+          float vignette = smoothstep(0.85, 0.25, length(center));
+          color *= vignette;
+
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `;
+
+      function createShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error("Shader compile error:", gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+          return null;
+        }
+        return shader;
+      }
+
+      function createProgram(gl, vsSource, fsSource) {
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        if (!vs || !fs) return null;
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error("Program link error:", gl.getProgramInfoLog(program));
+          gl.deleteProgram(program);
+          return null;
+        }
+        return program;
+      }
+
+      const program = createProgram(gl, vertexSrc, fragmentSrc);
+      if (!program) {
+        body.classList.add("no-webgl");
+        return;
+      }
+
+      gl.useProgram(program);
+
+      const positionLoc = gl.getAttribLocation(program, "a_position");
+      const uResolutionLoc = gl.getUniformLocation(program, "u_resolution");
+      const uTimeLoc = gl.getUniformLocation(program, "u_time");
+      const uDotScaleLoc = gl.getUniformLocation(program, "u_dotScale");
+      const uDensityLoc = gl.getUniformLocation(program, "u_density");
+      const uFlowSpeedLoc = gl.getUniformLocation(program, "u_flowSpeed");
+
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      // Fullscreen quad
+      const vertices = new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+         1,  1,
+      ]);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+      gl.enableVertexAttribArray(positionLoc);
+      gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.STENCIL_TEST);
+      gl.disable(gl.BLEND);
+
+      let startTime = performance.now();
+
+      function render() {
+        resizeCanvas();
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        const now = performance.now();
+        const time = now - startTime;
+
+        gl.useProgram(program);
+        gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
+        gl.uniform1f(uTimeLoc, time);
+
+        // Map slider values to uniforms
+        const dotScale = parseFloat(dotSizeInput.value);
+        const density = parseFloat(dotDensityInput.value);
+        const flowSpeed = parseFloat(flowSpeedInput.value) / 10.0;
+
+        gl.uniform1f(uDotScaleLoc, dotScale);
+        gl.uniform1f(uDensityLoc, density);
+        gl.uniform1f(uFlowSpeedLoc, flowSpeed);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+      }
+
+      dotSizeInput.addEventListener("input", updateLabels);
+      dotDensityInput.addEventListener("input", updateLabels);
+      flowSpeedInput.addEventListener("input", updateLabels);
+
+      requestAnimationFrame(render);
+    })();
   </script>
 </body>
 </html>
