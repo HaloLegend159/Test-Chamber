@@ -2,653 +2,938 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dither Machine — Live Background Demo</title>
+  <title>Dither Machine — Web Tool</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --bg: #050712;
-      --fg-card: rgba(15, 23, 42, 0.96);
-      --fg-border: rgba(148, 163, 184, 0.4);
-      --accent: #818cf8;
-      --accent-soft: rgba(129, 140, 248, 0.12);
-      --text: #e5e7eb;
-      --text-soft: #9ca3af;
-      --text-mute: #6b7280;
-      --radius-lg: 18px;
-      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.6);
+      --bg: #263142;
+      --panel: #3b4658;
+      --panel-dark: #323b4b;
+      --accent: #ffb347;
+      --accent-strong: #ffd66b;
+      --text: #f9fafb;
+      --text-soft: #e5e7eb;
+      --text-mute: #cbd5f5;
+      --field: #1f2933;
+      --border: #515b70;
     }
 
     * {
       box-sizing: border-box;
     }
 
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #000;
+      color: var(--text);
       overflow: hidden;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Inter", "Segoe UI", sans-serif;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(340px, 1fr);
+      height: 100vh;
       background: var(--bg);
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        height: auto;
+        min-height: 100vh;
+      }
+    }
+
+    /* LEFT: preview */
+    .left-pane {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #000;
+    }
+
+    .preview-box {
+      position: relative;
+      background: #000000;
+      padding: 16px;
+      border-radius: 6px;
+      box-shadow: 0 0 0 1px #111827, 0 12px 35px rgba(0, 0, 0, 0.8);
+    }
+
+    .preview-label {
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    #previewCanvas {
+      display: block;
+      background: #111827;
+      width: 420px;
+      height: 420px;
+      image-rendering: pixelated;
+    }
+
+    @media (max-width: 600px) {
+      #previewCanvas {
+        width: 280px;
+        height: 280px;
+      }
+    }
+
+    /* RIGHT: controls */
+    .right-pane {
+      background: var(--bg);
+      padding: 16px 16px 10px;
+      color: var(--text-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: var(--text);
     }
 
-    /* Dither canvas: ALWAYS behind everything */
-    #dither-canvas {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
+    .subtitle {
+      font-size: 11px;
+      color: var(--text-mute);
     }
 
-    /* Foreground UI container */
-    .ui-root {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      pointer-events: none; /* let children decide if they receive events */
-    }
-
-    .ui-shell {
-      pointer-events: auto;
-      max-width: 960px;
-      width: 100%;
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
-      gap: 20px;
-      align-items: stretch;
-    }
-
-    @media (max-width: 800px) {
-      .ui-shell {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #151b26;
+      border: 1px solid #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #e5e7eb;
     }
 
     .panel {
-      background: var(--fg-card);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--fg-border);
-      box-shadow: var(--shadow-soft);
-      padding: 16px 18px 18px;
-      backdrop-filter: blur(16px);
-    }
-
-    .panel-main-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .title-label {
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text-mute);
-    }
-
-    .title-main {
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .title-main span {
-      color: var(--accent);
-    }
-
-    .badge-soft {
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      color: var(--text-soft);
-      background: rgba(15, 23, 42, 0.9);
-      white-space: nowrap;
-    }
-
-    .panel-main-body {
-      margin-top: 8px;
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: var(--text-soft);
-      margin-bottom: 12px;
-    }
-
-    .icon-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .icon-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      background: var(--panel);
+      border-radius: 4px;
       padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.55);
-      background: rgba(15, 23, 42, 0.85);
-      font-size: 12px;
-      color: var(--text-soft);
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
     }
 
-    .icon-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-soft);
-    }
-
-    .fake-grid {
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .fake-card {
-      border-radius: 12px;
-      background: rgba(15, 23, 42, 0.98);
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      padding: 8px;
-      min-height: 52px;
+    .panel-row {
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 4px;
+      gap: 8px;
+      margin-top: 4px;
     }
 
-    .fake-card-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-mute);
+    .panel-col {
+      flex: 1;
     }
 
-    .fake-card-value {
-      font-size: 13px;
-      color: var(--text-soft);
-    }
-
-    @media (max-width: 640px) {
-      .fake-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    /* Control panel on the right */
-    .panel-controls h3 {
-      margin: 0 0 8px;
-      font-size: 13px;
+    h3 {
+      margin: 0 0 4px;
+      font-size: 12px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--text-soft);
-    }
-
-    .panel-controls p {
-      margin: 0 0 10px;
-      font-size: 12px;
       color: var(--text-mute);
     }
 
-    .control-group {
-      margin-bottom: 10px;
+    h4 {
+      margin: 8px 0 4px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+    }
+
+    label {
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      color: var(--text-soft);
+    }
+
+    .slider-row {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
+      gap: 2px;
+      margin-bottom: 4px;
     }
 
-    .control-group label {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      color: var(--text-soft);
-    }
-
-    .control-group label span.value {
-      color: var(--accent);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .control-group input[type="range"] {
+    input[type="range"] {
       width: 100%;
-      accent-color: var(--accent);
     }
 
-    .hint {
-      margin-top: 6px;
+    .value {
+      font-variant-numeric: tabular-nums;
+      color: var(--accent-strong);
       font-size: 11px;
-      color: var(--text-mute);
     }
 
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .pill-chip {
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      background: rgba(15, 23, 42, 0.9);
-      font-size: 11px;
-      padding: 4px 7px;
+    select,
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      background: var(--field);
+      border-radius: 3px;
+      border: 1px solid #4b5563;
+      padding: 3px 5px;
       color: var(--text-soft);
+      font-size: 11px;
     }
 
-    .pill-chip.good {
-      border-color: rgba(52, 211, 153, 0.7);
-      color: #a7f3d0;
-    }
-
-    .no-webgl-message {
-      position: absolute;
-      inset: 0;
-      display: none;
+    .color-row {
+      display: flex;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 16px;
-      background: rgba(15, 23, 42, 0.95);
-      color: var(--text-soft);
-      font-size: 13px;
-      z-index: 2;
+      gap: 4px;
+      margin-bottom: 2px;
     }
 
-    .no-webgl-message strong {
-      color: var(--accent);
+    .color-row input[type="color"] {
+      width: 24px;
+      height: 18px;
+      border: none;
+      padding: 0;
+      background: transparent;
     }
 
-    .no-webgl .no-webgl-message {
+    .color-row input[type="text"] {
+      flex: 1;
+    }
+
+    .small {
+      font-size: 10px;
+      color: var(--text-mute);
+      margin-top: 2px;
+    }
+
+    .button-bar {
       display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--panel-dark);
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      color: var(--text-soft);
+      font-size: 11px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: #ffb347;
+      border-color: #f59e0b;
+      color: #111827;
+      font-weight: 600;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      margin: 2px 0;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      margin: 0;
+    }
+
+    .footer-note {
+      font-size: 10px;
+      color: var(--text-mute);
+      margin-top: 2px;
     }
   </style>
 </head>
 <body>
-  <canvas id="dither-canvas"></canvas>
-
-  <div class="ui-root">
-    <div class="ui-shell panel-main">
-      <div class="panel">
-        <div class="panel-main-header">
-          <div class="title-block">
-            <div class="title-label">Background Engine</div>
-            <div class="title-main">
-              Dither <span>Machine</span>
-            </div>
-          </div>
-          <div class="badge-soft">Foreground stays clean</div>
-        </div>
-        <div class="panel-main-body">
-          <p class="subtitle">
-            This is the actual <strong>Type A animated dither</strong> running behind everything.
-            Notice how the foreground UI stays crisp and readable while the dots flow smoothly in the back.
-          </p>
-
-          <div class="icon-row">
-            <div class="icon-pill">
-              <div class="icon-dot"></div>
-              <span>GPU halftone / dither</span>
-            </div>
-            <div class="icon-pill">
-              <span>Soft pastel palette</span>
-            </div>
-            <div class="icon-pill">
-              <span>Organic gradient drift</span>
-            </div>
-          </div>
-
-          <div class="fake-grid">
-            <div class="fake-card">
-              <div class="fake-card-title">Mode</div>
-              <div class="fake-card-value">Animated halftone dots</div>
-            </div>
-            <div class="fake-card">
-              <div class="fake-card-title">Layer</div>
-              <div class="fake-card-value">Full-screen background</div>
-            </div>
-            <div class="fake-card">
-              <div class="fake-card-title">Brightness</div>
-              <div class="fake-card-value">Low &amp; easy on eyes</div>
-            </div>
-            <div class="fake-card">
-              <div class="fake-card-title">Seams</div>
-              <div class="fake-card-value">Procedural / seamless</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel panel-controls">
-        <h3>Dither Controls</h3>
-        <p>
-          These sliders control the <strong>live shader</strong>.  
-          Try bigger dots + slow flow for a Discord-style background.
-        </p>
-
-        <div class="control-group">
-          <label>
-            Dot size
-            <span class="value" id="dotSizeVal"></span>
-          </label>
-          <input id="dotSize" type="range" min="35" max="140" value="80" />
-        </div>
-
-        <div class="control-group">
-          <label>
-            Dot density
-            <span class="value" id="dotDensityVal"></span>
-          </label>
-          <input id="dotDensity" type="range" min="20" max="60" value="40" />
-        </div>
-
-        <div class="control-group">
-          <label>
-            Flow speed
-            <span class="value" id="flowSpeedVal"></span>
-          </label>
-          <input id="flowSpeed" type="range" min="10" max="60" value="25" />
-        </div>
-
-        <div class="hint">
-          Foreground UI is not dithered at all — this is exactly the layering you’d use for a web game.
-        </div>
-
-        <div class="pill-row">
-          <div class="pill-chip good">Background-only dither ✔</div>
-          <div class="pill-chip">Soft blues &amp; purples</div>
-          <div class="pill-chip">No harsh color clash</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="no-webgl-message">
-      <div>
-        <strong>WebGL not available.</strong><br />
-        The Dither Machine needs WebGL to run its animated background.  
-        Try another browser or enable hardware acceleration.
-      </div>
+<div class="app">
+  <!-- PREVIEW -->
+  <div class="left-pane">
+    <div class="preview-box">
+      <div class="preview-label">Live dither preview</div>
+      <canvas id="previewCanvas" width="256" height="256"></canvas>
     </div>
   </div>
 
-  <script>
-    (function () {
-      const canvas = document.getElementById("dither-canvas");
-      const body = document.body;
+  <!-- CONTROLS -->
+  <div class="right-pane">
+    <div class="header">
+      <div>
+        <div class="title">Dither Machine</div>
+        <div class="subtitle">Interactive gradient + pattern dithering tool</div>
+      </div>
+      <div class="badge">Web / GitHub</div>
+    </div>
 
-      const dotSizeInput = document.getElementById("dotSize");
-      const dotDensityInput = document.getElementById("dotDensity");
-      const flowSpeedInput = document.getElementById("flowSpeed");
-      const dotSizeVal = document.getElementById("dotSizeVal");
-      const dotDensityVal = document.getElementById("dotDensityVal");
-      const flowSpeedVal = document.getElementById("flowSpeedVal");
+    <!-- Palette -->
+    <div class="panel">
+      <h3>Palette</h3>
+      <div class="panel-row">
+        <div class="panel-col">
+          <h4>Preset</h4>
+          <select id="palettePreset">
+            <option value="demo">Demo rainbow</option>
+            <option value="warm">Warm sunset</option>
+            <option value="cool">Cool ocean</option>
+            <option value="discord">Soft Discord-ish</option>
+            <option value="cga">CGA</option>
+            <option value="mono">Monochrome</option>
+          </select>
+          <div class="small">Presets fill the color slots below.</div>
+        </div>
+        <div class="panel-col">
+          <h4>Steps</h4>
+          <div class="slider-row">
+            <label>Color steps <span class="value" id="stepsVal"></span></label>
+            <input id="steps" type="range" min="2" max="16" value="8" />
+          </div>
+          <div class="slider-row">
+            <label>Posterize <span class="value" id="posterVal"></span></label>
+            <input id="posterize" type="range" min="2" max="32" value="16" />
+          </div>
+        </div>
+      </div>
 
-      // Initial UI readout
-      function updateLabels() {
-        dotSizeVal.textContent = dotSizeInput.value;
-        dotDensityVal.textContent = dotDensityInput.value;
-        flowSpeedVal.textContent = (flowSpeedInput.value / 10).toFixed(1);
+      <h4>Manual colors</h4>
+      <div id="colorSlots"></div>
+      <div class="checkbox-row">
+        <input id="equalizeStops" type="checkbox" checked />
+        <label for="equalizeStops">Equalize stop percentages</label>
+      </div>
+      <div class="small">Up to 6 stops are blended into the gradient.</div>
+    </div>
+
+    <!-- Gradient / pattern -->
+    <div class="panel">
+      <h3>Gradient &amp; Pattern</h3>
+      <div class="panel-row">
+        <div class="panel-col">
+          <h4>Gradient</h4>
+          <div class="slider-row">
+            <label>Angle <span class="value" id="angleVal"></span></label>
+            <input id="angle" type="range" min="0" max="360" value="45" />
+          </div>
+          <label style="margin-bottom:3px;">
+            Type
+            <select id="gradientType" style="margin-left:4px;">
+              <option value="linear">Linear</option>
+              <option value="radial">Radial</option>
+              <option value="stripe">Striped</option>
+            </select>
+          </label>
+        </div>
+        <div class="panel-col">
+          <h4>Pattern</h4>
+          <label style="margin-bottom:3px;">
+            Matrix
+            <select id="patternMatrix" style="margin-left:4px;">
+              <option value="bayer2">Bayer 2×2</option>
+              <option value="bayer4" selected>Bayer 4×4</option>
+              <option value="bayer8">Bayer 8×8</option>
+            </select>
+          </label>
+          <label style="margin-bottom:3px;">
+            Style
+            <select id="patternStyle" style="margin-left:4px;">
+              <option value="dots" selected>Dots</option>
+              <option value="squares">Squares</option>
+              <option value="lines">Lines</option>
+              <option value="maze">Maze-ish</option>
+            </select>
+          </label>
+          <div class="slider-row">
+            <label>Cell size <span class="value" id="cellVal"></span></label>
+            <input id="cellSize" type="range" min="4" max="32" value="12" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animation -->
+    <div class="panel">
+      <h3>Animation</h3>
+      <div class="panel-row">
+        <div class="panel-col">
+          <h4>Flow</h4>
+          <label style="margin-bottom:3px;">
+            Mode
+            <select id="animMode" style="margin-left:4px;">
+              <option value="off">Static (no loop)</option>
+              <option value="scrollX">Scroll X</option>
+              <option value="scrollY">Scroll Y</option>
+              <option value="diag">Diagonal scroll</option>
+              <option value="wave">Wave</option>
+              <option value="noise">Noise drift</option>
+            </select>
+          </label>
+          <div class="slider-row">
+            <label>Speed <span class="value" id="speedVal"></span></label>
+            <input id="animSpeed" type="range" min="0" max="100" value="30" />
+          </div>
+        </div>
+        <div class="panel-col">
+          <h4>Extras</h4>
+          <div class="slider-row">
+            <label>Noise jitter <span class="value" id="noiseVal"></span></label>
+            <input id="noiseAmount" type="range" min="0" max="40" value="8" />
+          </div>
+          <div class="checkbox-row">
+            <input id="reverseGradient" type="checkbox" />
+            <label for="reverseGradient">Reverse gradient</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="previewGrid" type="checkbox" />
+            <label for="previewGrid">Show subtle preview grid</label>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">
+        Animation always loops; for export, a full loop is baked into a sprite sheet.
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="panel">
+      <h3>Export</h3>
+      <div class="panel-row">
+        <div class="panel-col">
+          <label>
+            Canvas size
+            <input id="exportSize" type="number" min="64" max="512" step="16" value="256" />
+          </label>
+          <div class="small">Preview always uses this size.</div>
+        </div>
+        <div class="panel-col">
+          <label>
+            Frames (loop)
+            <input id="exportFrames" type="number" min="4" max="64" step="4" value="24" />
+          </label>
+          <div class="small">Used for sprite sheet export.</div>
+        </div>
+      </div>
+      <div class="button-bar">
+        <button id="btnExportPNG" class="primary">Export PNG (current frame)</button>
+        <button id="btnExportSprite">Export sprite-sheet PNG (loop)</button>
+      </div>
+      <div class="footer-note">
+        Sprite sheet = frames laid out horizontally. You can turn that into GIF / video in any editor.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================
+   Utility helpers
+   =========================== */
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
+function hexToRgb(hex) {
+  hex = hex.replace("#", "");
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  const num = parseInt(hex, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  };
+}
+
+function rgbToString(rgb) {
+  return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+}
+
+/* ===========================
+   Palette / color stops
+   =========================== */
+
+const colorSlotsEl = document.getElementById("colorSlots");
+const palettePresetEl = document.getElementById("palettePreset");
+const equalizeStopsEl = document.getElementById("equalizeStops");
+
+const PALETTE_PRESETS = {
+  demo: ["#e9345c", "#ff9200", "#fede72", "#2cb299", "#74d6f5", "#b2689e"],
+  warm: ["#ff3b3b", "#ff8a3b", "#ffd75d", "#f9f4e8"],
+  cool: ["#031b3b", "#0c88ff", "#36d9ff", "#8af4ff"],
+  discord: ["#1e1f3b", "#5865f2", "#00b0f4", "#57f287"],
+  cga: ["#000000", "#55ffff", "#ff55ff", "#ffffff"],
+  mono: ["#080808", "#f5f5f5"],
+};
+
+const MAX_STOPS = 6;
+let colorInputs = [];
+
+function createColorSlots() {
+  for (let i = 0; i < MAX_STOPS; i++) {
+    const row = document.createElement("div");
+    row.className = "color-row";
+
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = "#ffffff";
+
+    const hexInput = document.createElement("input");
+    hexInput.type = "text";
+    hexInput.maxLength = 7;
+    hexInput.value = "#ffffff";
+
+    colorInput.addEventListener("input", () => {
+      hexInput.value = colorInput.value.toLowerCase();
+    });
+    hexInput.addEventListener("change", () => {
+      let v = hexInput.value.trim();
+      if (!v.startsWith("#")) v = "#" + v;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) {
+        hexInput.value = v.toLowerCase();
+        colorInput.value = v.toLowerCase();
       }
-      updateLabels();
+    });
 
-      let gl =
-        canvas.getContext("webgl", { antialias: false, depth: false }) ||
-        canvas.getContext("experimental-webgl", {
-          antialias: false,
-          depth: false,
-        });
+    row.appendChild(colorInput);
+    row.appendChild(hexInput);
+    colorSlotsEl.appendChild(row);
+    colorInputs.push({ colorInput, hexInput });
+  }
+}
 
-      if (!gl) {
-        body.classList.add("no-webgl");
-        return;
+function applyPalettePreset(name) {
+  const list = PALETTE_PRESETS[name] || PALETTE_PRESETS.demo;
+  for (let i = 0; i < MAX_STOPS; i++) {
+    const val = list[i] || list[list.length - 1];
+    colorInputs[i].colorInput.value = val;
+    colorInputs[i].hexInput.value = val;
+  }
+}
+
+function getStops() {
+  const stops = [];
+  for (let i = 0; i < MAX_STOPS; i++) {
+    const hex = colorInputs[i].hexInput.value.trim();
+    if (!hex) continue;
+    if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex)) continue;
+    stops.push(hexToRgb(hex));
+  }
+  if (stops.length === 0) {
+    stops.push({ r: 255, g: 255, b: 255 });
+  }
+  return stops;
+}
+
+/* ===========================
+   Bayer matrices
+   =========================== */
+
+const BAYER2 = [
+  0, 2,
+  3, 1,
+].map(v => (v + 0.5) / 4.0);
+
+const BAYER4 = [
+   0,  8,  2, 10,
+  12,  4, 14,  6,
+   3, 11,  1,  9,
+  15,  7, 13,  5,
+].map(v => (v + 0.5) / 16.0);
+
+const BAYER8_RAW = [
+   0, 32,  8, 40,  2, 34, 10, 42,
+  48, 16, 56, 24, 50, 18, 58, 26,
+  12, 44,  4, 36, 14, 46,  6, 38,
+  60, 28, 52, 20, 62, 30, 54, 22,
+   3, 35, 11, 43,  1, 33,  9, 41,
+  51, 19, 59, 27, 49, 17, 57, 25,
+  15, 47,  7, 39, 13, 45,  5, 37,
+  63, 31, 55, 23, 61, 29, 53, 21,
+];
+const BAYER8 = BAYER8_RAW.map(v => (v + 0.5) / 64.0);
+
+/* ===========================
+   UI elements
+   =========================== */
+
+const stepsEl = document.getElementById("steps");
+const posterizeEl = document.getElementById("posterize");
+const angleEl = document.getElementById("angle");
+const gradientTypeEl = document.getElementById("gradientType");
+const patternMatrixEl = document.getElementById("patternMatrix");
+const patternStyleEl = document.getElementById("patternStyle");
+const cellSizeEl = document.getElementById("cellSize");
+const animModeEl = document.getElementById("animMode");
+const animSpeedEl = document.getElementById("animSpeed");
+const noiseAmountEl = document.getElementById("noiseAmount");
+const reverseGradientEl = document.getElementById("reverseGradient");
+const previewGridEl = document.getElementById("previewGrid");
+const exportSizeEl = document.getElementById("exportSize");
+const exportFramesEl = document.getElementById("exportFrames");
+
+const stepsVal = document.getElementById("stepsVal");
+const posterVal = document.getElementById("posterVal");
+const angleVal = document.getElementById("angleVal");
+const cellVal = document.getElementById("cellVal");
+const speedVal = document.getElementById("speedVal");
+const noiseVal = document.getElementById("noiseVal");
+
+function updateValueLabels() {
+  stepsVal.textContent = stepsEl.value;
+  posterVal.textContent = posterizeEl.value;
+  angleVal.textContent = angleEl.value + "°";
+  cellVal.textContent = cellSizeEl.value;
+  speedVal.textContent = (animSpeedEl.value / 10).toFixed(1);
+  noiseVal.textContent = (noiseAmountEl.value / 10).toFixed(1);
+}
+
+/* ===========================
+   Core render
+   =========================== */
+
+const preview = document.getElementById("previewCanvas");
+const pctx = preview.getContext("2d");
+let lastSize = parseInt(exportSizeEl.value, 10) || 256;
+
+function resizePreviewIfNeeded() {
+  const size = parseInt(exportSizeEl.value, 10) || 256;
+  if (size !== lastSize) {
+    lastSize = size;
+    preview.width = size;
+    preview.height = size;
+  }
+}
+
+function sampleGradient(t, stops, posterLevels) {
+  t = clamp01(t);
+  if (posterLevels > 0) {
+    t = Math.round(t * (posterLevels - 1)) / (posterLevels - 1);
+  }
+
+  const n = stops.length;
+  if (n === 1) return stops[0];
+
+  let idxF, idxC, f;
+  if (equalizeStopsEl.checked) {
+    const scaled = t * (n - 1);
+    idxF = Math.floor(scaled);
+    idxC = Math.min(idxF + 1, n - 1);
+    f = scaled - idxF;
+  } else {
+    const scaled = t * (n);
+    idxF = Math.floor(scaled);
+    idxC = Math.min(idxF + 1, n - 1);
+    f = scaled - idxF;
+  }
+
+  const a = stops[idxF];
+  const b = stops[idxC];
+  return {
+    r: Math.round(lerp(a.r, b.r, f)),
+    g: Math.round(lerp(a.g, b.g, f)),
+    b: Math.round(lerp(a.b, b.b, f)),
+  };
+}
+
+function getMatrixSample(mx, my, matrixName) {
+  if (matrixName === "bayer2") {
+    const i = (my & 1) * 2 + (mx & 1);
+    return BAYER2[i];
+  } else if (matrixName === "bayer4") {
+    const x = mx & 3, y = my & 3;
+    const i = y * 4 + x;
+    return BAYER4[i];
+  } else {
+    const x = mx & 7, y = my & 7;
+    const i = y * 8 + x;
+    return BAYER8[i];
+  }
+}
+
+function patternModifier(threshold, x, y, style) {
+  if (style === "dots") {
+    // bias threshold to round-ish blobs
+    const cx = (x & 7) - 3.5;
+    const cy = (y & 7) - 3.5;
+    const d = Math.sqrt(cx * cx + cy * cy) / 5.0;
+    return clamp01(threshold * (1.0 - 0.4 * (1.0 - d)));
+  } else if (style === "lines") {
+    const stripe = (y & 3) / 3.0;
+    return clamp01((threshold * 0.5) + stripe * 0.5);
+  } else if (style === "maze") {
+    const s = Math.sin(x * 0.6) * Math.cos(y * 0.4);
+    return clamp01(threshold * 0.7 + (s * 0.15 + 0.15));
+  } else {
+    // squares / default
+    return threshold;
+  }
+}
+
+/* gradient position [0,1] given coords and time */
+function computeGradientPos(nx, ny, t, angleDeg, type, mode) {
+  const angle = angleDeg * Math.PI / 180;
+  const ca = Math.cos(angle);
+  const sa = Math.sin(angle);
+
+  let u, v;
+
+  if (type === "radial") {
+    const cx = 0.5 + 0.15 * Math.cos(t * 0.0003);
+    const cy = 0.5 + 0.15 * Math.sin(t * 0.00027);
+    const dx = nx - cx;
+    const dy = ny - cy;
+    const r = Math.sqrt(dx * dx + dy * dy);
+    u = r * 1.4;
+  } else if (type === "stripe") {
+    const xx = nx * ca - ny * sa;
+    u = xx * 6.0;
+  } else {
+    const xx = nx * ca - ny * sa;
+    const yy = nx * sa + ny * ca;
+    u = xx + yy * 0.0;
+  }
+
+  // Animate gradient offset
+  let offset = 0;
+  if (mode === "scrollX") {
+    offset = t * 0.00015;
+  } else if (mode === "scrollY") {
+    offset = t * 0.00018;
+  } else if (mode === "diag") {
+    offset = t * 0.00022;
+  } else if (mode === "wave") {
+    offset = Math.sin(t * 0.001 + ny * 8.0) * 0.1;
+  } else if (mode === "noise") {
+    offset = (Math.sin(t * 0.0015 + nx * 9.0) * Math.cos(t * 0.0012 + ny * 7.0)) * 0.15;
+  }
+
+  let g = u + offset;
+  g = g - Math.floor(g); // wrap
+  return g;
+}
+
+function drawFrameToContext(ctx, size, timeMs) {
+  const img = ctx.createImageData(size, size);
+  const data = img.data;
+
+  const steps = parseInt(stepsEl.value, 10);
+  const poster = parseInt(posterizeEl.value, 10);
+  const angle = parseFloat(angleEl.value);
+  const matrixName = patternMatrixEl.value;
+  const style = patternStyleEl.value;
+  const cellSize = parseInt(cellSizeEl.value, 10);
+  const animMode = animModeEl.value;
+  const noiseAmt = parseInt(noiseAmountEl.value, 10) / 255.0;
+  const reverse = reverseGradientEl.checked;
+  const showGrid = previewGridEl.checked;
+
+  const stops = getStops();
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const nx = (x + 0.5) / size;
+      const ny = (y + 0.5) / size;
+
+      const g = computeGradientPos(nx, ny, timeMs, angle, gradientTypeEl.value, animMode);
+      const base = reverse ? 1.0 - g : g;
+
+      const scaled = base * steps;
+      const band = Math.floor(scaled);
+      const frac = scaled - band;
+
+      const mx = Math.floor(x / cellSize);
+      const my = Math.floor(y / cellSize);
+
+      let threshold = getMatrixSample(mx, my, matrixName);
+      threshold = patternModifier(threshold, x, y, style);
+
+      if (noiseAmt > 0) {
+        const seed = (x * 374761393 + y * 668265263) ^ (timeMs | 0);
+        const rnd = ((seed ^ (seed >> 13)) * 1274126177 >>> 16) & 255;
+        const n = (rnd / 255.0 - 0.5) * noiseAmt * 2.0;
+        threshold = clamp01(threshold + n);
       }
 
-      function resizeCanvas() {
-        const dpr = window.devicePixelRatio || 1;
-        const width = Math.floor(window.innerWidth * dpr * 0.85); // small perf win
-        const height = Math.floor(window.innerHeight * dpr * 0.85);
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
+      let sampleT;
+      if (threshold < frac) {
+        sampleT = (band + 1) / steps;
+      } else {
+        sampleT = band / steps;
       }
 
-      window.addEventListener("resize", resizeCanvas);
-      resizeCanvas();
+      const color = sampleGradient(sampleT, stops, poster);
+      const idx = (y * size + x) * 4;
+      data[idx + 0] = color.r;
+      data[idx + 1] = color.g;
+      data[idx + 2] = color.b;
+      data[idx + 3] = 255;
+    }
+  }
 
-      const vertexSrc = `
-        attribute vec2 a_position;
-        void main() {
-          gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-      `;
+  ctx.putImageData(img, 0, 0);
 
-      const fragmentSrc = `
-        precision highp float;
-        uniform vec2 u_resolution;
-        uniform float u_time;
-        uniform float u_dotScale;
-        uniform float u_density;
-        uniform float u_flowSpeed;
+  if (showGrid) {
+    ctx.strokeStyle = "rgba(0,0,0,0.18)";
+    ctx.lineWidth = 1;
+    const step = cellSize;
+    for (let x = 0; x < size; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, size);
+      ctx.stroke();
+    }
+    for (let y = 0; y < size; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(size, y + 0.5);
+      ctx.stroke();
+    }
+  }
+}
 
-        // Basic 2D value noise
-        float hash(vec2 p) {
-          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-        }
+/* ===========================
+   Animation loop
+   =========================== */
+let startTime = performance.now();
 
-        float noise(vec2 p) {
-          vec2 i = floor(p);
-          vec2 f = fract(p);
-          float a = hash(i);
-          float b = hash(i + vec2(1.0, 0.0));
-          float c = hash(i + vec2(0.0, 1.0));
-          float d = hash(i + vec2(1.0, 1.0));
-          vec2 u = f * f * (3.0 - 2.0 * f);
-          return mix(a, b, u.x) +
-                 (c - a) * u.y * (1.0 - u.x) +
-                 (d - b) * u.x * u.y;
-        }
+function animate() {
+  resizePreviewIfNeeded();
+  const now = performance.now();
+  const speedFactor = parseInt(animSpeedEl.value, 10) / 30.0; // baseline
+  const animMode = animModeEl.value;
+  let t = now - startTime;
 
-        float fbm(vec2 p) {
-          float v = 0.0;
-          float a = 0.5;
-          for (int i = 0; i < 4; i++) {
-            v += a * noise(p);
-            p *= 2.1;
-            a *= 0.5;
-          }
-          return v;
-        }
+  if (animMode === "off") {
+    t = 0;
+  } else {
+    t *= speedFactor;
+  }
 
-        void main() {
-          vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-          // keep aspect more square-ish
-          uv.x *= u_resolution.x / u_resolution.y;
+  drawFrameToContext(pctx, preview.width, t);
+  requestAnimationFrame(animate);
+}
 
-          float t = u_time * 0.001 * u_flowSpeed;
+/* ===========================
+   Export
+   =========================== */
+function dataUrlDownload(url, filename) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
 
-          // Warp UV with low freq noise to create organic drift
-          vec2 warp = vec2(
-            fbm(uv * 1.6 + vec2(0.0, t * 0.15)),
-            fbm(uv * 1.4 - vec2(t * 0.12, 0.0))
-          );
-          vec2 p = uv + (warp - 0.5) * 0.18;
+document.getElementById("btnExportPNG").addEventListener("click", () => {
+  const size = parseInt(exportSizeEl.value, 10) || 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
 
-          // Gradient driver
-          float g = 0.5 + 0.5 * sin(
-            t * 0.18 +
-            p.x * 2.0 +
-            fbm(p * 2.3 + vec2(0.0, t * 0.22)) * 2.2
-          );
-          g = smoothstep(0.15, 0.95, g);
+  const now = performance.now();
+  const speedFactor = parseInt(animSpeedEl.value, 10) / 30.0;
+  const animMode = animModeEl.value;
+  let t = now - startTime;
+  if (animMode === "off") t = 0;
+  else t *= speedFactor;
 
-          // Soft pastel palette (Discordish but tame)
-          vec3 c1 = vec3(0.03, 0.04, 0.10);       // base dark
-          vec3 c2 = vec3(0.27, 0.35, 0.78);       // soft indigo
-          vec3 c3 = vec3(0.23, 0.79, 0.87);       // teal accent
+  drawFrameToContext(ctx, size, t);
+  const url = canvas.toDataURL("image/png");
+  dataUrlDownload(url, "dither_frame.png");
+});
 
-          vec3 grad = mix(c1, c2, g);
-          grad = mix(grad, c3, 0.26 * fbm(p * 1.5 - vec2(t * 0.08, 0.0)));
+document.getElementById("btnExportSprite").addEventListener("click", () => {
+  const size = parseInt(exportSizeEl.value, 10) || 256;
+  const frames = parseInt(exportFramesEl.value, 10) || 24;
 
-          // Halftone-like dots: project onto grid
-          float scale = u_dotScale;  // how many cells across
-          vec2 gridUV = p * scale;
+  const canvas = document.createElement("canvas");
+  canvas.width = size * frames;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
 
-          // optional subtle motion in the grid itself
-          gridUV += vec2(
-            fbm(p * 3.2 + vec2(t * 0.05, 0.0)),
-            fbm(p * 3.2 + vec2(0.0, t * 0.04))
-          ) * 0.5;
+  const baseTime = performance.now();
+  const speedFactor = parseInt(animSpeedEl.value, 10) / 30.0;
+  const mode = animModeEl.value;
 
-          vec2 cell = floor(gridUV) + 0.5;
-          vec2 diff = gridUV - cell;
-          float dist = length(diff);
+  for (let i = 0; i < frames; i++) {
+    let localT = (i / frames) * 4000; // 4s loop
+    if (mode === "off") localT = 0;
+    else localT *= speedFactor;
 
-          // Dot radius controlled by gradient + density
-          float minR = 0.10;
-          float maxR = clamp(0.55 - u_density * 0.004, 0.18, 0.55);
-          float radius = mix(minR, maxR, g);
+    const temp = document.createElement("canvas");
+    temp.width = size;
+    temp.height = size;
+    const tctx = temp.getContext("2d");
+    drawFrameToContext(tctx, size, localT);
 
-          // Smooth dot edge
-          float edgeSoft = 0.14;
-          float mask = smoothstep(radius, radius - edgeSoft, dist);
+    ctx.drawImage(temp, size * i, 0);
+  }
 
-          // Slight noise to break perfect circles
-          float n = fbm(gridUV * 1.5 + vec2(t * 0.12, 0.0));
-          mask *= 0.8 + 0.2 * n;
+  const url = canvas.toDataURL("image/png");
+  dataUrlDownload(url, "dither_sprite_sheet.png");
+});
 
-          // Final color: dots over dark base
-          vec3 base = c1;
-          vec3 color = mix(base, grad, mask);
+/* ===========================
+   Event wiring & init
+   =========================== */
+createColorSlots();
+applyPalettePreset("demo");
+updateValueLabels();
 
-          // Soft vignette so edges are darker / calmer
-          vec2 center = uv - 0.5;
-          float vignette = smoothstep(0.85, 0.25, length(center));
-          color *= vignette;
+palettePresetEl.addEventListener("change", () => {
+  applyPalettePreset(palettePresetEl.value);
+});
 
-          gl_FragColor = vec4(color, 1.0);
-        }
-      `;
+[
+  stepsEl, posterizeEl, angleEl, cellSizeEl,
+  animSpeedEl, noiseAmountEl
+].forEach(el => {
+  el.addEventListener("input", updateValueLabels);
+});
 
-      function createShader(gl, type, source) {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-          console.error("Shader compile error:", gl.getShaderInfoLog(shader));
-          gl.deleteShader(shader);
-          return null;
-        }
-        return shader;
-      }
+exportSizeEl.addEventListener("change", () => {
+  resizePreviewIfNeeded();
+});
 
-      function createProgram(gl, vsSource, fsSource) {
-        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
-        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-        if (!vs || !fs) return null;
-
-        const program = gl.createProgram();
-        gl.attachShader(program, vs);
-        gl.attachShader(program, fs);
-        gl.linkProgram(program);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-          console.error("Program link error:", gl.getProgramInfoLog(program));
-          gl.deleteProgram(program);
-          return null;
-        }
-        return program;
-      }
-
-      const program = createProgram(gl, vertexSrc, fragmentSrc);
-      if (!program) {
-        body.classList.add("no-webgl");
-        return;
-      }
-
-      gl.useProgram(program);
-
-      const positionLoc = gl.getAttribLocation(program, "a_position");
-      const uResolutionLoc = gl.getUniformLocation(program, "u_resolution");
-      const uTimeLoc = gl.getUniformLocation(program, "u_time");
-      const uDotScaleLoc = gl.getUniformLocation(program, "u_dotScale");
-      const uDensityLoc = gl.getUniformLocation(program, "u_density");
-      const uFlowSpeedLoc = gl.getUniformLocation(program, "u_flowSpeed");
-
-      const buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      // Fullscreen quad
-      const vertices = new Float32Array([
-        -1, -1,
-         1, -1,
-        -1,  1,
-         1,  1,
-      ]);
-      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-      gl.enableVertexAttribArray(positionLoc);
-      gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
-
-      gl.disable(gl.DEPTH_TEST);
-      gl.disable(gl.STENCIL_TEST);
-      gl.disable(gl.BLEND);
-
-      let startTime = performance.now();
-
-      function render() {
-        resizeCanvas();
-        gl.viewport(0, 0, canvas.width, canvas.height);
-
-        const now = performance.now();
-        const time = now - startTime;
-
-        gl.useProgram(program);
-        gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
-        gl.uniform1f(uTimeLoc, time);
-
-        // Map slider values to uniforms
-        const dotScale = parseFloat(dotSizeInput.value);
-        const density = parseFloat(dotDensityInput.value);
-        const flowSpeed = parseFloat(flowSpeedInput.value) / 10.0;
-
-        gl.uniform1f(uDotScaleLoc, dotScale);
-        gl.uniform1f(uDensityLoc, density);
-        gl.uniform1f(uFlowSpeedLoc, flowSpeed);
-
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        requestAnimationFrame(render);
-      }
-
-      dotSizeInput.addEventListener("input", updateLabels);
-      dotDensityInput.addEventListener("input", updateLabels);
-      flowSpeedInput.addEventListener("input", updateLabels);
-
-      requestAnimationFrame(render);
-    })();
-  </script>
+updateValueLabels();
+resizePreviewIfNeeded();
+requestAnimationFrame(animate);
+</script>
 </body>
 </html>
