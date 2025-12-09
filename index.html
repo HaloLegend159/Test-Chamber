@@ -594,48 +594,87 @@
     ctx.shadowBlur=0;
   }
 
-  // -------- Ordered-dither background (flowy, behind everything) --------
-  function drawCity(t){
-    const w = canvas.width;
-    const h = canvas.height;
-    const pri = getComputedStyle(document.documentElement).getPropertyValue('--pri').trim();
+  // -------- Ordered-dither background (flowy, but calmer behind UI) --------
+function drawCity(t){
+  const w = canvas.width;
+  const h = canvas.height;
+  const pri = getComputedStyle(document.documentElement)
+                .getPropertyValue('--pri').trim();
 
-    // solid dark base
-    ctx.fillStyle = '#050301';
-    ctx.fillRect(0,0,w,h);
+  // Solid dark base
+  ctx.fillStyle = '#050301';
+  ctx.fillRect(0,0,w,h);
 
-    ctx.save();
-    ctx.fillStyle = pri;
+  ctx.save();
+  ctx.fillStyle = pri;
 
-    const s = DITHER.spacing;
-    const size = DITHER.size;
-    const tSlow = t * 0.35; // slow, flowy motion
+  const s = DITHER.spacing;  // 9px grid
+  const size = DITHER.size;  // 4.2px squares
+  const tSlow = t * 0.35;    // slow, flowy motion
 
-    for(let y=0, jy=0; y<h+s; y+=s, jy++){
-      const ny = y / h;
-      for(let x=0, ix=0; x<w+s; x+=s, ix++){
-        const nx = x / w;
+  const cx = w * 0.5;
+  const cy = h * 0.45;       // slightly above center (where text/bird live)
 
-        // Base static gradient: darker right, lighter left
-        const base = clamp(1 - nx, 0, 1);
+  for(let y=0, jy=0; y<h+s; y+=s, jy++){
+    const ny = y / h;
+    for(let x=0, ix=0; x<w+s; x+=s, ix++){
+      const nx = x / w;
 
-        // Gentle waves across X and Y
-        const waveX = 0.18 * Math.sin(nx * 5 - tSlow);
-        const waveY = 0.12 * Math.sin(ny * 6 + tSlow * 0.8);
-        const gradient = clamp(base + waveX + waveY, 0, 1);
+      // Base static gradient: darker right, lighter left (like Checkpoint)
+      const base = clamp(1 - nx, 0, 1);
 
-        // Ordered-dither threshold
-        const threshold = (BAYER8[jy & 7][ix & 7] + 0.5) / BAYER_MAX;
+      // Gentle waves across X and Y
+      const waveX = 0.18 * Math.sin(nx * 5 - tSlow);
+      const waveY = 0.12 * Math.sin(ny * 6 + tSlow * 0.8);
+      let gradient = clamp(base + waveX + waveY, 0, 1);
 
-        if(gradient > threshold){
-          // tiny jitter so it feels organic
-          const jitterX = ((ix*13 + jy*7) & 1) ? 0.4 : -0.4;
-          const jitterY = ((ix*5 + jy*11) & 1) ? 0.4 : -0.4;
-          ctx.globalAlpha = 0.32 + 0.25 * gradient; // softer than before
-          ctx.fillRect(x - size/2 + jitterX, y - size/2 + jitterY, size, size);
-        }
+      // *** Central falloff so dots are calmer behind the main UI ***
+      const dx = (x - cx) / w;
+      const dy = (y - cy) / h;
+      const dist = Math.sqrt(dx*dx + dy*dy);  // 0 at center, ~1 at edges
+
+      // At the center, reduce the effective brightness a lot.
+      // At edges, leave it basically unchanged.
+      const falloff = clamp((dist - 0.10) / 0.70, 0.25, 1.0);
+      gradient *= falloff;
+
+      // Ordered-dither threshold (8x8 Bayer)
+      const threshold = (BAYER8[jy & 7][ix & 7] + 0.5) / BAYER_MAX;
+
+      if(gradient > threshold){
+        // tiny jitter so it feels organic
+        const jitterX = ((ix*13 + jy*7) & 1) ? 0.35 : -0.35;
+        const jitterY = ((ix*5 + jy*11) & 1) ? 0.35 : -0.35;
+
+        // *** Softer alpha so dots don't overpower UI ***
+        ctx.globalAlpha = 0.18 + 0.16 * gradient;
+
+        ctx.fillRect(
+          x - size/2 + jitterX,
+          y - size/2 + jitterY,
+          size, size
+        );
       }
     }
+  }
+  ctx.restore();
+
+  // *** Smooth "fog" on top of the dots to mimic Checkpoint’s soft center ***
+  ctx.save();
+  const g = ctx.createRadialGradient(
+    cx, cy, 0,
+    cx, cy, Math.max(w,h) * 0.7
+  );
+  // Slightly darker in the middle → text & icons glow more clearly
+  g.addColorStop(0.0, 'rgba(0,0,0,0.45)');
+  g.addColorStop(0.55,'rgba(0,0,0,0.10)');
+  g.addColorStop(1.0, 'rgba(0,0,0,0.40)');
+  ctx.fillStyle = g;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0,0,w,h);
+  ctx.restore();
+}
+
 
     ctx.restore();
   }
