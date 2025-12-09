@@ -60,7 +60,7 @@
   .btn:hover{
     transform:translateY(-1px);
     border-color:var(--pri);
-    box-shadow:0 0 12px 0 rgba(255,217,74,0.5);
+    box-shadow:0 0 12px 0 rgba(255,217,74,0.45);
   }
   .btn:active{
     transform:translateY(0);
@@ -96,7 +96,7 @@
   canvas{
     display:block;position:fixed;inset:0;
     touch-action:none;
-    z-index:1;
+    z-index:1;   /* background layer – behind HUD */
   }
   .panel.hidden{display:none}
   .mobile-only{display:none}
@@ -229,7 +229,8 @@
 
   const THEMES = {
     checkpoint:{ pri:'#ffd94a', sec:'#fff8b0', bg1:'#120a02', bg2:'#050301' },
-    magenta:{pri:'#ff2ea6',sec:'#00f0ff',bg1:'#0a0f1a',bg2:'#0b0018'},
+    // softer magenta, no cyan clash
+    magenta:{pri:'#ff4fb8',sec:'#ffb6ea',bg1:'#110014',bg2:'#050008'},
     cyan:{pri:'#00e5ff',sec:'#9fb0ff',bg1:'#06141f',bg2:'#001018'},
     lime:{pri:'#aaff00',sec:'#ff00e0',bg1:'#0b1110',bg2:'#001400'},
     amber:{pri:'#ffb000',sec:'#ffe58a',bg1:'#0f0a00',bg2:'#1a0f00'}
@@ -242,6 +243,20 @@
     bgSpeed:0.5,
     musicOn:true, musicVol:0.35
   };
+
+  // Ordered-dither config – bigger, easier dots
+  const DITHER = { spacing:9, size:4.2 };
+  const BAYER8 = [
+    [0,32,8,40,2,34,10,42],
+    [48,16,56,24,50,18,58,26],
+    [12,44,4,36,14,46,6,38],
+    [60,28,52,20,62,30,54,22],
+    [3,35,11,43,1,33,9,41],
+    [51,19,59,27,49,17,57,25],
+    [15,47,7,39,13,45,5,37],
+    [63,31,55,23,61,29,53,21]
+  ];
+  const BAYER_MAX = 64;
 
   // ---------- State & persistence ----------
   function loadSettings(){
@@ -265,20 +280,6 @@
   const hud = E('#hud');
   const canvas = E('#game');
   const ctx = canvas.getContext('2d');
-
-  // Ordered dither params (like the sample image)
-  const DITHER = { spacing:8, size:3.5 };
-  const BAYER8 = [
-    [0,32,8,40,2,34,10,42],
-    [48,16,56,24,50,18,58,26],
-    [12,44,4,36,14,46,6,38],
-    [60,28,52,20,62,30,54,22],
-    [3,35,11,43,1,33,9,41],
-    [51,19,59,27,49,17,57,25],
-    [15,47,7,39,13,45,5,37],
-    [63,31,55,23,61,29,53,21]
-  ];
-  const BAYER_MAX = 64;
 
   // ---------- Apply theme ----------
   function applyTheme(){
@@ -562,7 +563,7 @@
   function neonRect(x,y,w,h,clr){
     ctx.save();
     ctx.fillStyle=clr;
-    ctx.globalAlpha=0.85;
+    ctx.globalAlpha=0.9;
     ctx.fillRect(x,y,w,h);
     ctx.shadowColor=clr;
     ctx.shadowBlur=10;
@@ -582,7 +583,7 @@
     ctx.shadowBlur=0;
   }
 
-  // -------- Ordered-dither background (Bayer 8x8) --------
+  // -------- Ordered-dither background (flowy, no seam) --------
   function drawCity(t){
     const w = canvas.width;
     const h = canvas.height;
@@ -596,25 +597,30 @@
 
     const s = DITHER.spacing;
     const size = DITHER.size;
-    const baseSpeed = 0.04 + S.bgSpeed*0.06;
-    // Move gradient slowly over time
-    const offset = (t * baseSpeed) % 1;
+    const tSlow = t * 0.35; // slower motion, overall
 
     for(let y=0, jy=0; y<h+s; y+=s, jy++){
       const ny = y / h;
       for(let x=0, ix=0; x<w+s; x+=s, ix++){
-        // Horizontal gradient that loops, darker on left
-        let gx = 1 - ((x / w) + offset);
-        gx = gx - Math.floor(gx); // wrap to 0..1
+        const nx = x / w;
 
-        // Mix in slight vertical shaping so it's not perfectly flat
-        const gradient = clamp(gx*0.75 + (1-ny)*0.25, 0, 1);
+        // Base static gradient: darker left, lighter right
+        const base = clamp(1 - nx, 0, 1);
 
+        // Gentle flowing waves in both X and Y
+        const waveX = 0.18 * Math.sin(nx * 5 - tSlow);
+        const waveY = 0.12 * Math.sin(ny * 6 + tSlow * 0.8);
+        const gradient = clamp(base + waveX + waveY, 0, 1);
+
+        // Ordered-dither threshold
         const threshold = (BAYER8[jy & 7][ix & 7] + 0.5) / BAYER_MAX;
 
         if(gradient > threshold){
-          ctx.globalAlpha = 0.95;
-          ctx.fillRect(x - size/2, y - size/2, size, size);
+          // Tiny jitter so it feels organic, not a perfect grid
+          const jitterX = ((ix*13 + jy*7) & 1) ? 0.4 : -0.4;
+          const jitterY = ((ix*5 + jy*11) & 1) ? 0.4 : -0.4;
+          ctx.globalAlpha = 0.45 + 0.3 * gradient; // softer overall
+          ctx.fillRect(x - size/2 + jitterX, y - size/2 + jitterY, size, size);
         }
       }
     }
